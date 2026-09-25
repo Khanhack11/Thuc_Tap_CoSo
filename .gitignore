@@ -37,3 +37,7 @@ uploads/
 # Temporary
 tmp/
 temp/
+
+
+# Local database configuration
+src/main/resources/db.properties
