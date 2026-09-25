@@ -1,0 +1,39 @@
+# Maven
+target/
+
+# Java
+*.class
+*.jar
+*.war
+
+# VS Code
+.vscode/
+
+# IntelliJ
+.idea/
+*.iml
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Uploaded files
+uploads/
+
+# Temporary
+tmp/
+temp/
