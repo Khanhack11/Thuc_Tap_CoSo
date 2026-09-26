@@ -41,8 +41,5 @@ temp/
 
 # Local database configuration
 src/main/resources/db.properties
-
-printf '\n# Local mail configuration\nsrc/main/resources/mail.properties\n' >> .gitignore
-
 # Local mail configuration
 src/main/resources/mail.properties
