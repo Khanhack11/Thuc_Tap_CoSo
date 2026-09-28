@@ -2,7 +2,7 @@
 -- SEED DATA DÀNH CHO QA TEST (BE2 - HỒ SƠ, TÀI LIỆU, HỢP ĐỒNG)
 -- ========================================================
 
-USE internship_db;
+USE internship_management;
 
 -- 1. Thêm Roles
 INSERT INTO roles (role_id, role_name) VALUES 

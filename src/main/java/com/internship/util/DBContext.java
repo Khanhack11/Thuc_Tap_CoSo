@@ -14,7 +14,7 @@ public class DBContext {
     // Mặc định hỗ trợ cả port 3306 và port 3307 (máy Docker của Huệ)
     private static final String DB_HOST = System.getenv("DB_HOST") != null ? System.getenv("DB_HOST") : "localhost";
     private static final String DB_PORT = System.getenv("DB_PORT") != null ? System.getenv("DB_PORT") : "3306";
-    private static final String DB_NAME = System.getenv("DB_NAME") != null ? System.getenv("DB_NAME") : "internship_db";
+    private static final String DB_NAME = System.getenv("DB_NAME") != null ? System.getenv("DB_NAME") : "internship_management";
     private static final String DB_USER = System.getenv("DB_USER") != null ? System.getenv("DB_USER") : "root";
     private static final String DB_PASS = System.getenv("DB_PASS") != null ? System.getenv("DB_PASS") : "root";
 
@@ -30,7 +30,11 @@ public class DBContext {
     }
 
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, DB_USER, DB_PASS);
+        try {
+            return DBConnection.getConnection();
+        } catch (Throwable t) {
+            return DriverManager.getConnection(URL, DB_USER, DB_PASS);
+        }
     }
 
     public static void close(AutoCloseable... closeables) {
