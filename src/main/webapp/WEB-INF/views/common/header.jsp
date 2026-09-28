@@ -11,6 +11,28 @@
         <%@ include file="/WEB-INF/views/common/footer.jsp" %>
 
     Trang KHÔNG cần lặp lại <html>, <head>, sidebar hay topbar.
+
+    ============================================================================
+    HỢP ĐỒNG SESSION VỚI BE1 - KHÔNG ĐƯỢC ĐỔI TÊN
+    ----------------------------------------------------------------------------
+    LoginServlet đặt vào session:
+        currentUser : com.internship.model.User
+        currentRole : String - "ADMIN" | "HR" | "MENTOR" | "INTERN"
+
+    User của BE1 KHÔNG có isAdmin()/isHR()/isIntern().
+    Nên TUYỆT ĐỐI không viết ${sessionScope.currentUser.admin} -> ném
+    PropertyNotFoundException -> HTTP 500.
+
+    Lấy role: dùng currentRole (đã chốt với BE1 ngày 28/09/2026). KHÔNG dùng
+    ${sessionScope.currentUser.role.roleName} - hiện cho cùng kết quả
+    (currentRole = user.getRole().getRoleName()) nhưng không phải key đã chốt,
+    và sẽ lệch nếu cách tính currentRole ở LoginServlet thay đổi.
+        ${sessionScope.currentRole eq 'ADMIN'}
+
+    Trước 28/09/2026 khối dưới đây đọc sessionScope.user nên không bao giờ
+    render: không có tên người dùng, không có nhãn vai trò, và không có nút
+    Đăng xuất nào trong toàn bộ giao diện.
+    ============================================================================
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -65,20 +87,30 @@
                         </c:choose>
                     </span>
                     <span class="app-user__meta">
-                        <span class="app-user__name"><c:out value="${sessionScope.currentUser.username}" /></span>
+                        <%-- User của BE1 có getFullName(); ưu tiên họ tên, chưa có thì lấy username --%>
+                        <span class="app-user__name"><c:out value="${empty sessionScope.currentUser.fullName ? sessionScope.currentUser.username : sessionScope.currentUser.fullName}" /></span>
                         <span class="app-user__role">
                             <c:choose>
-                                <c:when test="${sessionScope.currentUser.role.roleName eq 'ADMIN'}">Quản trị viên</c:when>
-                                <c:when test="${sessionScope.currentUser.role.roleName eq 'HR'}">Nhân sự (HR)</c:when>
-                                <c:when test="${sessionScope.currentUser.role.roleName eq 'MENTOR'}">Mentor</c:when>
-                                <c:otherwise>Thực tập sinh</c:otherwise>
+                                <c:when test="${sessionScope.currentRole eq 'ADMIN'}">Quản trị viên</c:when>
+                                <c:when test="${sessionScope.currentRole eq 'HR'}">Nhân sự (HR)</c:when>
+                                <c:when test="${sessionScope.currentRole eq 'MENTOR'}">Mentor</c:when>
+                                <c:when test="${sessionScope.currentRole eq 'INTERN'}">Thực tập sinh</c:when>
+                                <c:otherwise><c:out value="${sessionScope.currentRole}" /></c:otherwise>
                             </c:choose>
                         </span>
                     </span>
-                    <a href="${ctx}/auth/logout" class="btn btn-outline-brand btn-sm">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span class="d-none d-sm-inline ms-1">Đăng xuất</span>
-                    </a>
+                    <%--
+                        LogoutServlet CHỈ override doPost, KHÔNG có doGet. Nên
+                        <a href="${ctx}/auth/logout"> (GET) sẽ trả 405 Method Not
+                        Allowed. Bắt buộc phải là form POST như dưới đây.
+                        Không thêm doGet vào LogoutServlet (file của BE1).
+                    --%>
+                    <form action="${ctx}/auth/logout" method="post" class="m-0">
+                        <button type="submit" class="btn btn-outline-brand btn-sm">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span class="d-none d-sm-inline ms-1">Đăng xuất</span>
+                        </button>
+                    </form>
                 </div>
             </c:if>
         </header>

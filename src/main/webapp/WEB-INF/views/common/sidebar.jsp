@@ -6,6 +6,27 @@
     - Mục chưa có route thật (BE/FE khác chưa làm xong) render bằng
       <span class="app-nav__link is-soon">, KHÔNG dùng <a> để tránh link chết 404.
       Khi route sẵn sàng thì đổi span thành a và bỏ class is-soon.
+
+    ============================================================================
+    HỢP ĐỒNG SESSION VỚI BE1 - KHÔNG ĐƯỢC ĐỔI TÊN
+    ----------------------------------------------------------------------------
+    LoginServlet đặt vào session:
+        currentUser : com.internship.model.User
+        currentRole : String - "ADMIN" | "HR" | "MENTOR" | "INTERN"
+
+    User của BE1 KHÔNG có isAdmin()/isHR()/isIntern().
+    Nên TUYỆT ĐỐI không viết ${sessionScope.currentUser.admin} -> ném
+    PropertyNotFoundException -> HTTP 500.
+
+    Lấy role: dùng currentRole (đã chốt với BE1 ngày 28/09/2026). KHÔNG dùng
+    ${sessionScope.currentUser.role.roleName} - hiện cho cùng kết quả
+    (currentRole = user.getRole().getRoleName()) nhưng không phải key đã chốt,
+    và sẽ lệch nếu cách tính currentRole ở LoginServlet thay đổi.
+        ${sessionScope.currentRole eq 'ADMIN'}
+
+    Trước 28/09/2026 file này đọc sessionScope.user - attribute KHÔNG ai set -
+    nên cả 4 khối <c:if> theo role đều false và menu luôn rỗng với mọi role.
+    ============================================================================
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -20,7 +41,7 @@
     <nav class="app-nav" aria-label="Menu chính">
 
         <%-- ============================ INTERN ============================ --%>
-        <c:if test="${sessionScope.currentUser.role.roleName eq 'INTERN'}">
+        <c:if test="${sessionScope.currentRole eq 'INTERN'}">
 
             <div class="app-nav__group">Thực tập của tôi</div>
 
@@ -76,7 +97,9 @@
         </c:if>
 
         <%-- ============================== HR ============================== --%>
-        <c:if test="${sessionScope.currentUser.role.roleName eq 'HR'}">
+        <%-- ADMIN đi qua nhánh ADMIN bên dưới; AuthorizationFilter cũng cho ADMIN
+             qua mọi /hr/*, nên nếu cần menu HR cho ADMIN thì bổ sung có chủ đích. --%>
+        <c:if test="${sessionScope.currentRole eq 'HR'}">
 
             <div class="app-nav__group">Tuyển dụng</div>
 
@@ -129,7 +152,7 @@
         </c:if>
 
         <%-- ============================ MENTOR ============================ --%>
-        <c:if test="${sessionScope.currentUser.role.roleName eq 'MENTOR'}">
+        <c:if test="${sessionScope.currentRole eq 'MENTOR'}">
 
             <div class="app-nav__group">Hướng dẫn</div>
 
@@ -158,7 +181,7 @@
         </c:if>
 
         <%-- ============================= ADMIN ============================ --%>
-        <c:if test="${sessionScope.currentUser.role.roleName eq 'ADMIN'}">
+        <c:if test="${sessionScope.currentRole eq 'ADMIN'}">
 
             <div class="app-nav__group">Quản trị hệ thống</div>
 
