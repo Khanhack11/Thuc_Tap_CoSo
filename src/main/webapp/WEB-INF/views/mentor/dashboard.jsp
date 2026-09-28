@@ -6,19 +6,26 @@
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <section class="fe3-page" id="fe3App" data-page="mentor-dashboard" data-context="${ctx}">
-    <p class="fe3-intro">Theo dõi thực tập sinh, nhiệm vụ, báo cáo và đánh giá trong một nơi.</p>
+    <div class="fe3-hero">
+        <div>
+            <span class="fe3-hero__eyebrow"><i class="bi bi-compass"></i> Không gian Mentor</span>
+            <h2>Tổng quan hướng dẫn</h2>
+            <p>Theo dõi thực tập sinh, tiến độ công việc và các báo cáo cần phản hồi trong một nơi.</p>
+        </div>
+        <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-people"></i></div>
+    </div>
     <div id="fe3Notice" class="alert d-none" role="status" aria-live="polite"></div>
     <div class="fe3-metrics" aria-label="Thống kê Mentor">
-        <div class="fe3-metric"><span>TTS đang hướng dẫn</span><strong id="metricActiveInterns">—</strong></div>
-        <div class="fe3-metric"><span>Task chưa bắt đầu</span><strong id="metricTasksTodo">—</strong></div>
-        <div class="fe3-metric"><span>Task đang làm</span><strong id="metricTasksInProgress">—</strong></div>
-        <div class="fe3-metric"><span>Task hoàn thành</span><strong id="metricTasksDone">—</strong></div>
-        <div class="fe3-metric"><span>Báo cáo chờ phản hồi</span><strong id="metricReportsSubmitted">—</strong></div>
-        <div class="fe3-metric"><span>Báo cáo đã phản hồi</span><strong id="metricReportsReviewed">—</strong></div>
-        <div class="fe3-metric"><span>Đánh giá đã thực hiện</span><strong id="metricEvaluationsCompleted">—</strong></div>
+        <div class="fe3-metric"><span><i class="bi bi-people"></i> TTS đang hướng dẫn</span><strong id="metricActiveInterns">—</strong></div>
+        <div class="fe3-metric"><span><i class="bi bi-list-check"></i> Task chưa bắt đầu</span><strong id="metricTasksTodo">—</strong></div>
+        <div class="fe3-metric"><span><i class="bi bi-arrow-repeat"></i> Task đang làm</span><strong id="metricTasksInProgress">—</strong></div>
+        <div class="fe3-metric"><span><i class="bi bi-check-circle"></i> Task hoàn thành</span><strong id="metricTasksDone">—</strong></div>
+        <div class="fe3-metric"><span><i class="bi bi-chat-left-text"></i> Báo cáo chờ phản hồi</span><strong id="metricReportsSubmitted">—</strong></div>
+        <div class="fe3-metric"><span><i class="bi bi-chat-left-dots"></i> Báo cáo đã phản hồi</span><strong id="metricReportsReviewed">—</strong></div>
+        <div class="fe3-metric"><span><i class="bi bi-award"></i> Đánh giá đã thực hiện</span><strong id="metricEvaluationsCompleted">—</strong></div>
     </div>
     <div class="fe3-panel">
-        <div class="fe3-panel__heading"><h2>TTS được phân công</h2></div>
+        <div class="fe3-panel__heading"><div><span class="fe3-section-label">ĐỢT THỰC TẬP</span><h2>TTS được phân công</h2></div></div>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead><tr><th>TTS</th><th>Chương trình</th><th>Thời gian</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>

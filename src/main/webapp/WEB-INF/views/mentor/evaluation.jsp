@@ -6,7 +6,14 @@
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <section class="fe3-page" id="fe3App" data-page="mentor-evaluation" data-context="${ctx}">
-    <p class="fe3-intro">Mỗi đợt thực tập chỉ có một đánh giá cuối kỳ. Điểm theo thang 0–100.</p>
+    <div class="fe3-hero">
+        <div>
+            <span class="fe3-hero__eyebrow"><i class="bi bi-award"></i> Tổng kết hành trình</span>
+            <h2>Đánh giá cuối kỳ</h2>
+            <p>Ghi điểm và nhận xét tổng kết cho thực tập sinh bạn đang hướng dẫn. Mỗi đợt chỉ có một đánh giá.</p>
+        </div>
+        <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-clipboard-check"></i></div>
+    </div>
     <div id="fe3Notice" class="alert d-none" role="status" aria-live="polite"></div>
     <div class="fe3-panel">
         <label class="form-label" for="enrollmentSelect">Đợt thực tập</label>

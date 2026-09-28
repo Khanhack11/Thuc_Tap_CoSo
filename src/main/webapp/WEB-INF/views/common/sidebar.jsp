@@ -116,6 +116,11 @@
 
             <div class="app-nav__group">Báo cáo</div>
 
+            <a class="app-nav__link ${activePage eq 'hr-evaluations' ? 'is-active' : ''}"
+               href="${ctx}/hr/evaluations">
+                <i class="bi bi-award"></i><span>Kết quả đánh giá</span>
+            </a>
+
             <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-bar-chart"></i><span>Thống kê</span>
                 <span class="app-nav__soon">Sắp có</span>
@@ -156,6 +161,11 @@
         <c:if test="${sessionScope.currentUser.role.roleName eq 'ADMIN'}">
 
             <div class="app-nav__group">Quản trị hệ thống</div>
+
+            <a class="app-nav__link ${activePage eq 'hr-evaluations' ? 'is-active' : ''}"
+               href="${ctx}/hr/evaluations">
+                <i class="bi bi-award"></i><span>Kết quả đánh giá</span>
+            </a>
 
             <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-person-gear"></i><span>Tài khoản nội bộ</span>

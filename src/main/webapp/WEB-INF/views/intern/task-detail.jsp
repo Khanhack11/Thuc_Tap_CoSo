@@ -7,6 +7,14 @@
 
 <section class="fe3-page" id="fe3App" data-page="intern-task-detail" data-context="${ctx}">
     <a href="${ctx}/intern/tasks" class="fe3-back"><i class="bi bi-arrow-left"></i> Quay lại danh sách</a>
+    <div class="fe3-hero">
+        <div>
+            <span class="fe3-hero__eyebrow"><i class="bi bi-graph-up-arrow"></i> Theo dõi tiến độ</span>
+            <h2>Chi tiết nhiệm vụ</h2>
+            <p>Ghi lại tiến độ theo từng mốc để mentor có thể theo dõi và hỗ trợ bạn.</p>
+        </div>
+        <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-activity"></i></div>
+    </div>
     <div id="fe3Notice" class="alert d-none" role="status" aria-live="polite"></div>
     <div class="fe3-two-column">
         <div class="fe3-panel">

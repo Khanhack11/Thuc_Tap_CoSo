@@ -6,7 +6,14 @@
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <section class="fe3-page" id="fe3App" data-page="intern-tasks" data-context="${ctx}">
-    <p class="fe3-intro">Theo dõi các task được giao và cập nhật tiến độ từng task.</p>
+    <div class="fe3-hero">
+        <div>
+            <span class="fe3-hero__eyebrow"><i class="bi bi-check2-square"></i> Công việc của tôi</span>
+            <h2>Mỗi nhiệm vụ, một bước tiến</h2>
+            <p>Xem việc được giao, hạn hoàn thành và cập nhật tiến độ cho mentor.</p>
+        </div>
+        <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-clipboard2-check"></i></div>
+    </div>
     <div id="fe3Notice" class="alert d-none" role="status" aria-live="polite"></div>
     <div class="fe3-panel">
         <label class="form-label" for="enrollmentSelect">Đợt thực tập</label>

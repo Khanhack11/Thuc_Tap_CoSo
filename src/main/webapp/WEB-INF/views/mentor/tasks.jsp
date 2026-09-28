@@ -6,7 +6,14 @@
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <section class="fe3-page" id="fe3App" data-page="mentor-tasks" data-context="${ctx}">
-    <p class="fe3-intro">Chọn đợt thực tập để giao nhiệm vụ và xem tiến độ của TTS.</p>
+    <div class="fe3-hero">
+        <div>
+            <span class="fe3-hero__eyebrow"><i class="bi bi-list-check"></i> Công việc của Mentor</span>
+            <h2>Giao nhiệm vụ rõ ràng, theo dõi tiến độ dễ dàng</h2>
+            <p>Chọn thực tập sinh, đặt hạn hoàn thành và xem từng lần cập nhật tiến độ.</p>
+        </div>
+        <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-kanban"></i></div>
+    </div>
     <div id="fe3Notice" class="alert d-none" role="status" aria-live="polite"></div>
     <div class="fe3-panel">
         <label class="form-label" for="enrollmentSelect">Đợt thực tập</label>

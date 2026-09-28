@@ -6,7 +6,14 @@
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <section class="fe3-page" id="fe3App" data-page="intern-evaluation" data-context="${ctx}">
-    <p class="fe3-intro">Xem kết quả đánh giá do mentor ghi cho đợt thực tập của bạn.</p>
+    <div class="fe3-hero">
+        <div>
+            <span class="fe3-hero__eyebrow"><i class="bi bi-award"></i> Thành quả của tôi</span>
+            <h2>Đánh giá cuối kỳ</h2>
+            <p>Xem kết quả và nhận xét của mentor cho từng đợt thực tập đã tham gia.</p>
+        </div>
+        <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-trophy"></i></div>
+    </div>
     <div id="fe3Notice" class="alert d-none" role="status" aria-live="polite"></div>
     <div class="fe3-panel">
         <label class="form-label" for="enrollmentSelect">Đợt thực tập</label>

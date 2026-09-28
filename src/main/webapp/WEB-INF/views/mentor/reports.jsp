@@ -6,7 +6,14 @@
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <section class="fe3-page" id="fe3App" data-page="mentor-reports" data-context="${ctx}">
-    <p class="fe3-intro">Xem báo cáo đã nộp và gửi phản hồi cho TTS đang hướng dẫn.</p>
+    <div class="fe3-hero">
+        <div>
+            <span class="fe3-hero__eyebrow"><i class="bi bi-journal-check"></i> Theo dõi hằng tuần</span>
+            <h2>Báo cáo và phản hồi</h2>
+            <p>Đọc báo cáo đã nộp, ghi nhận xét và giúp TTS biết bước tiếp theo cần cải thiện.</p>
+        </div>
+        <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-chat-square-text"></i></div>
+    </div>
     <div id="fe3Notice" class="alert d-none" role="status" aria-live="polite"></div>
     <div class="fe3-panel">
         <label class="form-label" for="enrollmentSelect">Đợt thực tập</label>

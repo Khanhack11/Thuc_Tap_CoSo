@@ -6,7 +6,14 @@
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <section class="fe3-page" id="fe3App" data-page="intern-reports" data-context="${ctx}">
-    <p class="fe3-intro">Mỗi tuần trong một đợt thực tập có một báo cáo. Có thể sửa trước khi nộp.</p>
+    <div class="fe3-hero">
+        <div>
+            <span class="fe3-hero__eyebrow"><i class="bi bi-journal-text"></i> Nhật ký thực tập</span>
+            <h2>Báo cáo từng tuần</h2>
+            <p>Lưu bản nháp, hoàn thiện nội dung rồi nộp báo cáo để nhận phản hồi từ mentor.</p>
+        </div>
+        <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-pencil-square"></i></div>
+    </div>
     <div id="fe3Notice" class="alert d-none" role="status" aria-live="polite"></div>
     <div class="fe3-panel">
         <label class="form-label" for="enrollmentSelect">Đợt thực tập</label>

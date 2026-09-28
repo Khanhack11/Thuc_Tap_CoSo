@@ -6,7 +6,8 @@
 
     var page = app.dataset.page;
     var ctx = app.dataset.context || '';
-    var role = page.indexOf('mentor-') === 0 ? 'mentor' : 'intern';
+    var role = page.indexOf('mentor-') === 0 ? 'mentor'
+        : page.indexOf('hr-') === 0 ? 'hr' : 'intern';
     var base = ctx + '/' + role + '/be4';
     var csrfToken = null;
     var enrollments = [];
@@ -67,6 +68,27 @@
     }
 
     function cell(row, text) { row.appendChild(node('td', text)); }
+    function statusCell(row, value) {
+        var holder = node('td');
+        var badge = node('span', status(value), 'fe3-status fe3-status--'
+            + String(value || '').toLowerCase().replace(/[^a-z_]/g, ''));
+        holder.appendChild(badge);
+        row.appendChild(holder);
+    }
+    function progressCell(row, percentage) {
+        var holder = node('td');
+        if (percentage == null) {
+            holder.appendChild(node('span', 'Chưa cập nhật', 'fe3-muted'));
+        } else {
+            var line = node('div', null, 'fe3-progress');
+            var fill = node('span');
+            fill.style.width = Math.max(0, Math.min(100, percentage)) + '%';
+            line.appendChild(fill);
+            holder.appendChild(line);
+            holder.appendChild(node('small', percentage + '%', 'fe3-progress__label'));
+        }
+        row.appendChild(holder);
+    }
     function emptyRow(body, columns, message) {
         body.replaceChildren();
         var row = node('tr');
@@ -141,7 +163,7 @@
             cell(row, entry.internName);
             cell(row, entry.programName);
             cell(row, date(entry.startDate) + ' – ' + date(entry.endDate));
-            cell(row, status(entry.status));
+            statusCell(row, entry.status);
             var action = node('td');
             var anchor = node('a', 'Xem nhiệm vụ', 'btn btn-outline-primary btn-sm');
             anchor.href = link('/mentor/tasks', { enrollmentId: entry.enrollmentId });
@@ -184,12 +206,12 @@
             assigned.forEach(function (assignment, index) {
                 var task = tasks.get(assignment.taskId);
                 var percentages = histories[index].map(function (item) { return item.completionPercentage; });
-                var progress = percentages.length ? Math.max.apply(null, percentages) + '%' : 'Chưa cập nhật';
+                var progress = percentages.length ? Math.max.apply(null, percentages) : null;
                 var row = node('tr');
                 cell(row, task ? task.title : 'Task #' + assignment.taskId);
                 cell(row, task ? date(task.dueDate) : '—');
-                cell(row, status(assignment.status));
-                cell(row, progress);
+                statusCell(row, assignment.status);
+                progressCell(row, progress);
                 var action = node('td');
                 var button = node('button', 'Lịch sử', 'btn btn-outline-primary btn-sm');
                 button.type = 'button';
@@ -341,7 +363,7 @@
                 var row = node('tr');
                 cell(row, task ? task.title : 'Task #' + assignment.taskId);
                 cell(row, task ? date(task.dueDate) : '—');
-                cell(row, status(assignment.status));
+                statusCell(row, assignment.status);
                 var action = node('td');
                 var anchor = node('a', 'Xem chi tiết', 'btn btn-outline-primary btn-sm');
                 anchor.href = link('/intern/tasks/detail', {
@@ -498,6 +520,54 @@
         });
     }
 
+    async function hrEvaluations() {
+        var entries = await api('/evaluations');
+        var search = byId('evaluationSearch');
+        var scored = entries.map(function (entry) { return Number(entry.score); })
+            .filter(function (score) { return Number.isFinite(score); });
+        byId('metricEvaluationCount').textContent = entries.length;
+        byId('metricEvaluatedInterns').textContent = new Set(entries.map(function (entry) {
+            return entry.internName;
+        })).size;
+        byId('metricAverageScore').textContent = scored.length
+            ? (scored.reduce(function (sum, score) { return sum + score; }, 0) / scored.length).toFixed(1)
+            : '—';
+
+        function render() {
+            var term = search.value.trim().toLocaleLowerCase('vi');
+            var filtered = entries.filter(function (entry) {
+                return !term || [entry.enrollmentId, entry.internName, entry.programName,
+                    entry.mentorName].some(function (part) {
+                    return String(part || '').toLocaleLowerCase('vi').includes(term);
+                });
+            });
+            var body = byId('evaluationRows');
+            if (!filtered.length) {
+                emptyRow(body, 6, entries.length ? 'Không tìm thấy kết quả phù hợp.'
+                    : 'Chưa có đánh giá cuối kỳ nào.');
+                return;
+            }
+            body.replaceChildren();
+            filtered.forEach(function (entry) {
+                var row = node('tr');
+                var intern = node('td');
+                intern.appendChild(node('strong', entry.internName || '—'));
+                intern.appendChild(node('small', 'Đợt #' + entry.enrollmentId, 'fe3-table-meta'));
+                row.appendChild(intern);
+                cell(row, entry.programName);
+                cell(row, entry.mentorName);
+                var score = node('td');
+                score.appendChild(node('span', entry.score + '/100', 'fe3-score'));
+                row.appendChild(score);
+                cell(row, moment(entry.createdAt));
+                cell(row, entry.comment || 'Không có nhận xét.');
+                body.appendChild(row);
+            });
+        }
+        search.addEventListener('input', render);
+        render();
+    }
+
     var start = ({
         'mentor-dashboard': mentorDashboard,
         'mentor-tasks': mentorTasks,
@@ -506,7 +576,8 @@
         'intern-tasks': internTasks,
         'intern-task-detail': internTaskDetail,
         'intern-reports': internReports,
-        'intern-evaluation': function () { return evaluationPage(false); }
+        'intern-evaluation': function () { return evaluationPage(false); },
+        'hr-evaluations': hrEvaluations
     })[page];
     if (start) start().catch(errorMessage);
 })();
