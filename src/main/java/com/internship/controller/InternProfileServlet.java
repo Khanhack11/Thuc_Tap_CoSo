@@ -24,7 +24,7 @@ import java.util.List;
  * - /hr/interns: HR/Admin tìm kiếm, lọc danh sách hồ sơ.
  * - /hr/intern-detail: HR xem chi tiết hồ sơ thực tập sinh.
  */
-@WebServlet(name = "InternProfileServlet", urlPatterns = {"/intern/profile", "/hr/interns", "/hr/intern-detail"})
+@WebServlet(name = "InternProfileServlet", urlPatterns = {"/intern/profile", "/hr/interns", "/hr/interns/search", "/hr/intern-detail"})
 public class InternProfileServlet extends HttpServlet {
 
     private InternProfileService profileService;
@@ -64,6 +64,7 @@ public class InternProfileServlet extends HttpServlet {
                     handleViewOwnProfile(request, response, currentUser);
                     break;
                 case "/hr/interns":
+                case "/hr/interns/search":
                     handleListAndSearchProfiles(request, response, currentUser);
                     break;
                 case "/hr/intern-detail":
@@ -148,6 +149,10 @@ public class InternProfileServlet extends HttpServlet {
         }
 
         String name = request.getParameter("name");
+        String keyword = request.getParameter("keyword");
+        if ((name == null || name.trim().isEmpty()) && keyword != null && !keyword.trim().isEmpty()) {
+            name = keyword;
+        }
         String university = request.getParameter("university");
         String major = request.getParameter("major");
 

@@ -1,6 +1,6 @@
- feature/fe2-sprint1
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <c:set var="pageTitle" value="Chi tiết Thực Tập Sinh" />
 <c:set var="activePage" value="interns" />
 
@@ -8,175 +8,117 @@
 
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4">Hồ Sơ Thực Tập Sinh</h2>
-        <a href="${pageContext.request.contextPath}/hr/interns" class="btn btn-outline-secondary">Quay lại danh sách</a>
+        <h2 class="h4 mb-0">Hồ Sơ Thực Tập Sinh: <c:out value="${profile.fullName}" /></h2>
+        <a href="${pageContext.request.contextPath}/hr/interns" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
+        </a>
     </div>
 
     <div class="row">
-        <!-- Thông tin tóm tắt bên trái -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <div class="bg-secondary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 100px; height: 100px; font-size: 2rem;">
-                        TTS
+        <!-- Thông tin tóm tắt bên trái (FE2 Layout + BE2 Action) -->
+        <div class="col-lg-4 col-md-5 mb-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center p-4">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 fw-bold" style="width: 80px; height: 80px; font-size: 1.8rem;">
+                        <c:choose>
+                            <c:when test="${not empty profile.fullName}">
+                                <c:out value="${fn:toUpperCase(fn:substring(profile.fullName, 0, 1))}" />
+                            </c:when>
+                            <c:otherwise>TTS</c:otherwise>
+                        </c:choose>
                     </div>
-                    <h5 class="card-title fw-bold">[Tên TTS sẽ hiển thị ở đây]</h5>
-                    <p class="text-muted">[Email hiển thị ở đây]</p>
-                    <span class="badge bg-success">Đang thực tập</span>
+                    <h5 class="card-title fw-bold mb-1"><c:out value="${profile.fullName}" /></h5>
+                    <p class="text-muted small mb-2"><c:out value="${profile.email}" /></p>
+                    <div class="mb-3">
+                        <c:choose>
+                            <c:when test="${profile.status == 'ACTIVE'}">
+                                <span class="badge bg-success">Đang thực tập</span>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="badge bg-secondary"><c:out value="${profile.status}" /></span>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
 
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết hồ sơ - HR Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="${pageContext.request.contextPath}/hr/interns">
-            <i class="bi bi-buildings me-2"></i>HR Portal - Internship Manager
-        </a>
-        <div class="d-flex align-items-center text-white">
-            <a href="${pageContext.request.contextPath}/hr/interns" class="btn btn-outline-light btn-sm me-2">
-                <i class="bi bi-arrow-left me-1"></i>Quay lại danh sách
-            </a>
-            <form action="${pageContext.request.contextPath}/auth/logout" method="post" class="m-0">
-                <button type="submit" class="btn btn-outline-danger btn-sm">
-                    <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
-                </button>
-            </form>
-
-        </div>
-    </div>
-</nav>
-
-<div class="container pb-5">
-
-    <c:if test="${not empty sessionScope.flashSuccess}">
-        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>${sessionScope.flashSuccess}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <c:remove var="flashSuccess" scope="session"/>
-    </c:if>
-
-    <c:if test="${not empty sessionScope.flashError}">
-        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>${sessionScope.flashError}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <c:remove var="flashError" scope="session"/>
-    </c:if>
-
-    <div class="row g-4">
-        <!-- Thông tin chi tiết hồ sơ TTS -->
-        <div class="col-lg-6">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0 text-primary fw-bold">
-                        <i class="bi bi-person-bounding-box me-2"></i>Hồ sơ #${profile.profileId} - ${profile.fullName}
-                    </h5>
-                    <form action="${pageContext.request.contextPath}/intern/profile" method="post" class="d-inline">
-                        <input type="hidden" name="action" value="update_status">
-                        <input type="hidden" name="profileId" value="${profile.profileId}">
-                        <input type="hidden" name="status" value="${profile.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}">
-                        <button type="submit" class="btn btn-sm ${profile.status == 'ACTIVE' ? 'btn-outline-danger' : 'btn-outline-success'}">
-                            Chuyển sang ${profile.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}
-                        </button>
-                    </form>
-                </div>
-                <div class="card-body p-4">
-                    <table class="table table-borderless">
-                        <tbody>
-                            <tr>
-                                <th class="w-35 text-secondary">Họ và tên:</th>
-                                <td class="fw-bold">${profile.fullName}</td>
-                            </tr>
-                            <tr>
-                                <th class="text-secondary">Ngày sinh:</th>
-                                <td>${profile.dob}</td>
-                            </tr>
-                            <tr>
-                                <th class="text-secondary">Giới tính:</th>
-                                <td>${profile.gender}</td>
-                            </tr>
-                            <tr>
-                                <th class="text-secondary">Số điện thoại:</th>
-                                <td>${profile.phone}</td>
-                            </tr>
-                            <tr>
-                                <th class="text-secondary">Email:</th>
-                                <td>${profile.email}</td>
-                            </tr>
-                            <tr>
-                                <th class="text-secondary">Trường ĐH/CĐ:</th>
-                                <td>${profile.university}</td>
-                            </tr>
-                            <tr>
-                                <th class="text-secondary">Chuyên ngành:</th>
-                                <td>${profile.major}</td>
-                            </tr>
-                            <tr>
-                                <th class="text-secondary">GPA:</th>
-                                <td><span class="badge bg-primary fs-6">${profile.gpa != null ? profile.gpa : 'N/A'}</span></td>
-                            </tr>
-                            <tr>
-                                <th class="text-secondary">Kỹ năng:</th>
-                                <td>${profile.skills}</td>
-                            </tr>
-                            <tr>
-                                <th class="text-secondary">Trạng thái hồ sơ:</th>
-                                <td>
-                                    <span class="badge ${profile.status == 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">
-                                        ${profile.status}
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
- develop
+                    <!-- Nút chuyển trạng thái hồ sơ (BE2 Logic) -->
+                    <div class="border-top pt-3">
+                        <form action="${pageContext.request.contextPath}/intern/profile" method="post">
+                            <input type="hidden" name="action" value="update_status">
+                            <input type="hidden" name="profileId" value="${profile.profileId}">
+                            <input type="hidden" name="status" value="${profile.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}">
+                            <button type="submit" class="btn btn-sm ${profile.status == 'ACTIVE' ? 'btn-outline-danger' : 'btn-outline-success'} w-100">
+                                <i class="bi bi-arrow-repeat me-1"></i>Chuyển sang ${profile.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
 
- feature/fe2-sprint1
-        <!-- Chi tiết hồ sơ bên phải -->
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white fw-bold py-3">Thông tin chi tiết</div>
+        <!-- Chi tiết hồ sơ bên phải (FE2 Layout + BE2 Data & Forms) -->
+        <div class="col-lg-8 col-md-7">
+            <!-- Thông tin chi tiết cá nhân & học vấn -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white fw-bold py-3 border-bottom">
+                    <i class="bi bi-person-lines-fill me-2 text-primary"></i>Thông tin chi tiết hồ sơ (#${profile.profileId})
+                </div>
                 <div class="card-body">
                     <div class="row mb-3">
-                        <div class="col-sm-3 text-muted">Trường Đại học:</div>
-                        <div class="col-sm-9 fw-semibold">[Tên Trường]</div>
+                        <div class="col-sm-4 text-muted">Họ và tên:</div>
+                        <div class="col-sm-8 fw-semibold"><c:out value="${profile.fullName}" /></div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-sm-3 text-muted">Chuyên ngành:</div>
-                        <div class="col-sm-9 fw-semibold">[Chuyên Ngành]</div>
+                        <div class="col-sm-4 text-muted">Ngày sinh:</div>
+                        <div class="col-sm-8"><c:out value="${profile.dob}" /></div>
                     </div>
                     <div class="row mb-3">
-                        <div class="col-sm-3 text-muted">Mentor Hướng dẫn:</div>
-                        <div class="col-sm-9 fw-semibold">[Tên Mentor]</div>
+                        <div class="col-sm-4 text-muted">Giới tính:</div>
+                        <div class="col-sm-8"><c:out value="${profile.gender}" /></div>
                     </div>
-                    <div class="row mt-4 pt-3 border-top">
-                        <div class="col-12">
-                            <a href="#" class="btn btn-primary me-2">Tải CV (PDF)</a>
-                            <a href="#" class="btn btn-outline-danger">Chấm dứt thực tập</a>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Số điện thoại:</div>
+                        <div class="col-sm-8"><c:out value="${profile.phone}" /></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Email liên hệ:</div>
+                        <div class="col-sm-8"><c:out value="${profile.email}" /></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Trường Đại học/Cao đẳng:</div>
+                        <div class="col-sm-8 fw-semibold"><c:out value="${profile.university}" /></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Chuyên ngành:</div>
+                        <div class="col-sm-8"><c:out value="${profile.major}" /></div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Điểm GPA:</div>
+                        <div class="col-sm-8">
+                            <span class="badge ${profile.gpa >= 3.2 ? 'bg-success' : 'bg-primary'} fs-6">
+                                ${profile.gpa != null ? profile.gpa : 'N/A'}
+                            </span>
                         </div>
                     </div>
-                  
-        <!-- Tài liệu (CV, Đơn) & Upload Hợp đồng (US9) -->
-        <div class="col-lg-6">
-            <!-- Tài liệu đính kèm của TTS -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h5 class="card-title mb-0 text-dark fw-bold">
-                        <i class="bi bi-file-earmark-check me-2"></i>Tài liệu đính kèm (CV, Đơn xin thực tập)
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted">Kỹ năng chuyên môn:</div>
+                        <div class="col-sm-8"><c:out value="${profile.skills}" /></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4 text-muted">Trạng thái hồ sơ:</div>
+                        <div class="col-sm-8">
+                            <span class="badge ${profile.status == 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">
+                                <c:out value="${profile.status}" />
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tài liệu đính kèm của TTS (CV, Đơn xin thực tập) -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 text-dark fw-bold h6">
+                        <i class="bi bi-file-earmark-check me-2 text-primary"></i>Tài liệu đính kèm (CV, Đơn xin thực tập)
                     </h5>
                 </div>
                 <div class="card-body p-0">
@@ -186,10 +128,10 @@
                                 <c:forEach var="doc" items="${documents}">
                                     <li class="list-group-item p-3 d-flex justify-content-between align-items-center">
                                         <div>
-                                            <span class="badge bg-info text-dark me-2">${doc.documentType}</span>
-                                            <strong>${doc.fileName}</strong>
+                                            <span class="badge bg-info text-dark me-2"><c:out value="${doc.documentType}" /></span>
+                                            <strong><c:out value="${doc.fileName}" /></strong>
                                             <div class="small text-muted">
-                                                Dung lượng: ${doc.fileSize / 1024} KB | Trạng thái: ${doc.status}
+                                                Dung lượng: ${doc.fileSize / 1024} KB | Trạng thái: <c:out value="${doc.status}" />
                                             </div>
                                         </div>
                                         <a href="${pageContext.request.contextPath}/document/download?id=${doc.documentId}" 
@@ -210,10 +152,10 @@
                 </div>
             </div>
 
-            <!-- US9: HR Upload Hợp đồng thực tập -->
-            <div class="card shadow-sm border-0">
+            <!-- Quản lý hợp đồng thực tập (US9) -->
+            <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white py-3 border-bottom">
-                    <h5 class="card-title mb-0 text-success fw-bold">
+                    <h5 class="card-title mb-0 text-success fw-bold h6">
                         <i class="bi bi-file-earmark-lock me-2"></i>Quản lý hợp đồng thực tập (US9)
                     </h5>
                 </div>
@@ -228,24 +170,17 @@
                             <input type="number" name="applicationId" class="form-control" placeholder="Nhập ID đơn ứng tuyển đã duyệt (VD: 1)" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Chọn file hợp đồng (PDF, Word, tối đa 5MB)</label>
+                            <label class="form-label fw-semibold">Chọn file hợp đồng (PDF, Word, tối đa 5MB) <span class="text-danger">*</span></label>
                             <input type="file" name="contractFile" class="form-control" accept=".pdf,.doc,.docx" required>
                         </div>
                         <button type="submit" class="btn btn-success w-100 fw-bold">
                             <i class="bi bi-cloud-arrow-up-fill me-1"></i>Tải lên Hợp đồng cho ứng viên
                         </button>
                     </form>
- develop
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-feature/fe2-sprint1
 <%@ include file="/WEB-INF/views/common/footer.jsp" %>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
- develop
