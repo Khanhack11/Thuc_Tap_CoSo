@@ -19,9 +19,14 @@
         currentUser : com.internship.model.User
         currentRole : String - "ADMIN" | "HR" | "MENTOR" | "INTERN"
 
-    User của BE1 KHÔNG có isAdmin()/isHR()/isIntern() và KHÔNG có roleName.
+    User của BE1 KHÔNG có isAdmin()/isHR()/isIntern().
     Nên TUYỆT ĐỐI không viết ${sessionScope.currentUser.admin} -> ném
-    PropertyNotFoundException -> HTTP 500. Luôn so sánh qua currentRole:
+    PropertyNotFoundException -> HTTP 500.
+
+    Lấy role: dùng currentRole (đã chốt với BE1 ngày 28/09/2026). KHÔNG dùng
+    ${sessionScope.currentUser.role.roleName} - hiện cho cùng kết quả
+    (currentRole = user.getRole().getRoleName()) nhưng không phải key đã chốt,
+    và sẽ lệch nếu cách tính currentRole ở LoginServlet thay đổi.
         ${sessionScope.currentRole eq 'ADMIN'}
 
     Trước 28/09/2026 khối dưới đây đọc sessionScope.user nên không bao giờ
@@ -48,6 +53,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="${ctx}/assets/css/app.css" rel="stylesheet">
+    <c:if test="${not empty pageStylesheet}">
+        <link href="${ctx}/assets/css/${pageStylesheet}" rel="stylesheet">
+    </c:if>
 </head>
 <body>
 

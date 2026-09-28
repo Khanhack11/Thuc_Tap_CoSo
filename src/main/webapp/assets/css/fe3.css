@@ -1,0 +1,212 @@
+/* FE3-only screens. Reuse the shared FE1 palette and shell. */
+.fe3-page { display: grid; gap: 20px; }
+.fe3-intro { color: var(--text-muted); margin: 0; }
+.fe3-panel, .fe3-metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+.fe3-panel { padding: 22px; min-width: 0; }
+.fe3-panel h2 { font-size: 1.16rem; font-weight: 650; margin: 0 0 16px; }
+.fe3-panel__heading { display: flex; justify-content: space-between; align-items: center; }
+.fe3-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.fe3-metric { padding: 18px 20px; display: grid; gap: 4px; }
+.fe3-metric span { color: var(--text-muted); font-size: .9rem; }
+.fe3-metric strong { font-size: 1.8rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.fe3-two-column { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.fe3-list { display: grid; gap: 8px; }
+.fe3-list-button {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    width: 100%; text-align: left; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
+    padding: 12px 14px;
+}
+.fe3-list-button:hover, .fe3-list-button.is-selected {
+    background: var(--brand-soft); border-color: var(--brand);
+}
+.fe3-list-button small { color: var(--text-muted); flex: 0 0 auto; }
+.fe3-subpanel { border-top: 1px solid var(--border); padding-top: 18px; margin-top: 12px; }
+.fe3-report-content { white-space: pre-wrap; overflow-wrap: anywhere; }
+.fe3-feedback-list { display: grid; gap: 10px; }
+.fe3-feedback { background: var(--surface-sunken); border-radius: var(--radius-sm); padding: 12px; }
+.fe3-feedback p { white-space: pre-wrap; margin: 6px 0 0; }
+.fe3-details { display: grid; grid-template-columns: 140px 1fr; gap: 8px 14px; margin: 0; }
+.fe3-details dt { color: var(--text-muted); font-weight: 500; }
+.fe3-details dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fe3-back { display: inline-flex; align-items: center; gap: 6px; width: fit-content; }
+.fe3-page .table { color: var(--text); margin-bottom: 0; }
+.fe3-page .table th { color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+.fe3-page .form-control, .fe3-page .form-select {
+    background-color: var(--surface); color: var(--text); border-color: var(--border-strong);
+}
+.fe3-page .form-control:focus, .fe3-page .form-select:focus { border-color: var(--brand); }
+.fe3-page .btn-primary { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
+.fe3-page .btn-primary:hover { background: var(--brand-strong); border-color: var(--brand-strong); }
+.fe3-page .text-muted { color: var(--text-muted) !important; }
+@media (max-width: 900px) {
+    .fe3-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fe3-two-column { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+    .fe3-metrics { grid-template-columns: 1fr; }
+    .fe3-panel { padding: 16px; }
+    .fe3-details { grid-template-columns: 1fr; gap: 2px; }
+    .fe3-details dd { margin-bottom: 10px; }
+}
+
+/* FE3's content layer uses the shared shell and colour tokens without changing FE1. */
+.fe3-page { gap: 22px; }
+.fe3-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: clamp(24px, 4vw, 38px);
+    overflow: hidden;
+    background: linear-gradient(115deg, var(--surface) 12%, var(--brand-soft) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+.fe3-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: var(--brand);
+}
+.fe3-hero__eyebrow, .fe3-section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: var(--brand-strong);
+    font-size: .73rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+.fe3-hero h2 {
+    margin: 0 0 8px;
+    color: var(--text);
+    font-size: clamp(1.55rem, 2.4vw, 2.2rem);
+    font-weight: 750;
+    letter-spacing: -.03em;
+    line-height: 1.2;
+}
+.fe3-hero p { max-width: 60ch; margin: 0; color: var(--text-muted); }
+.fe3-hero__mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 100px;
+    width: 100px;
+    height: 100px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--brand);
+    font-size: 3rem;
+    box-shadow: var(--shadow-sm);
+}
+.fe3-panel { padding: 24px; box-shadow: var(--shadow-sm); }
+.fe3-panel__heading { gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.fe3-panel__heading h2 { margin-bottom: 0; }
+.fe3-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.fe3-metrics--compact { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.fe3-metric {
+    position: relative;
+    min-height: 105px;
+    padding: 19px 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+.fe3-metric::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--brand);
+}
+.fe3-metric span { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; }
+.fe3-metric span .bi { color: var(--brand); font-size: 1rem; }
+.fe3-metric strong { color: var(--text); font-size: clamp(1.65rem, 2vw, 2rem); }
+.fe3-page .table { --bs-table-bg: transparent; }
+.fe3-page .table thead th {
+    padding: 13px 12px;
+    border-bottom: 1px solid var(--border-strong);
+    background: var(--surface-sunken);
+    font-size: .79rem;
+    letter-spacing: .02em;
+}
+.fe3-page .table tbody td { padding: 15px 12px; border-color: var(--border); vertical-align: middle; }
+.fe3-page .table tbody tr:last-child td { border-bottom: 0; }
+.fe3-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--state-neutral-bg);
+    color: var(--state-neutral-fg);
+    font-size: .78rem;
+    font-weight: 650;
+    white-space: nowrap;
+}
+.fe3-status--active, .fe3-status--done, .fe3-status--reviewed,
+.fe3-status--completed { background: var(--state-ok-bg); color: var(--state-ok-fg); }
+.fe3-status--submitted, .fe3-status--in_progress {
+    background: var(--state-pending-bg); color: var(--state-pending-fg);
+}
+.fe3-status--cancelled { background: var(--state-bad-bg); color: var(--state-bad-fg); }
+.fe3-muted, .fe3-table-meta { color: var(--text-muted); font-size: .82rem; }
+.fe3-table-meta { display: block; margin-top: 2px; }
+.fe3-progress {
+    width: min(110px, 100%);
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--border);
+}
+.fe3-progress span { display: block; height: 100%; border-radius: inherit; background: var(--brand); }
+.fe3-progress__label { display: block; margin-top: 5px; color: var(--text-muted); }
+.fe3-search { position: relative; width: min(340px, 100%); }
+.fe3-search .bi {
+    position: absolute;
+    top: 50%;
+    left: 13px;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+}
+.fe3-search input { padding-left: 38px; }
+.fe3-score {
+    display: inline-block;
+    min-width: 75px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+.fe3-list-button { transition: background .18s ease, border-color .18s ease, transform .18s ease; }
+.fe3-list-button:hover { transform: translateY(-1px); }
+.fe3-feedback { border: 1px solid var(--border); }
+.fe3-page .form-label { font-weight: 650; font-size: .87rem; }
+.fe3-page textarea.form-control { resize: vertical; }
+@media (max-width: 1050px) {
+    .fe3-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+    .fe3-page { gap: 16px; }
+    .fe3-hero { padding: 23px 20px; }
+    .fe3-hero__mark { display: none; }
+    .fe3-metrics, .fe3-metrics--compact { grid-template-columns: 1fr; }
+    .fe3-metric { min-height: 90px; }
+    .fe3-panel { padding: 18px; }
+    .fe3-search { width: 100%; }
+}

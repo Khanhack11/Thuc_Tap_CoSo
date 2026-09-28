@@ -14,9 +14,14 @@
         currentUser : com.internship.model.User
         currentRole : String - "ADMIN" | "HR" | "MENTOR" | "INTERN"
 
-    User của BE1 KHÔNG có isAdmin()/isHR()/isIntern() và KHÔNG có roleName.
+    User của BE1 KHÔNG có isAdmin()/isHR()/isIntern().
     Nên TUYỆT ĐỐI không viết ${sessionScope.currentUser.admin} -> ném
-    PropertyNotFoundException -> HTTP 500. Luôn so sánh qua currentRole:
+    PropertyNotFoundException -> HTTP 500.
+
+    Lấy role: dùng currentRole (đã chốt với BE1 ngày 28/09/2026). KHÔNG dùng
+    ${sessionScope.currentUser.role.roleName} - hiện cho cùng kết quả
+    (currentRole = user.getRole().getRoleName()) nhưng không phải key đã chốt,
+    và sẽ lệch nếu cách tính currentRole ở LoginServlet thay đổi.
         ${sessionScope.currentRole eq 'ADMIN'}
 
     Trước 28/09/2026 file này đọc sessionScope.user - attribute KHÔNG ai set -
@@ -57,15 +62,20 @@
 
             <div class="app-nav__group">Công việc</div>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'intern-tasks' ? 'is-active' : ''}"
+               href="${ctx}/intern/tasks">
                 <i class="bi bi-list-check"></i><span>Nhiệm vụ của tôi</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'intern-reports' ? 'is-active' : ''}"
+               href="${ctx}/intern/reports">
                 <i class="bi bi-journal-text"></i><span>Báo cáo tuần</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
+
+            <a class="app-nav__link ${activePage eq 'intern-evaluation' ? 'is-active' : ''}"
+               href="${ctx}/intern/evaluation">
+                <i class="bi bi-clipboard-check"></i><span>Đánh giá cuối kỳ</span>
+            </a>
 
             <div class="app-nav__group">Thời gian và quyền lợi</div>
 
@@ -129,6 +139,11 @@
 
             <div class="app-nav__group">Báo cáo</div>
 
+            <a class="app-nav__link ${activePage eq 'hr-evaluations' ? 'is-active' : ''}"
+               href="${ctx}/hr/evaluations">
+                <i class="bi bi-award"></i><span>Kết quả đánh giá</span>
+            </a>
+
             <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-bar-chart"></i><span>Thống kê</span>
                 <span class="app-nav__soon">Sắp có</span>
@@ -141,27 +156,27 @@
 
             <div class="app-nav__group">Hướng dẫn</div>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
-                <i class="bi bi-people"></i><span>TTS phụ trách</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            <a class="app-nav__link ${activePage eq 'mentor-dashboard' ? 'is-active' : ''}"
+               href="${ctx}/mentor/dashboard">
+                <i class="bi bi-speedometer2"></i><span>Dashboard và TTS</span>
+            </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'mentor-tasks' ? 'is-active' : ''}"
+               href="${ctx}/mentor/tasks">
                 <i class="bi bi-list-check"></i><span>Giao nhiệm vụ</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
             <div class="app-nav__group">Theo dõi</div>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'mentor-reports' ? 'is-active' : ''}"
+               href="${ctx}/mentor/reports">
                 <i class="bi bi-journal-text"></i><span>Báo cáo tuần</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'mentor-evaluation' ? 'is-active' : ''}"
+               href="${ctx}/mentor/evaluation">
                 <i class="bi bi-clipboard-check"></i><span>Đánh giá</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
         </c:if>
 
@@ -169,6 +184,11 @@
         <c:if test="${sessionScope.currentRole eq 'ADMIN'}">
 
             <div class="app-nav__group">Quản trị hệ thống</div>
+
+            <a class="app-nav__link ${activePage eq 'hr-evaluations' ? 'is-active' : ''}"
+               href="${ctx}/hr/evaluations">
+                <i class="bi bi-award"></i><span>Kết quả đánh giá</span>
+            </a>
 
             <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-person-gear"></i><span>Tài khoản nội bộ</span>
