@@ -6,6 +6,22 @@
     - Mục chưa có route thật (BE/FE khác chưa làm xong) render bằng
       <span class="app-nav__link is-soon">, KHÔNG dùng <a> để tránh link chết 404.
       Khi route sẵn sàng thì đổi span thành a và bỏ class is-soon.
+
+    ============================================================================
+    HỢP ĐỒNG SESSION VỚI BE1 - KHÔNG ĐƯỢC ĐỔI TÊN
+    ----------------------------------------------------------------------------
+    LoginServlet đặt vào session:
+        currentUser : com.internship.model.User
+        currentRole : String - "ADMIN" | "HR" | "MENTOR" | "INTERN"
+
+    User của BE1 KHÔNG có isAdmin()/isHR()/isIntern() và KHÔNG có roleName.
+    Nên TUYỆT ĐỐI không viết ${sessionScope.currentUser.admin} -> ném
+    PropertyNotFoundException -> HTTP 500. Luôn so sánh qua currentRole:
+        ${sessionScope.currentRole eq 'ADMIN'}
+
+    Trước 28/09/2026 file này đọc sessionScope.user - attribute KHÔNG ai set -
+    nên cả 4 khối <c:if> theo role đều false và menu luôn rỗng với mọi role.
+    ============================================================================
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -20,7 +36,7 @@
     <nav class="app-nav" aria-label="Menu chính">
 
         <%-- ============================ INTERN ============================ --%>
-        <c:if test="${sessionScope.user.intern}">
+        <c:if test="${sessionScope.currentRole eq 'INTERN'}">
 
             <div class="app-nav__group">Thực tập của tôi</div>
 
@@ -71,7 +87,9 @@
         </c:if>
 
         <%-- ============================== HR ============================== --%>
-        <c:if test="${sessionScope.user.HR and not sessionScope.user.admin}">
+        <%-- ADMIN đi qua nhánh ADMIN bên dưới; AuthorizationFilter cũng cho ADMIN
+             qua mọi /hr/*, nên nếu cần menu HR cho ADMIN thì bổ sung có chủ đích. --%>
+        <c:if test="${sessionScope.currentRole eq 'HR'}">
 
             <div class="app-nav__group">Tuyển dụng</div>
 
@@ -119,7 +137,7 @@
         </c:if>
 
         <%-- ============================ MENTOR ============================ --%>
-        <c:if test="${sessionScope.user.roleName eq 'MENTOR'}">
+        <c:if test="${sessionScope.currentRole eq 'MENTOR'}">
 
             <div class="app-nav__group">Hướng dẫn</div>
 
@@ -148,7 +166,7 @@
         </c:if>
 
         <%-- ============================= ADMIN ============================ --%>
-        <c:if test="${sessionScope.user.admin}">
+        <c:if test="${sessionScope.currentRole eq 'ADMIN'}">
 
             <div class="app-nav__group">Quản trị hệ thống</div>
 
@@ -170,7 +188,7 @@
         </c:if>
 
         <%-- Trường hợp chưa đăng nhập hoặc role không xác định --%>
-        <c:if test="${empty sessionScope.user}">
+        <c:if test="${empty sessionScope.currentUser}">
             <div class="app-nav__group">Phiên làm việc</div>
             <a class="app-nav__link" href="${ctx}/auth/login">
                 <i class="bi bi-box-arrow-in-right"></i><span>Đăng nhập</span>
