@@ -2,6 +2,7 @@ package com.internship.controller;
 
 import com.internship.model.DashboardCount;
 import com.internship.model.Evaluation;
+import com.internship.model.EvaluationSummary;
 import com.internship.model.EnrollmentSummary;
 import com.internship.model.HrDashboard;
 import com.internship.model.MentorDashboard;
@@ -69,6 +70,17 @@ final class Be4Json {
                 "mentorId", value.getMentorId(), "score", value.getScore(),
                 "comment", value.getComment(), "createdAt", value.getCreatedAt(),
                 "updatedAt", value.getUpdatedAt());
+    }
+
+    static Map<String, Object> evaluationSummary(EvaluationSummary value) {
+        return fields("evaluationId", value.evaluationId(),
+                "enrollmentId", value.enrollmentId(),
+                "internName", value.internName(),
+                "programName", value.programName(),
+                "mentorName", value.mentorName(),
+                "score", value.score(),
+                "comment", value.comment(),
+                "createdAt", value.createdAt());
     }
 
     static Map<String, Object> nullableEvaluation(Evaluation value) {

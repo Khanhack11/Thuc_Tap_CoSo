@@ -48,7 +48,8 @@ BE4 cung cấp JSON API trên cùng ứng dụng Tomcat. Không cần server/API
 
 | Method | Path sau `/hr/be4` | Tham số | Kết quả |
 |---|---|---|---|
-| GET | `/dashboard` | — | `HrDashboard` |
+| GET | `/dashboard` | - | `HrDashboard` |
+| GET | `/evaluations` | - | `EvaluationSummary[]` gồm mã enrollment, TTS, chương trình, mentor đánh giá, điểm, nhận xét và ngày đánh giá |
 | GET | `/evaluation` | `enrollmentId` | `Evaluation` hoặc `null` |
 
 `HrDashboard` gồm `totalInterns`, `activeEnrollments`, `completedEnrollments`, `completionRatePercent`, `internsByUniversity`, `internsByMajor`, `activeInternsByMentor`. Ba mảng cuối gồm `{ "label": "...", "count": 1 }`. Tỷ lệ = completed / (active + completed) × 100; không tính enrollment cancelled. `MentorDashboard` gồm `activeInterns`, `tasksTodo`, `tasksInProgress`, `tasksDone`, `reportsSubmitted`, `reportsReviewed`, `evaluationsCompleted`.

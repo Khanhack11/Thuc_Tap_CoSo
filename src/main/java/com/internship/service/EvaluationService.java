@@ -3,6 +3,7 @@ package com.internship.service;
 import com.internship.dao.EvaluationDAO;
 import com.internship.dao.TaskAccessDAO;
 import com.internship.model.Evaluation;
+import com.internship.model.EvaluationSummary;
 import com.internship.util.DBConnection;
 
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.List;
 
 public class EvaluationService {
     private final Be4ConnectionFactory connections;
@@ -68,6 +70,16 @@ public class EvaluationService {
                 throw new SecurityException("Không có quyền xem đánh giá này");
             }
             return evaluations.findByEnrollment(connection, enrollmentId);
+        }
+    }
+
+    public List<EvaluationSummary> findAllForHr(long hrUserId) throws SQLException {
+        requirePositive(hrUserId, "hrUserId");
+        try (Connection connection = connections.open()) {
+            if (!access.isActiveHrOrAdmin(connection, hrUserId)) {
+                throw new SecurityException("Chỉ HR/Admin được xem danh sách đánh giá");
+            }
+            return evaluations.findAllSummaries(connection);
         }
     }
 

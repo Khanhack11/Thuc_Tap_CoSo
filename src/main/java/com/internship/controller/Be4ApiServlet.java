@@ -111,6 +111,10 @@ public class Be4ApiServlet extends HttpServlet {
         if ("/hr/be4".equals(area) && "/dashboard".equals(path)) {
             return Be4Json.hrDashboard(dashboards.getHrDashboard(userId));
         }
+        if ("/hr/be4".equals(area) && "/evaluations".equals(path)) {
+            return evaluations.findAllForHr(userId).stream()
+                    .map(Be4Json::evaluationSummary).toList();
+        }
         if ("/mentor/be4".equals(area) && "/dashboard".equals(path)) {
             return Be4Json.mentorDashboard(dashboards.getMentorDashboard(userId));
         }
