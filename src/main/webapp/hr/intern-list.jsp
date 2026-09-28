@@ -1,141 +1,66 @@
- feature/fe2-sprint1
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<c:set var="pageTitle" value="Danh sách Thực Tập Sinh" />
+<c:set var="pageTitle" value="Quản lý Thực Tập Sinh" />
 <c:set var="activePage" value="interns" />
 
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <div class="container-fluid mt-4">
-    <h2 class="h4 mb-4">Quản lý Thực Tập Sinh</h2>
-    
-    <!-- Form Tìm Kiếm (Dành cho BE2 xử lý logic) -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0">Quản lý Thực Tập Sinh</h2>
+    </div>
+
+    <!-- Form Tìm Kiếm & Lọc (Tích hợp BE2 logic + FE2 Layout) -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <form action="${pageContext.request.contextPath}/hr/interns/search" method="GET" class="row g-3 align-items-center">
-                <div class="col-md-5">
-                    <input type="text" class="form-control" name="keyword" placeholder="Nhập tên, email hoặc trường đại học...">
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select" name="status">
-                        <option value="">-- Tất cả trạng thái --</option>
-                        <option value="ACTIVE">Đang thực tập</option>
-                        <option value="COMPLETED">Đã hoàn thành</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Tìm kiếm</button>
-
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh sách Thực tập sinh - HR Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-buildings me-2"></i>HR Portal - Internship Manager</a>
-        <div class="d-flex align-items-center text-white">
-            <span class="me-3"><i class="bi bi-person-circle me-1"></i><c:out value="${sessionScope.currentUser.username}" /> (<c:out value="${sessionScope.currentRole}" />)</span>
-                        <form action="${pageContext.request.contextPath}/auth/logout" method="post" class="m-0">
-                <button type="submit" class=m">
-                    <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
-                </button>
-            </form>
-
-        </div>
-    </div>
-</nav>
-
-<div class="container pb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="text-primary fw-bold mb-0">
-            <i class="bi bi-people-fill me-2"></i>Quản lý hồ sơ thực tập sinh (BE2)
-        </h4>
-    </div>
-
-    <!-- Bộ lọc & Tìm kiếm theo Tên, Trường, Ngành (Yêu cầu BE2 - Ảnh 1) -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body p-4">
-            <form action="${pageContext.request.contextPath}/hr/interns" method="get" class="row g-3">
+            <form action="${pageContext.request.contextPath}/hr/interns" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">Tìm kiếm theo tên</label>
+                    <label class="form-label fw-semibold small text-muted">Họ và tên</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" name="name" class="form-control" placeholder="Nhập họ và tên..." value="${searchName}">
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Tìm kiếm theo trường</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-mortarboard"></i></span>
-                        <input type="text" name="university" class="form-control" placeholder="Tên trường ĐH/CĐ..." value="${searchUniversity}">
+                        <input type="text" class="form-control" name="name" placeholder="Nhập tên thực tập sinh..." value="<c:out value='${searchName}'/>">
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">Tìm kiếm theo ngành</label>
+                    <label class="form-label fw-semibold small text-muted">Trường Đại học</label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-book"></i></span>
-                        <input type="text" name="major" class="form-control" placeholder="Chuyên ngành..." value="${searchMajor}">
+                        <span class="input-group-text"><i class="bi bi-mortarboard"></i></span>
+                        <input type="text" class="form-control" name="university" placeholder="Tên trường ĐH/CĐ..." value="<c:out value='${searchUniversity}'/>">
                     </div>
                 </div>
-                <div class="col-md-1 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100 fw-semibold">
-                        <i class="bi bi-funnel"></i> Lọc
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold small text-muted">Chuyên ngành</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-book"></i></span>
+                        <input type="text" class="form-control" name="major" placeholder="Chuyên ngành..." value="<c:out value='${searchMajor}'/>">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel me-1"></i>Tìm kiếm
                     </button>
- develop
                 </div>
             </form>
         </div>
     </div>
 
- feature/fe2-sprint1
-    <!-- Bảng Danh Sách -->
+    <!-- Bảng Danh Sách Hồ Sơ TTS -->
     <div class="card shadow-sm">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Mã TTS</th>
-                            <th>Họ Tên</th>
-                            <th>Trường Đại Học</th>
-                            <th>Trạng Thái</th>
-                            <th class="text-center">Thao Tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- BE2 sẽ dùng thẻ c:forEach để đổ dữ liệu thật vào khu vực này -->
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                Dữ liệu trống. Đang chờ BE2 đổ dữ liệu từ Server...
-                            </td>
-                        </tr>
-
-    <!-- Danh sách Hồ sơ -->
-    <div class="card shadow-sm border-0">
         <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0 fw-bold">Danh sách hồ sơ (${profiles.size()})</h5>
+            <h5 class="card-title mb-0 fw-bold">Danh sách hồ sơ (${not empty profiles ? profiles.size() : 0})</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">ID</th>
-                            <th>Họ và tên</th>
-                            <th>Số điện thoại / Email</th>
-                            <th>Trường ĐH / Chuyên ngành</th>
+                            <th class="ps-3">Mã TTS</th>
+                            <th>Họ Tên</th>
+                            <th>Liên hệ</th>
+                            <th>Trường Đại Học / Ngành</th>
                             <th>GPA</th>
-                            <th>Trạng thái</th>
-                            <th class="text-end pe-3">Hành động</th>
+                            <th>Trạng Thái</th>
+                            <th class="text-center pe-3">Thao Tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -145,16 +70,16 @@
                                     <tr>
                                         <td class="ps-3 fw-bold text-muted">#${p.profileId}</td>
                                         <td>
-                                            <div class="fw-bold text-dark">${p.fullName}</div>
-                                            <small class="text-muted">${p.gender} | ${p.dob}</small>
+                                            <div class="fw-bold text-dark"><c:out value="${p.fullName}" /></div>
+                                            <small class="text-muted"><c:out value="${p.gender}" /> | <c:out value="${p.dob}" /></small>
                                         </td>
                                         <td>
-                                            <div><i class="bi bi-telephone me-1 text-secondary"></i>${p.phone}</div>
-                                            <small class="text-muted"><i class="bi bi-envelope me-1 text-secondary"></i>${p.email}</small>
+                                            <div><i class="bi bi-telephone me-1 text-secondary"></i><c:out value="${p.phone}" /></div>
+                                            <small class="text-muted"><i class="bi bi-envelope me-1 text-secondary"></i><c:out value="${p.email}" /></small>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold">${p.university}</div>
-                                            <small class="text-muted">${p.major}</small>
+                                            <div class="fw-semibold"><c:out value="${p.university}" /></div>
+                                            <small class="text-muted"><c:out value="${p.major}" /></small>
                                         </td>
                                         <td>
                                             <span class="badge ${p.gpa >= 3.2 ? 'bg-success' : 'bg-secondary'}">
@@ -162,14 +87,19 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="badge ${p.status == 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">
-                                                ${p.status}
-                                            </span>
+                                            <c:choose>
+                                              <c:when test="${p.status == 'ACTIVE'}">
+                                                  <span class="badge bg-success">Đang thực tập</span>
+                                              </c:when>
+                                              <c:otherwise>
+                                                  <span class="badge bg-secondary"><c:out value="${p.status}" /></span>
+                                              </c:otherwise>
+                                            </c:choose>
                                         </td>
-                                        <td class="text-end pe-3">
+                                        <td class="text-center pe-3">
                                             <a href="${pageContext.request.contextPath}/hr/intern-detail?id=${p.profileId}" 
-                                               class="btn btn-outline-primary btn-sm">
-                                                <i class="bi bi-eye me-1"></i>Chi tiết & Tài liệu
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i>Chi tiết
                                             </a>
                                         </td>
                                     </tr>
@@ -184,7 +114,6 @@
                                 </tr>
                             </c:otherwise>
                         </c:choose>
- develop
                     </tbody>
                 </table>
             </div>
@@ -192,10 +121,4 @@
     </div>
 </div>
 
- feature/fe2-sprint1
 <%@ include file="/WEB-INF/views/common/footer.jsp" %>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
- develop
