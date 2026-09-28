@@ -31,6 +31,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="${ctx}/assets/css/app.css" rel="stylesheet">
+    <c:if test="${not empty pageStylesheet}">
+        <link href="${ctx}/assets/css/${pageStylesheet}" rel="stylesheet">
+    </c:if>
 </head>
 <body>
 
@@ -51,23 +54,23 @@
 
             <div class="app-topbar__spacer"></div>
 
-            <c:if test="${not empty sessionScope.user}">
+            <c:if test="${not empty sessionScope.currentUser}">
                 <div class="app-user">
                     <span class="app-user__avatar" aria-hidden="true">
                         <c:choose>
-                            <c:when test="${not empty sessionScope.user.username}">
-                                <c:out value="${fn:toUpperCase(fn:substring(sessionScope.user.username, 0, 1))}" />
+                            <c:when test="${not empty sessionScope.currentUser.username}">
+                                <c:out value="${fn:toUpperCase(fn:substring(sessionScope.currentUser.username, 0, 1))}" />
                             </c:when>
                             <c:otherwise><i class="bi bi-person"></i></c:otherwise>
                         </c:choose>
                     </span>
                     <span class="app-user__meta">
-                        <span class="app-user__name">${sessionScope.user.username}</span>
+                        <span class="app-user__name"><c:out value="${sessionScope.currentUser.username}" /></span>
                         <span class="app-user__role">
                             <c:choose>
-                                <c:when test="${sessionScope.user.admin}">Quản trị viên</c:when>
-                                <c:when test="${sessionScope.user.HR}">Nhân sự (HR)</c:when>
-                                <c:when test="${sessionScope.user.roleName eq 'MENTOR'}">Mentor</c:when>
+                                <c:when test="${sessionScope.currentUser.role.roleName eq 'ADMIN'}">Quản trị viên</c:when>
+                                <c:when test="${sessionScope.currentUser.role.roleName eq 'HR'}">Nhân sự (HR)</c:when>
+                                <c:when test="${sessionScope.currentUser.role.roleName eq 'MENTOR'}">Mentor</c:when>
                                 <c:otherwise>Thực tập sinh</c:otherwise>
                             </c:choose>
                         </span>

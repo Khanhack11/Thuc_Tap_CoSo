@@ -20,7 +20,7 @@
     <nav class="app-nav" aria-label="Menu chính">
 
         <%-- ============================ INTERN ============================ --%>
-        <c:if test="${sessionScope.user.intern}">
+        <c:if test="${sessionScope.currentUser.role.roleName eq 'INTERN'}">
 
             <div class="app-nav__group">Thực tập của tôi</div>
 
@@ -41,15 +41,20 @@
 
             <div class="app-nav__group">Công việc</div>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'intern-tasks' ? 'is-active' : ''}"
+               href="${ctx}/intern/tasks">
                 <i class="bi bi-list-check"></i><span>Nhiệm vụ của tôi</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'intern-reports' ? 'is-active' : ''}"
+               href="${ctx}/intern/reports">
                 <i class="bi bi-journal-text"></i><span>Báo cáo tuần</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
+
+            <a class="app-nav__link ${activePage eq 'intern-evaluation' ? 'is-active' : ''}"
+               href="${ctx}/intern/evaluation">
+                <i class="bi bi-clipboard-check"></i><span>Đánh giá cuối kỳ</span>
+            </a>
 
             <div class="app-nav__group">Thời gian và quyền lợi</div>
 
@@ -71,7 +76,7 @@
         </c:if>
 
         <%-- ============================== HR ============================== --%>
-        <c:if test="${sessionScope.user.HR and not sessionScope.user.admin}">
+        <c:if test="${sessionScope.currentUser.role.roleName eq 'HR'}">
 
             <div class="app-nav__group">Tuyển dụng</div>
 
@@ -119,36 +124,36 @@
         </c:if>
 
         <%-- ============================ MENTOR ============================ --%>
-        <c:if test="${sessionScope.user.roleName eq 'MENTOR'}">
+        <c:if test="${sessionScope.currentUser.role.roleName eq 'MENTOR'}">
 
             <div class="app-nav__group">Hướng dẫn</div>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
-                <i class="bi bi-people"></i><span>TTS phụ trách</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            <a class="app-nav__link ${activePage eq 'mentor-dashboard' ? 'is-active' : ''}"
+               href="${ctx}/mentor/dashboard">
+                <i class="bi bi-speedometer2"></i><span>Dashboard và TTS</span>
+            </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'mentor-tasks' ? 'is-active' : ''}"
+               href="${ctx}/mentor/tasks">
                 <i class="bi bi-list-check"></i><span>Giao nhiệm vụ</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
             <div class="app-nav__group">Theo dõi</div>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'mentor-reports' ? 'is-active' : ''}"
+               href="${ctx}/mentor/reports">
                 <i class="bi bi-journal-text"></i><span>Báo cáo tuần</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'mentor-evaluation' ? 'is-active' : ''}"
+               href="${ctx}/mentor/evaluation">
                 <i class="bi bi-clipboard-check"></i><span>Đánh giá</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
         </c:if>
 
         <%-- ============================= ADMIN ============================ --%>
-        <c:if test="${sessionScope.user.admin}">
+        <c:if test="${sessionScope.currentUser.role.roleName eq 'ADMIN'}">
 
             <div class="app-nav__group">Quản trị hệ thống</div>
 
@@ -170,7 +175,7 @@
         </c:if>
 
         <%-- Trường hợp chưa đăng nhập hoặc role không xác định --%>
-        <c:if test="${empty sessionScope.user}">
+        <c:if test="${empty sessionScope.currentUser}">
             <div class="app-nav__group">Phiên làm việc</div>
             <a class="app-nav__link" href="${ctx}/auth/login">
                 <i class="bi bi-box-arrow-in-right"></i><span>Đăng nhập</span>
