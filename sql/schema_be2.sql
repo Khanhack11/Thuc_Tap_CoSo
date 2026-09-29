@@ -7,6 +7,9 @@
 CREATE DATABASE IF NOT EXISTS internship_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE internship_management;
 
+SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
+SET CHARACTER SET utf8mb4;
+
 -- 1. Bảng roles (Đã được tạo bởi BE1)
 -- 2. Bảng users (Đã được tạo bởi BE1, user_id là BIGINT)
 
