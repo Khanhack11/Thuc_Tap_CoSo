@@ -12,5 +12,8 @@
 <%-- /.app-shell --%>
 
 <script src="${ctx}/assets/js/app.js"></script>
+<c:if test="${not empty pageScript}">
+    <script src="${ctx}/assets/js/${pageScript}"></script>
+</c:if>
 </body>
 </html>

@@ -2,21 +2,24 @@
     login.jsp - Trang đăng nhập. Owner: FE1
 
     ============================================================================
-    HỢP ĐỒNG CẦN CHỐT VỚI BE1 (4.1 - Đăng nhập)
-    Trang này viết theo giả định dưới đây. Khi BE1 chốt khác thì chỉ sửa đúng
-    các dòng được đánh dấu [GIẢ ĐỊNH], KHÔNG phải viết lại trang.
+    HỢP ĐỒNG ĐÃ CHỐT VỚI BE1 (US39/4.1 - Đăng nhập) - đối chiếu LoginServlet
     ----------------------------------------------------------------------------
-    [GIẢ ĐỊNH 1] Servlet nhận POST tại  ${ctx}/auth/login
-    [GIẢ ĐỊNH 2] Tên tham số:          username, password
-    [GIẢ ĐỊNH 3] Đăng nhập sai:        forward về chính trang này kèm request
-                                       attribute "errorMessage" (header/flash
-                                       cũng hiển thị được sessionScope.flashError)
-    [GIẢ ĐỊNH 4] Đăng nhập đúng:       set sessionScope.user rồi redirect
-    [GIẢ ĐỊNH 5] Đăng xuất:            ${ctx}/auth/logout
-    [GIẢ ĐỊNH 6] Tài khoản bị khoá:    thông báo qua "errorMessage"
+    [1] Servlet nhận POST tại  ${ctx}/auth/login
+    [2] Tên tham số:           username, password
+    [3] GET /auth/login:       đã đăng nhập -> redirect về ${ctx}/
+                               chưa đăng nhập -> forward về /login.jsp
+                               (chính là file này - trang này ĐÃ được nối thật,
+                                không còn là trang mồ côi như trước)
+    [4] Đăng nhập sai:         forward về /login.jsp kèm request attribute
+                               "error" và attribute "username" để giữ lại tên
+                               đã nhập -> ô username đọc ${username}
+    [5] Đăng nhập đúng:        set session currentUser + currentRole rồi
+                               redirect về ${ctx}/
+    [6] Tài khoản bị khoá:     thông báo qua "error"
     ----------------------------------------------------------------------------
-    Nếu BE1 dùng tên tham số khác (vd: user, pass) thì đổi thuộc tính name của
-    2 ô input bên dưới. Không cần sửa gì khác.
+    LƯU Ý QUAN TRỌNG: LogoutServlet CHỈ override doPost, KHÔNG có doGet, nên
+    link GET tới /auth/logout sẽ trả 405 Method Not Allowed. Vì vậy nút Đăng
+    xuất ở cuối trang này (và ở header.jsp) bắt buộc phải là form POST.
     ============================================================================
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
@@ -56,9 +59,12 @@
             <a href="${ctx}/" class="btn btn-brand w-100 mb-3">
                 <i class="bi bi-arrow-right-circle me-1"></i>Vào hệ thống
             </a>
-            <a href="${ctx}/auth/logout" class="btn btn-outline-brand w-100">
-                <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
-            </a>
+            <%-- LogoutServlet chỉ có doPost -> phải là form POST, xem ghi chú đầu file --%>
+            <form action="${ctx}/auth/logout" method="post" class="m-0">
+                <button type="submit" class="btn btn-outline-brand w-100">
+                    <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
+                </button>
+            </form>
         </c:if>
 
         <c:if test="${empty sessionScope.currentUser}">
