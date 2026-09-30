@@ -41,6 +41,7 @@ mvn -Dbe4.mysql=true clean package
 Ngày kiểm tra: 30/09/2026.
 
 - Bản BE4 riêng từ develop: **69 tests, 0 failures, 0 errors, 0 skipped**, đóng gói WAR thành công khi bật `be4.mysql`.
+- Ghép thử cục bộ BE4 với BE3 Sprint 2 commit `237391225a4c9b9374878660e45cf1284e2bbe1f` (PR #24): **92 tests, 0 failures, 0 errors, 0 skipped**, WAR thành công với `mvn -Dbe3.mysql=true -Dbe4.mysql=true clean package`. Không có conflict. Nhánh ghép chỉ nằm local để kiểm chứng, không push hay merge vào develop.
 - 9 test nhanh mới: thứ tự khóa trước quyền, commit sau ghi, không ghi nếu sai quyền, rollback khi lỗi SQL; cả giao task/feedback/evaluation.
 - 14 ca MySQL mới: FK/kiểu khóa/unique, giữ lịch sử sau bàn giao, tiếp nhận report cũ, đánh giá bởi mentor mới, dashboard khi đổi đi/đổi lại, bàn giao thất bại, trạng thái COMPLETED/CANCELLED, truy cập khác owner/tài khoản LOCKED và sáu ca đồng thời (ba thao tác × hai thứ tự lấy khóa).
 - Trong Maven, 3 test wrapper BE4 hiện có còn gọi 27 checks chi tiết của Sprint 1 (9 task + 11 report/evaluation/dashboard + 7 HTTP); không cộng thêm 27 vào tổng 69 vì chúng được gói trong 3 test wrapper.
