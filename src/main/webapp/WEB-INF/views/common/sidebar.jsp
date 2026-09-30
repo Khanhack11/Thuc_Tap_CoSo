@@ -120,10 +120,15 @@
                 <span class="app-nav__soon">Sắp có</span>
             </span>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
-                <i class="bi bi-person-badge"></i><span>Mentor</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            <a class="app-nav__link ${activePage eq 'hr-mentors' ? 'is-active' : ''}"
+               href="${ctx}/hr/mentors">
+                <i class="bi bi-person-badge"></i><span>Đội ngũ mentor</span>
+            </a>
+
+            <a class="app-nav__link ${activePage eq 'hr-mentor-assignments' ? 'is-active' : ''}"
+               href="${ctx}/hr/enrollments?ui=mentor">
+                <i class="bi bi-person-lines-fill"></i><span>Phân công mentor</span>
+            </a>
 
             <div class="app-nav__group">Thời gian và quyền lợi</div>
 
@@ -184,6 +189,15 @@
         <c:if test="${sessionScope.currentRole eq 'ADMIN'}">
 
             <div class="app-nav__group">Quản trị hệ thống</div>
+
+            <a class="app-nav__link ${activePage eq 'hr-mentors' ? 'is-active' : ''}"
+               href="${ctx}/hr/mentors">
+                <i class="bi bi-person-badge"></i><span>Đội ngũ mentor</span>
+            </a>
+            <a class="app-nav__link ${activePage eq 'hr-mentor-assignments' ? 'is-active' : ''}"
+               href="${ctx}/hr/enrollments?ui=mentor">
+                <i class="bi bi-person-lines-fill"></i><span>Phân công mentor</span>
+            </a>
 
             <a class="app-nav__link ${activePage eq 'hr-evaluations' ? 'is-active' : ''}"
                href="${ctx}/hr/evaluations">

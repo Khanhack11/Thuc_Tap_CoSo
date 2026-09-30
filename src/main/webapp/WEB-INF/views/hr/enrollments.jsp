@@ -1,5 +1,11 @@
-<%@ page contentType="text/html; charset=UTF-8" language="java" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%-- Keep FE2 enrollment forms/list intact; FE3 is selected explicitly with ui=mentor. --%>
+<c:choose>
+<c:when test="${param.ui eq 'mentor' and viewMode ne 'enroll-form'}">
+    <jsp:include page="/WEB-INF/views/hr/mentor-management.jsp" />
+</c:when>
+<c:otherwise>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -140,3 +146,5 @@
 </c:if>
 </body>
 </html>
+</c:otherwise>
+</c:choose>

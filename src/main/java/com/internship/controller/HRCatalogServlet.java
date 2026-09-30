@@ -18,7 +18,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /** Minimal HR setup for departments, programs and mentor records. */
-@WebServlet("/hr/catalog")
+@WebServlet({"/hr/catalog", "/hr/programs", "/hr/mentors"})
 public class HRCatalogServlet extends HttpServlet {
     private static final Logger LOGGER = Logger.getLogger(HRCatalogServlet.class.getName());
     private CatalogService catalog;

@@ -1,5 +1,11 @@
-<%@ page contentType="text/html; charset=UTF-8" language="java" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%-- FE3 owns only the mentor presentation; preserve FE2/BE3 catalog unchanged. --%>
+<c:choose>
+<c:when test="${requestScope['jakarta.servlet.forward.servlet_path'] eq '/hr/mentors'}">
+    <jsp:include page="/WEB-INF/views/hr/mentors.jsp" />
+</c:when>
+<c:otherwise>
 <!DOCTYPE html>
 <html lang="vi">
 <head><meta charset="UTF-8"><title>Thiết lập thực tập</title></head>
@@ -89,3 +95,5 @@
 </table>
 </body>
 </html>
+</c:otherwise>
+</c:choose>
