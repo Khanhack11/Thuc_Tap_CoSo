@@ -36,6 +36,51 @@
 </form>
 
 <h2>Chương trình</h2>
+<form method="get" action="${pageContext.request.contextPath}/hr/catalog">
+    <label>Lọc chương trình và mentor theo phòng ban:
+        <select name="departmentId">
+            <option value="">Tất cả phòng ban</option>
+            <c:forEach var="department" items="${departments}">
+                <option value="${department.departmentId}" ${selectedDepartmentId == department.departmentId ? 'selected' : ''}><c:out value="${department.departmentName}"/></option>
+            </c:forEach>
+        </select>
+    </label>
+    <button type="submit">Lọc</button>
+</form>
+<c:if test="${not empty editingProgram}">
+    <h3>Sửa chương trình #${editingProgram.programId}</h3>
+    <c:if test="${programStructureLocked}"><p>Đã có ghi danh: chỉ được sửa tên và mô tả.</p></c:if>
+    <form method="post" action="${pageContext.request.contextPath}/hr/catalog">
+        <input type="hidden" name="csrfToken" value="${csrfToken}"/>
+        <input type="hidden" name="action" value="update-program"/>
+        <input type="hidden" name="programId" value="${editingProgram.programId}"/>
+        <label>Tên <input name="name" value="<c:out value='${editingProgram.programName}'/>" maxlength="200" required/></label>
+        <label>Mô tả <input name="description" value="<c:out value='${editingProgram.description}'/>"/></label>
+        <c:choose>
+            <c:when test="${programStructureLocked}">
+                <input type="hidden" name="departmentId" value="${editingProgram.departmentId}"/>
+                <input type="hidden" name="startDate" value="${editingProgram.startDate}"/>
+                <input type="hidden" name="endDate" value="${editingProgram.endDate}"/>
+                <input type="hidden" name="maxInterns" value="${editingProgram.maxInterns}"/>
+                <p>Phòng ban: <c:out value="${editingProgram.departmentName}"/>.
+                    Ngày: ${editingProgram.startDate} – ${editingProgram.endDate}.
+                    Sức chứa: ${editingProgram.maxInterns} (0 = không giới hạn).</p>
+            </c:when>
+            <c:otherwise>
+                <label>Phòng ban <select name="departmentId" required>
+                    <c:forEach var="department" items="${departments}">
+                        <option value="${department.departmentId}" ${editingProgram.departmentId == department.departmentId ? 'selected' : ''}><c:out value="${department.departmentName}"/></option>
+                    </c:forEach>
+                </select></label>
+                <label>Bắt đầu <input type="date" name="startDate" value="${editingProgram.startDate}" required/></label>
+                <label>Kết thúc <input type="date" name="endDate" value="${editingProgram.endDate}" required/></label>
+                <label>Sức chứa <input type="number" min="0" name="maxInterns" value="${editingProgram.maxInterns}" required/></label>
+            </c:otherwise>
+        </c:choose>
+        <button type="submit">Lưu chương trình</button>
+        <a href="${pageContext.request.contextPath}/hr/catalog">Hủy</a>
+    </form>
+</c:if>
 <table border="1">
     <tr><th>Tên</th><th>Phòng ban</th><th>Thời gian</th><th>Trạng thái</th><th>Thao tác</th></tr>
     <c:forEach var="program" items="${programs}">
@@ -44,7 +89,9 @@
             <td><c:out value="${program.departmentName}"/></td>
             <td><c:out value="${program.startDate}"/> – <c:out value="${program.endDate}"/></td>
             <td><c:out value="${program.status}"/></td>
-            <td><c:if test="${program.status == 'PLANNED'}">
+            <td>
+                <a href="${pageContext.request.contextPath}/hr/catalog?action=edit-program&programId=${program.programId}">Sửa</a>
+                <c:if test="${program.status == 'PLANNED'}">
                 <form method="post" action="${pageContext.request.contextPath}/hr/catalog">
                     <input type="hidden" name="csrfToken" value="${csrfToken}"/>
                     <input type="hidden" name="action" value="activate-program"/>
@@ -70,20 +117,23 @@
             <option value="${department.departmentId}"><c:out value="${department.departmentName}"/></option>
         </c:forEach>
     </select></label>
-    <label>Chuyên môn <input name="specialization"/></label>
+    <label>Chuyên môn <input name="specialization" maxlength="200"/></label>
     <label>Số TTS tối đa <input type="number" min="1" name="maxMentees" value="5" required/></label>
     <button type="submit">Thêm mentor</button>
 </form>
 
 <h2>Mentor</h2>
 <table border="1">
-    <tr><th>Tên</th><th>Phòng ban</th><th>Chuyên môn</th><th>Đang hướng dẫn</th></tr>
+    <tr><th>Tên</th><th>Phòng ban</th><th>Chuyên môn</th><th>Trạng thái</th><th>Đang hướng dẫn</th><th>Chỗ còn lại</th><th>Tải</th></tr>
     <c:forEach var="mentor" items="${mentors}">
         <tr>
             <td><c:out value="${mentor.fullName}"/></td>
             <td><c:out value="${mentor.departmentName}"/></td>
             <td><c:out value="${mentor.specialization}"/></td>
+            <td><c:out value="${mentor.status}"/></td>
             <td>${mentor.currentMenteeCount}/${mentor.maxMentees}</td>
+            <td>${mentor.remainingCapacity}</td>
+            <td>${mentor.atCapacity ? 'Đã đầy' : 'Còn chỗ'}</td>
         </tr>
     </c:forEach>
 </table>

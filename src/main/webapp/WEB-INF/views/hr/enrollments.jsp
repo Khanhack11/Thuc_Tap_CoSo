@@ -67,6 +67,15 @@
                 </c:forEach>
             </select>
         </label><br/>
+        <label>Mentor ban đầu (không bắt buộc, phải cùng phòng ban):
+            <select name="mentorId">
+                <option value="">-- Phân mentor sau --</option>
+                <c:forEach var="m" items="${mentors}">
+                    <option value="${m.mentorId}"><c:out value="${m.fullName}"/>
+                        — <c:out value="${m.departmentName}"/> (${m.currentMenteeCount}/${m.maxMentees})</option>
+                </c:forEach>
+            </select>
+        </label><br/>
         <button type="submit">Ghi danh</button>
     </form>
     <p><a href="${pageContext.request.contextPath}/hr/enrollments">← Quay lại</a></p>
@@ -75,6 +84,7 @@
 <%-- Assign mentor form --%>
 <c:if test="${viewMode == 'assign-form' and not empty enrollment}">
     <h2>Phân mentor cho <c:out value="${enrollment.internName}"/></h2>
+    <c:if test="${empty mentors}"><p>Chưa có mentor cùng phòng ban còn chỗ. Hãy kiểm tra danh mục mentor.</p></c:if>
     <form method="post" action="${pageContext.request.contextPath}/hr/enrollments">
         <input type="hidden" name="csrfToken" value="${csrfToken}"/>
         <input type="hidden" name="action" value="assign-mentor"/>
@@ -95,6 +105,7 @@
 <%-- Change mentor form --%>
 <c:if test="${viewMode == 'change-form' and not empty enrollment}">
     <h2>Đổi mentor cho <c:out value="${enrollment.internName}"/></h2>
+    <c:if test="${empty mentors}"><p>Chưa có mentor khác cùng phòng ban còn chỗ.</p></c:if>
     <form method="post" action="${pageContext.request.contextPath}/hr/enrollments">
         <input type="hidden" name="csrfToken" value="${csrfToken}"/>
         <input type="hidden" name="action" value="change-mentor"/>
@@ -107,7 +118,7 @@
                 </c:forEach>
             </select>
         </label><br/>
-        <label>Lý do đổi: <input type="text" name="endReason" required/></label><br/>
+        <label>Lý do đổi: <input type="text" name="endReason" maxlength="200" required/></label><br/>
         <button type="submit">Đổi mentor</button>
     </form>
     <p><a href="${pageContext.request.contextPath}/hr/enrollments">← Quay lại</a></p>

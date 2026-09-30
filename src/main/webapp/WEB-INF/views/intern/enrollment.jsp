@@ -14,9 +14,14 @@
 </c:if>
 
 <c:choose>
+    <c:when test="${not empty errorMessage}">
+        <p>Chưa thể tải thông tin thực tập. Vui lòng thử lại sau.</p>
+    </c:when>
     <c:when test="${not empty enrollment}">
         <h2>Đang tham gia: <c:out value="${enrollment.programName}"/></h2>
         <p>Trạng thái: <c:out value="${enrollment.status}"/></p>
+        <p>Phòng ban: <c:out value="${enrollment.departmentName}"/></p>
+        <p>Thời gian thực tập: <c:out value="${enrollment.startDate}"/> – <c:out value="${enrollment.endDate}"/></p>
         <p>Ngày ghi danh: <c:out value="${enrollment.enrolledAt}"/></p>
 
         <c:if test="${not empty currentMentor}">
