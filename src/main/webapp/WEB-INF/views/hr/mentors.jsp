@@ -5,7 +5,8 @@
 <c:set var="activePage" value="hr-mentors" />
 <c:set var="pageStylesheet" value="fe3-mentor.css" />
 <c:set var="pageScript" value="fe3-mentor.js" />
-<c:set var="mentorError" value="${requestScope.errorMessage}" />
+<c:set var="mentorNotice" value="${requestScope.errorMessage}" />
+<c:set var="mentorError" value="${mentors eq null ? mentorNotice : ''}" />
 <c:remove var="errorMessage" scope="request" />
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 <div class="fe3-page fm-page" data-mentor-page="directory">
@@ -26,7 +27,7 @@
     </section>
 
     <c:if test="${not empty successMessage}"><div class="fm-notice fm-notice--success" role="status"><c:out value="${successMessage}" /></div></c:if>
-    <c:if test="${not empty mentorError}"><div class="fm-notice fm-notice--error" role="alert"><c:out value="${mentorError}" /> <a href="${ctx}/hr/mentors">Tải lại</a></div></c:if>
+    <c:if test="${not empty mentorNotice}"><div class="fm-notice fm-notice--error" role="alert"><c:out value="${mentorNotice}" /> <a href="${ctx}/hr/mentors">Tải lại</a></div></c:if>
 
     <c:set var="activeCount" value="0" /><c:set var="fullCount" value="0" /><c:set var="totalMentees" value="0" /><c:set var="freePlaces" value="0" />
     <c:forEach var="mentor" items="${mentors}">

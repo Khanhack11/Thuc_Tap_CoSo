@@ -16,6 +16,12 @@
     const queryId = new URLSearchParams(window.location.search).get('mentorId');
     let mentorId = root.dataset.mentorPage === 'assignments' && /^[1-9]\d{0,9}$/.test(queryId || '')
         && Number(queryId) <= 2147483647 ? queryId : null;
+    function clearMentorFilter() {
+        mentorId = null;
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mentorId');
+        window.history.replaceState(null, '', url);
+    }
     function filter() {
         if (!rows.length) return;
         const keyword = normalize(search && search.value);
@@ -41,12 +47,12 @@
         if (search) search.value = '';
         if (capacity) capacity.value = 'all';
         if (assignment) assignment.value = 'all';
-        mentorId = null;
+        clearMentorFilter();
         filter();
         if (search) search.focus();
     }));
     root.querySelectorAll('[data-clear-mentor]').forEach(button => button.addEventListener('click', () => {
-        mentorId = null;
+        clearMentorFilter();
         filter();
     }));
     root.querySelectorAll('[data-open-create]').forEach(link => link.addEventListener('click', () => {

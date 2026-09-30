@@ -6,13 +6,14 @@
 <c:set var="activePage" value="hr-mentor-assignments" />
 <c:set var="pageStylesheet" value="fe3-mentor.css" />
 <c:set var="pageScript" value="fe3-mentor.js" />
-<c:set var="mentorError" value="${requestScope.errorMessage}" />
+<c:set var="mentorNotice" value="${requestScope.errorMessage}" />
+<c:set var="mentorError" value="${enrollments eq null and enrollment eq null ? mentorNotice : ''}" />
 <c:remove var="errorMessage" scope="request" />
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 <div class="fe3-page fm-page" data-mentor-page="assignments">
     <div class="fm-breadcrumb"><a href="${ctx}/hr/mentors">Đội ngũ mentor</a><span aria-hidden="true">/</span><a href="${ctx}/hr/enrollments?ui=mentor">Phân công</a><c:if test="${not empty enrollment}"><span aria-hidden="true">/</span><span>#<c:out value="${enrollment.enrollmentId}" /></span></c:if></div>
     <c:if test="${not empty successMessage}"><div class="fm-notice fm-notice--success" role="status"><c:out value="${successMessage}" /></div></c:if>
-    <c:if test="${not empty mentorError}"><div class="fm-notice fm-notice--error" role="alert"><c:out value="${mentorError}" /></div></c:if>
+    <c:if test="${not empty mentorNotice}"><div class="fm-notice fm-notice--error" role="alert"><c:out value="${mentorNotice}" /></div></c:if>
 
     <c:choose>
         <c:when test="${(viewMode eq 'assign-form' or viewMode eq 'change-form') and not empty enrollment}">
@@ -33,7 +34,7 @@
                                     <select id="assignment-mentor" name="${isChange ? 'newMentorId' : 'mentorId'}" required data-mentor-choice>
                                         <option value="">Chọn người hướng dẫn</option>
                                         <c:forEach var="mentor" items="${mentors}"><option value="${mentor.mentorId}" data-name="<c:out value='${mentor.fullName}' />" data-specialization="<c:out value='${mentor.specialization}' />" data-department="<c:out value='${mentor.departmentName}' />" data-current="${mentor.currentMenteeCount}" data-max="${mentor.maxMentees}"><c:out value="${mentor.fullName}" /> · <c:out value="${mentor.departmentName}" /> · ${mentor.currentMenteeCount}/${mentor.maxMentees} TTS</option></c:forEach>
-                                    </select><small>Danh sách do BE3 lọc theo phòng ban, trạng thái và sức chứa hiện tại.</small>
+                                    </select><small>Chỉ hiển thị mentor cùng phòng ban, đang hoạt động và còn sức chứa.</small>
                                 </div>
                                 <div class="fm-choice-preview" data-choice-preview hidden aria-live="polite"><span class="fm-avatar" aria-hidden="true" data-choice-initial></span><div><strong data-choice-name></strong><p data-choice-specialization></p><span class="fm-chip fm-chip--available" data-choice-capacity></span></div></div>
                                 <c:if test="${isChange}"><div class="fm-field"><label for="change-reason">Lý do đổi mentor <span>*</span></label><textarea id="change-reason" name="endReason" rows="4" maxlength="200" required placeholder="Ghi rõ lý do để lưu trong lịch sử bàn giao…" data-reason></textarea><div class="fm-field-meta"><small>Không để trống hoặc chỉ nhập khoảng trắng.</small><small data-reason-count aria-live="polite">0/200</small></div></div></c:if>

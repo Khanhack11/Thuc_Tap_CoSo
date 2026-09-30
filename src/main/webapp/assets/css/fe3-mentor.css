@@ -2,6 +2,7 @@
 /* FE3 Sprint 2 only. Shared FE1 palette/layout and FE2 views stay unchanged. */
 .fm-page { --fm-radius: 16px; max-width: 1440px; margin-inline: auto; }
 .fm-page [hidden] { display: none !important; }
+.fm-table-scroll { position: relative; }
 .fm-page h3, .fm-page h4, .fm-page p { margin-top: 0; }
 .fm-hero { display:flex; align-items:center; justify-content:space-between; gap:28px; padding:34px 38px; border:1px solid var(--border); border-radius:var(--fm-radius); background:linear-gradient(120deg,var(--surface) 25%,var(--brand-soft)); position:relative; overflow:hidden; }
 .fm-hero::before { content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--brand); }
