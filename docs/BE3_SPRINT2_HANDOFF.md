@@ -155,3 +155,34 @@ QA2 còn phải nghiệm thu luồng web với giao diện FE Sprint 2: thao tá
 CSRF, input sai, empty/error states, refresh sau phân/đổi mentor và regression.
 Chỉ đánh dấu Done khi PR tích hợp + QA nghiệm thu; build đạt không đồng nghĩa
 đã hoàn thành 100% toàn bộ Sprint 2.
+
+## Cập nhật theo develop sau khôi phục FE3 — 01/10/2026
+
+- Merge bình thường `origin/develop` tại `85b08ba` (đã có FE3 PR #27) vào nhánh
+  BE3; không rebase, force-push hoặc push trực tiếp vào develop/main.
+- Xung đột thực tế chỉ nằm trong `hr/catalog.jsp`: giữ bộ lọc phòng ban,
+  form sửa chương trình và các giá trị khóa, các cột trạng thái/chỗ còn lại/tải
+  mentor của BE3 Sprint 2; kết hợp với header/footer, UTF-8, `fe3.css`, panel
+  và bảng cuộn của FE3. Không chọn đè toàn bộ một phía.
+- `hr/enrollments.jsp` auto-merge nhưng được rà soát/kiểm tra riêng: giữ mentor
+  ban đầu tùy chọn, form phân/đổi, giới hạn lý do 200 ký tự, CSRF, lịch sử,
+  trạng thái empty và layout HR vừa khôi phục.
+- Thêm 4 regression test bảo vệ các controls BE3 và layout FE3 trên hai view.
+  Các file dashboard/sidebar/applications/CSS/JS FE3 lấy nguyên từ develop.
+  Không bổ sung thay đổi auth/session, DAO/service, schema hoặc file kết nối DB.
+
+Kết quả kiểm chứng sau kết hợp:
+
+- `mvn -Dbe3.mysql=true clean package`: **83 tests, 0 failures/errors/skipped**;
+  có chạy MySQL integration trên DB tạm riêng do test tạo và tự dọn.
+- Jasper compile 5 JSP `hr/catalog`, `hr/enrollments`, `hr/dashboard-overview`,
+  `hr/applications`, `intern/enrollment`: **0 lỗi**.
+- Tomcat preview riêng dùng database giả lập đã tách khỏi DB ứng dụng:
+  catalog/lọc phòng ban/sửa chương trình đã khóa và chưa khóa; enrollment
+  list/form ghi danh có mentor ban đầu/form đổi mentor/chi tiết-lịch sử;
+  HR dashboard và API số liệu đều trả 200. Mỗi trang HR chỉ có một sidebar.
+  Giữ token CSRF và các input cần gửi khi cấu trúc chương trình đã khóa.
+  Kiểm tra preview không gửi POST thay đổi nghiệp vụ.
+- Không triển khai đè Tomcat của nhóm; không commit db.properties, secrets,
+  WAR hoặc dữ liệu preview. QA vẫn cần nghiệm thu thao tác POST và giao diện
+  FE Sprint 2 trên bản tích hợp chung sau review/merge PR #24.
