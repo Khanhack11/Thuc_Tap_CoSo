@@ -12,10 +12,11 @@
 
 Nhánh FE3 được tạo trực tiếp từ `develop` (`8af20bc`). PR chỉ chứa thay đổi FE3, **không kéo theo các commit BE3/BE4**.
 
-1. Cần tích hợp BE3 Sprint 2 **PR #24** trước để có bộ lọc phòng ban, danh sách tài khoản đủ điều kiện, mentor cùng phòng ban/còn sức chứa và quy tắc ghi danh ACTIVE.
-2. BE4 Sprint 2 **PR #25** không đổi API của màn hình này; nên tích hợp để có regression/hardening giao dịch khi đổi mentor đồng thời với thao tác task/report/evaluation.
-3. Sau đó cập nhật nhánh FE3 theo `develop`, build và kiểm tra diff rồi merge PR FE3.
-4. QA test trên bản tích hợp của nhóm. Không merge feature trực tiếp vào `main`.
+1. Tích hợp bản khôi phục FE3 Sprint 1 **PR #27** để giữ `/hr/dashboard` và layout HR của #17/#18. Nhánh FE3 Sprint 2 đã merge bình thường nhánh khôi phục (không force-push); khi #27 được merge, diff #26 sẽ tập trung lại vào Sprint 2.
+2. Cần tích hợp BE3 Sprint 2 **PR #24** trước khi merge #26 để có bộ lọc phòng ban, danh sách tài khoản đủ điều kiện, mentor cùng phòng ban/còn sức chứa và quy tắc ghi danh ACTIVE.
+3. BE4 Sprint 2 **PR #25** không đổi API của màn hình này; nên tích hợp để có regression/hardening giao dịch khi đổi mentor đồng thời với thao tác task/report/evaluation.
+4. Sau đó cập nhật nhánh FE3 theo `develop`, build và kiểm tra diff rồi merge PR FE3.
+5. QA test trên bản tích hợp của nhóm. Không merge feature trực tiếp vào `main`.
 
 Đã ghép thử cả #24 và #25 trên **nhánh local-only**, không push nhánh ghép này.
 
@@ -55,7 +56,7 @@ Sau POST, filter trình bày FE3 giữ URL trong màn hình mentor và đưa ph�
 
 - `src/main/webapp/WEB-INF/views/hr/mentors.jsp`: danh bạ, form thêm, workload.
 - `src/main/webapp/WEB-INF/views/hr/mentor-management.jsp`: danh sách, form phân/đổi, chi tiết/lịch sử.
-- `catalog.jsp`, `enrollments.jsp`: chỉ wrapper chọn UI; giữ nội dung cũ cho FE2.
+- `catalog.jsp`, `enrollments.jsp`: wrapper chọn UI; giữ form/luồng FE2, khôi phục layout HR của Sprint 1. Header/footer chỉ chạy trong nhánh giao diện tương ứng, không lặp layout khi mở mentor UI.
 - `assets/css/fe3-mentor.css`, `assets/js/fe3-mentor.js`: riêng cho Sprint 2, không sửa CSS/JS dùng chung.
 - `common/sidebar.jsp`: mở hai link Đội ngũ mentor / Phân công mentor cho HR và Admin.
 - `HRCatalogServlet.java`: alias đường dẫn, giống PR #24.
@@ -63,9 +64,13 @@ Sau POST, filter trình bày FE3 giữ URL trong màn hình mentor và đưa ph�
 
 Các menu “Sắp có” ngoài US29–31 giữ nguyên; hoàn thiện các module đó thuộc owner tương ứng, không mở rộng scope FE3 trong PR này.
 
+Các thay đổi FE3 Sprint 1 của #17/#18 được đưa vào qua nhánh khôi phục #27,
+kèm regression test và tài liệu `FE3_SPRINT1_RESTORE.md`. Hai trang Intern
+của FE1 #23 không bị thay đổi.
+
 ## Kiểm chứng ngày 01/10/2026
 
-### Tự động
+### Tự động - trước cập nhật khôi phục Sprint 1
 
 - FE3 standalone: `mvn clean package` thành công; **58 test, 0 failure/error/skip**, gồm 12 test mới cho filter.
 - Nhánh ghép thử FE3 + #24 + #25: build WAR thành công, không conflict; **100 test, 0 failure/error, 11 skip** (các test MySQL opt-in chưa cấu hình trên máy build; không tính là đã chạy).
@@ -87,6 +92,19 @@ Các menu “Sắp có” ngoài US29–31 giữ nguyên; hoàn thiện các mod
 - Desktop và viewport 390px: không tràn ngang toàn trang; bảng cuộn ngang bên trong; menu mobile và form responsive.
 
 Không commit/push cấu hình database, mật khẩu, dữ liệu giả lập, WAR, ảnh preview hoặc nhánh tích hợp local-only.
+
+### Cập nhật sau khôi phục #27 (01/10/2026)
+
+- FE3 standalone chứa cả Sprint 1 + Sprint 2: `mvn clean package`
+  **68 test, 0 failure/error/skip** (thêm 10 regression test dashboard/layout).
+- Sáu HR JSP (dashboard/applications/catalog/enrollments/mentors/mentor-management)
+  compile bằng Jasper với 0 lỗi.
+- Smoke trên preview local có backend #24/#25: dashboard HR lấy số liệu,
+  menu có cả Thống kê/Ghi danh/Đội ngũ mentor/Phân công mentor; các trang
+  chương trình/ghi danh và hai trang mentor tải đúng, mỗi trang chỉ có
+  một `.app-shell`, một sidebar và một vùng nội dung chính.
+- Giữ draft #26 cho đến khi các PR phụ thuộc được tích hợp/review. Đây không
+  phải xác nhận toàn bộ QA đã pass hoặc code đã có trên `develop`.
 
 ## Checklist QA sau tích hợp
 
