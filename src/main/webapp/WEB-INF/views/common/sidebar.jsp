@@ -190,10 +190,10 @@
                 <i class="bi bi-award"></i><span>Kết quả đánh giá</span>
             </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'admin-accounts' ? 'is-active' : ''}"
+               href="${ctx}/admin/accounts">
                 <i class="bi bi-person-gear"></i><span>Tài khoản nội bộ</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
             <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-shield-lock"></i><span>Phân quyền</span>
