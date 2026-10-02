@@ -60,6 +60,13 @@
                 <i class="bi bi-file-earmark-text"></i><span>Hợp đồng thực tập</span>
             </a>
 
+            <%-- /intern/enrollment (US14) - BE3 da co route tu Sprint 1, BE3 bo sung
+                 departmentName/startDate/endDate o Sprint 2. --%>
+            <a class="app-nav__link ${activePage eq 'intern-enrollment' ? 'is-active' : ''}"
+               href="${ctx}/intern/enrollment">
+                <i class="bi bi-calendar3"></i><span>Chương trình thực tập</span>
+            </a>
+
             <div class="app-nav__group">Công việc</div>
 
             <a class="app-nav__link ${activePage eq 'intern-tasks' ? 'is-active' : ''}"
