@@ -11,9 +11,8 @@
         <p class="page-head__sub">Thông tin chương trình bạn đang tham gia và mentor hướng dẫn.</p>
     </div>
 
-    <c:if test="${not empty errorMessage}">
-        <div class="alert alert-danger" role="alert"><c:out value="${errorMessage}"/></div>
-    </c:if>
+    <%-- errorMessage da duoc header.jsp render san (khoi flash chung).
+         Render lai o day se hien 2 lan. --%>
 
     <c:choose>
         <c:when test="${not empty enrollment}">
