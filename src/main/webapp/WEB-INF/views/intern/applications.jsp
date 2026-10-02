@@ -15,9 +15,8 @@
     <c:if test="${not empty successMessage}">
         <div class="alert alert-success" role="status"><c:out value="${successMessage}"/></div>
     </c:if>
-    <c:if test="${not empty errorMessage}">
-        <div class="alert alert-danger" role="alert"><c:out value="${errorMessage}"/></div>
-    </c:if>
+    <%-- errorMessage da duoc header.jsp render san (khoi flash chung).
+         Render lai o day se hien 2 lan. --%>
 
     <div class="card shadow-sm mb-4">
         <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
