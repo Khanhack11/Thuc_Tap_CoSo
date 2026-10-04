@@ -132,7 +132,7 @@ public class LoginServlet extends HttpServlet {
             case "HR" -> "/hr/dashboard";
             case "MENTOR" -> "/mentor/dashboard";
             case "INTERN" -> "/intern/profile";
-            case "ADMIN" -> "/";
+            case "ADMIN" -> "/admin/accounts";
             default -> "/";
         };
     }
