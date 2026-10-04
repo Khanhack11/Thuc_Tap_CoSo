@@ -123,69 +123,91 @@
                 </div>
             </div>
 
-            <!-- Tài liệu đính kèm của TTS (CV, Đơn xin thực tập) -->
+            <!-- Card Tài liệu & Hợp đồng (US05, US09) -->
             <div class="card shadow-sm mb-4 border-0">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0 text-dark fw-bold h6">
-                        <i class="fas fa-file-alt me-2 text-primary"></i>Tài liệu đính kèm (CV, Đơn xin thực tập)
-                    </h5>
+                <div class="card-header bg-white pt-3 pb-0 border-bottom">
+                    <ul class="nav nav-tabs border-bottom-0" id="docContractTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold" style="color: #4e73df;" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab" aria-controls="docs" aria-selected="true">
+                                <i class="fas fa-file-alt me-1"></i>Duyệt tài liệu (US05)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-success" id="contract-tab" data-bs-toggle="tab" data-bs-target="#contract" type="button" role="tab" aria-controls="contract" aria-selected="false">
+                                <i class="fas fa-file-signature me-1"></i>Hợp đồng (US09)
+                            </button>
+                        </li>
+                    </ul>
                 </div>
-                <div class="card-body p-0">
-                    <c:choose>
-                        <c:when test="${not empty documents}">
-                            <ul class="list-group list-group-flush">
-                                <c:forEach var="doc" items="${documents}">
-                                    <li class="list-group-item p-3 d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <span class="badge bg-info text-dark me-2"><c:out value="${doc.documentType}" /></span>
-                                            <strong><c:out value="${doc.fileName}" /></strong>
-                                            <div class="small text-muted mt-1">
-                                                Dung lượng: ${doc.fileSize / 1024} KB | Trạng thái: <c:out value="${doc.status}" />
-                                            </div>
-                                        </div>
-                                        <a href="${pageContext.request.contextPath}/document/download?id=${doc.documentId}" 
-                                           class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-download me-1"></i>Tải về
-                                        </a>
-                                    </li>
-                                </c:forEach>
-                            </ul>
-                        </c:when>
-                        <c:otherwise>
-                            <div class="p-4 text-center text-muted">
-                                <i class="fas fa-folder-open fs-1 d-block mb-3 text-light"></i>
-                                TTS này chưa tải lên CV hoặc tài liệu nào.
+                <div class="card-body">
+                    <div class="tab-content" id="docContractTabContent">
+                        <!-- Tab Duyệt Tài Liệu -->
+                        <div class="tab-pane fade show active" id="docs" role="tabpanel" aria-labelledby="docs-tab">
+                            <h6 class="mb-3 text-secondary"><i class="fas fa-list me-1"></i>Danh sách tài liệu đã nộp</h6>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 border rounded">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-3">Tên file</th>
+                                            <th>Loại tài liệu</th>
+                                            <th>Trạng thái</th>
+                                            <th class="text-center pe-3">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Mockup Item: Đang chờ duyệt -->
+                                        <tr>
+                                            <td class="ps-3"><i class="fas fa-file-pdf text-danger me-2 fs-5"></i><strong>NguyenVanA_CV.pdf</strong></td>
+                                            <td>Sơ yếu lý lịch (CV)</td>
+                                            <td><span class="badge bg-warning text-dark">Chờ duyệt</span></td>
+                                            <td class="text-center pe-3">
+                                                <button class="btn btn-sm btn-success shadow-sm me-1" title="Duyệt" onclick="alert('Đã DUYỆT tài liệu')">
+                                                    <i class="fas fa-check me-1"></i>Duyệt
+                                                </button>
+                                                <button class="btn btn-sm btn-danger shadow-sm" title="Từ chối" onclick="alert('Đã TỪ CHỐI tài liệu')">
+                                                    <i class="fas fa-times me-1"></i>Từ chối
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <!-- Mockup Item: Đã duyệt -->
+                                        <tr>
+                                            <td class="ps-3"><i class="fas fa-file-word text-primary me-2 fs-5"></i><strong>DonXinThucTap.docx</strong></td>
+                                            <td>Đơn xin thực tập</td>
+                                            <td><span class="badge bg-success">Đã duyệt</span></td>
+                                            <td class="text-center pe-3">
+                                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                    <i class="fas fa-check-circle me-1"></i>Đã xử lý
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                        </c:otherwise>
-                    </c:choose>
-                </div>
-            </div>
+                        </div>
 
-            <!-- Quản lý hợp đồng thực tập (US9) -->
-            <div class="card shadow-sm mb-4 border-0">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h5 class="card-title mb-0 text-success fw-bold h6">
-                        <i class="fas fa-file-signature me-2"></i>Quản lý hợp đồng thực tập (US9)
-                    </h5>
-                </div>
-                <div class="card-body p-4">
-                    <p class="small text-muted mb-3">
-                        Hợp đồng là tài liệu riêng. Sau khi ứng viên được duyệt đơn, HR tải lên bản hợp đồng để thực tập sinh xem và xác nhận.
-                    </p>
-                    <form action="${pageContext.request.contextPath}/contract/upload" method="post" enctype="multipart/form-data">
-                        <input type="hidden" name="redirectUrl" value="${pageContext.request.contextPath}/hr/intern-detail?id=${profile.profileId}">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Mã đơn ứng tuyển (Application ID) <span class="text-danger">*</span></label>
-                            <input type="number" name="applicationId" class="form-control" placeholder="Nhập ID đơn ứng tuyển đã duyệt (VD: 1)" required>
+                        <!-- Tab Hợp đồng -->
+                        <div class="tab-pane fade" id="contract" role="tabpanel" aria-labelledby="contract-tab">
+                            <h6 class="mb-3 text-secondary"><i class="fas fa-cloud-upload-alt me-1"></i>Đính kèm hợp đồng thực tập</h6>
+                            <form onsubmit="event.preventDefault(); alert('Upload Hợp đồng thành công!');">
+                                <div class="row g-3">
+                                    <div class="col-md-5">
+                                        <label class="form-label fw-semibold">Ngày ký <span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control" name="signDate" required>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <label class="form-label fw-semibold">File hợp đồng đính kèm <span class="text-danger">*</span></label>
+                                        <input type="file" class="form-control" name="contractFile" accept=".pdf,.doc,.docx" required>
+                                        <div class="form-text">Định dạng hỗ trợ: PDF, DOC, DOCX. Tối đa 5MB.</div>
+                                    </div>
+                                    <div class="col-12 mt-4 text-end">
+                                        <button type="submit" class="btn btn-success px-4 shadow-sm">
+                                            <i class="fas fa-upload me-2"></i>Tải lên Hợp đồng
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Chọn file hợp đồng (PDF, Word, tối đa 5MB) <span class="text-danger">*</span></label>
-                            <input type="file" name="contractFile" class="form-control" accept=".pdf,.doc,.docx" required>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm">
-                            <i class="fas fa-cloud-upload-alt me-1"></i>Tải lên Hợp đồng cho ứng viên
-                        </button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
