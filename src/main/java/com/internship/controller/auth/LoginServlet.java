@@ -1,5 +1,7 @@
 package com.internship.controller.auth;
 
+import java.io.IOException;
+
 import com.internship.model.User;
 import com.internship.service.AuthService;
 
@@ -9,8 +11,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-
-import java.io.IOException;
 
 @WebServlet("/auth/login")
 public class LoginServlet extends HttpServlet {
@@ -32,10 +32,10 @@ public class LoginServlet extends HttpServlet {
                 request.getSession(false);
 
         if (session != null
-                && session.getAttribute("currentUser") != null) {
+                && session.getAttribute("currentUser") instanceof User user) {
 
             response.sendRedirect(
-                    request.getContextPath() + "/"
+                    request.getContextPath() + getLandingPath(user)
             );
 
             return;
@@ -45,6 +45,7 @@ public class LoginServlet extends HttpServlet {
                 "/login.jsp"
         ).forward(request, response);
     }
+
     @Override
     protected void doPost(
             HttpServletRequest request,
@@ -82,6 +83,7 @@ public class LoginServlet extends HttpServlet {
                 request.getRequestDispatcher(
                         "/login.jsp"
                 ).forward(request, response);
+
                 return;
             }
 
@@ -106,7 +108,7 @@ public class LoginServlet extends HttpServlet {
             );
 
             response.sendRedirect(
-                    request.getContextPath() + "/"
+                    request.getContextPath() + getLandingPath(user)
             );
 
         } catch (Exception e) {
@@ -116,5 +118,22 @@ public class LoginServlet extends HttpServlet {
                     e
             );
         }
+    }
+
+    private String getLandingPath(User user) {
+
+        if (user == null
+                || user.getRole() == null
+                || user.getRole().getRoleName() == null) {
+            return "/";
+        }
+
+        return switch (user.getRole().getRoleName()) {
+            case "HR" -> "/hr/dashboard";
+            case "MENTOR" -> "/mentor/dashboard";
+            case "INTERN" -> "/intern/profile";
+            case "ADMIN" -> "/";
+            default -> "/";
+        };
     }
 }
