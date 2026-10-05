@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" language="java" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <c:set var="pageTitle" value="Chương trình thực tập của tôi" />
 
@@ -15,6 +15,13 @@
          Render lai o day se hien 2 lan. --%>
 
     <c:choose>
+        <c:when test="${not empty errorMessage}">
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5 text-muted">
+                    Chưa thể tải thông tin thực tập. Vui lòng thử lại sau.
+                </div>
+            </div>
+        </c:when>
         <c:when test="${not empty enrollment}">
 
             <div class="card shadow-sm mb-4">
@@ -26,6 +33,12 @@
                     <dl class="row mb-0">
                         <dt class="col-sm-3">Tên chương trình</dt>
                         <dd class="col-sm-9 fw-semibold"><c:out value="${enrollment.programName}"/></dd>
+
+                        <dt class="col-sm-3">Phòng ban</dt>
+                        <dd class="col-sm-9"><c:out value="${enrollment.departmentName}"/></dd>
+
+                        <dt class="col-sm-3">Thời gian thực tập</dt>
+                        <dd class="col-sm-9"><c:out value="${enrollment.startDate}"/> – <c:out value="${enrollment.endDate}"/></dd>
 
                         <dt class="col-sm-3">Ngày ghi danh</dt>
                         <dd class="col-sm-9"><c:out value="${enrollment.enrolledAt}"/></dd>
