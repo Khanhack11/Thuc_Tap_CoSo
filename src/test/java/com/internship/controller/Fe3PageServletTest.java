@@ -92,6 +92,14 @@ class Fe3PageServletTest {
         }
     }
 
+    @Test void evaluatedInternMetricMustNotTreatNamesAsUniqueIdentity() throws Exception {
+        String source = Files.readString(Path.of("src/main/webapp/assets/js/fe3.js"), StandardCharsets.UTF_8);
+        assertTrue(source.contains("return entry.internProfileId;"));
+        assertTrue(source.contains("new Set(profileIds).size"));
+        assertTrue(source.contains("Number.isSafeInteger(id) && id > 0"));
+        assertFalse(source.contains("return entry.internName;"));
+    }
+
     private static User user(String name) {
         Role role = new Role(); role.setRoleName(name);
         User user = new User(); user.setRole(role); user.setUserId(1L);
