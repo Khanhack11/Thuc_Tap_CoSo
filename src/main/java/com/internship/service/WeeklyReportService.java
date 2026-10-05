@@ -109,8 +109,14 @@ public class WeeklyReportService {
             throw new IllegalArgumentException("Điểm phản hồi phải từ 1 đến 5");
         }
         try (Connection connection = connections.open()) {
+            connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             connection.setAutoCommit(false);
             try {
+                // Read only the stable enrollment link first; lock enrollment before report.
+                // The shared lock order matches BE3 mentor handover and avoids a stale check.
+                WeeklyReport linkedReport = reports.findById(connection, reportId);
+                if (linkedReport == null) throw new IllegalArgumentException("Không tìm thấy báo cáo");
+                access.lockEnrollmentForMentorWrite(connection, linkedReport.getEnrollmentId());
                 WeeklyReport report = requireReportForUpdate(connection, reportId);
                 if (!access.isCurrentMentor(connection, mentorUserId, report.getEnrollmentId())) {
                     throw new SecurityException("Mentor không phụ trách báo cáo này");

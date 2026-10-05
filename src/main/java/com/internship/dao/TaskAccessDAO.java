@@ -5,8 +5,27 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/** Read-only ownership checks against the BE1, BE2 and BE3 tables. */
+/** Ownership checks and the shared BE3 enrollment lock used for mentor writes. */
 public class TaskAccessDAO {
+
+    /**
+     * Serialize a mentor write with BE3 assign/changeMentor on the same enrollment.
+     * Call before checking current mentorship, keep the lock through commit/rollback,
+     * and use READ_COMMITTED so a request waiting behind HR rechecks the new assignment.
+     * This does not change any BE3 data.
+     */
+    public void lockEnrollmentForMentorWrite(Connection connection, int enrollmentId) throws SQLException {
+        if (connection.getAutoCommit()) {
+            throw new IllegalStateException("Mentor write requires an explicit transaction");
+        }
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT enrollment_id FROM program_enrollments WHERE enrollment_id = ? FOR UPDATE")) {
+            statement.setInt(1, enrollmentId);
+            try (ResultSet rows = statement.executeQuery()) {
+                if (!rows.next()) throw new IllegalArgumentException("Không tìm thấy đợt thực tập");
+            }
+        }
+    }
 
     public boolean isActiveMentor(Connection connection, long userId) throws SQLException {
         String sql = """
