@@ -16,8 +16,8 @@
     <!-- Thanh công cụ Tìm Kiếm & Lọc Thực Tập Sinh (US03) -->
     <div class="card shadow-sm mb-4 border-0">
         <div class="card-body bg-light rounded">
-            <!-- Form HTML tĩnh theo yêu cầu (ngăn submit thật vì không cần gọi API) -->
-            <form id="filterForm" class="row g-3 align-items-end" onsubmit="event.preventDefault(); alert('Thực hiện lọc danh sách...');">
+            <!-- Form HTML thực tế gửi request GET -->
+            <form id="filterForm" class="row g-3 align-items-end" action="${pageContext.request.contextPath}/hr/interns" method="GET">
                 <!-- 1. Input text để tìm kiếm theo Tên hoặc Email -->
                 <div class="col-md-4 col-sm-12">
                     <label for="searchInput" class="form-label fw-semibold small text-muted">
@@ -57,9 +57,9 @@
                     <button type="submit" class="btn btn-primary flex-grow-1 shadow-sm" title="Tìm kiếm">
                         <i class="fas fa-filter me-1"></i>Lọc
                     </button>
-                    <button type="reset" class="btn btn-secondary shadow-sm" title="Xóa bộ lọc">
+                    <a href="${pageContext.request.contextPath}/hr/interns" class="btn btn-secondary shadow-sm" title="Xóa bộ lọc">
                         <i class="fas fa-sync-alt"></i>
-                    </button>
+                    </a>
                 </div>
             </form>
         </div>

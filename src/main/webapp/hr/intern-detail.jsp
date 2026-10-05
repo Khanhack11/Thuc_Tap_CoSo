@@ -155,31 +155,61 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <!-- Mockup Item: Đang chờ duyệt -->
-                                        <tr>
-                                            <td class="ps-3"><i class="fas fa-file-pdf text-danger me-2 fs-5"></i><strong>NguyenVanA_CV.pdf</strong></td>
-                                            <td>Sơ yếu lý lịch (CV)</td>
-                                            <td><span class="badge bg-warning text-dark">Chờ duyệt</span></td>
-                                            <td class="text-center pe-3">
-                                                <button class="btn btn-sm btn-success shadow-sm me-1" title="Duyệt" onclick="alert('Đã DUYỆT tài liệu')">
-                                                    <i class="fas fa-check me-1"></i>Duyệt
-                                                </button>
-                                                <button class="btn btn-sm btn-danger shadow-sm" title="Từ chối" onclick="alert('Đã TỪ CHỐI tài liệu')">
-                                                    <i class="fas fa-times me-1"></i>Từ chối
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <!-- Mockup Item: Đã duyệt -->
-                                        <tr>
-                                            <td class="ps-3"><i class="fas fa-file-word text-primary me-2 fs-5"></i><strong>DonXinThucTap.docx</strong></td>
-                                            <td>Đơn xin thực tập</td>
-                                            <td><span class="badge bg-success">Đã duyệt</span></td>
-                                            <td class="text-center pe-3">
-                                                <button class="btn btn-sm btn-outline-secondary" disabled>
-                                                    <i class="fas fa-check-circle me-1"></i>Đã xử lý
-                                                </button>
-                                            </td>
-                                        </tr>
+                                        <c:forEach var="doc" items="${documents}">
+                                            <tr>
+                                                <td class="ps-3">
+                                                    <i class="fas fa-file text-primary me-2 fs-5"></i>
+                                                    <a href="${pageContext.request.contextPath}/document/download?id=${doc.documentId}" target="_blank" class="text-decoration-none"><strong><c:out value="${doc.fileName}" /></strong></a>
+                                                </td>
+                                                <td><c:out value="${doc.documentType}" /></td>
+                                                <td>
+                                                    <c:choose>
+                                                        <c:when test="${doc.status == 'PENDING'}">
+                                                            <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <span class="badge bg-success"><c:out value="${doc.status}" /></span>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </td>
+                                                <td class="text-center pe-3">
+                                                    <c:choose>
+                                                        <c:when test="${doc.status == 'PENDING'}">
+                                                            <!-- Form Duyệt tài liệu -->
+                                                            <form action="${pageContext.request.contextPath}/document/review" method="POST" style="display: inline-block; margin-bottom: 0;">
+                                                                <input type="hidden" name="documentId" value="${doc.documentId}">
+                                                                <input type="hidden" name="action" value="approve">
+                                                                <button type="submit" class="btn btn-sm btn-success shadow-sm me-1" title="Duyệt">
+                                                                    <i class="fas fa-check me-1"></i>Duyệt
+                                                                </button>
+                                                            </form>
+
+                                                            <!-- Form Từ chối tài liệu -->
+                                                            <form action="${pageContext.request.contextPath}/document/review" method="POST" style="display: inline-block; margin-bottom: 0;">
+                                                                <input type="hidden" name="documentId" value="${doc.documentId}">
+                                                                <input type="hidden" name="action" value="reject">
+                                                                <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Từ chối">
+                                                                    <i class="fas fa-times me-1"></i>Từ chối
+                                                                </button>
+                                                            </form>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                                <i class="fas fa-check-circle me-1"></i>Đã xử lý
+                                                            </button>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </td>
+                                            </tr>
+                                        </c:forEach>
+                                        <c:if test="${empty documents}">
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4 text-muted">
+                                                    <i class="fas fa-folder-open fs-3 d-block mb-2 text-light"></i>
+                                                    Không có tài liệu nào.
+                                                </td>
+                                            </tr>
+                                        </c:if>
                                     </tbody>
                                 </table>
                             </div>
@@ -188,7 +218,8 @@
                         <!-- Tab Hợp đồng -->
                         <div class="tab-pane fade" id="contract" role="tabpanel" aria-labelledby="contract-tab">
                             <h6 class="mb-3 text-secondary"><i class="fas fa-cloud-upload-alt me-1"></i>Đính kèm hợp đồng thực tập</h6>
-                            <form onsubmit="event.preventDefault(); alert('Upload Hợp đồng thành công!');">
+                            <form action="${pageContext.request.contextPath}/contract/upload" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="profileId" value="${profile.profileId}">
                                 <div class="row g-3">
                                     <div class="col-md-5">
                                         <label class="form-label fw-semibold">Ngày ký <span class="text-danger">*</span></label>
@@ -218,7 +249,7 @@
 <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-            <form id="editProfileForm" onsubmit="handleEditProfileSubmit(event)">
+            <form action="${pageContext.request.contextPath}/hr/intern-detail" method="POST">
                 <div class="modal-header bg-light">
                     <h5 class="modal-title fw-bold" id="editProfileModalLabel">
                         <i class="fas fa-user-edit me-2 text-primary"></i>Cập nhật thông tin Thực tập sinh
@@ -289,19 +320,7 @@
 </div>
 
 <script>
-    function handleEditProfileSubmit(event) {
-        event.preventDefault();
-        
-        // Basic Frontend Validation and Fake Submit
-        alert('Dữ liệu hợp lệ! Đã sẵn sàng submit Form HTML để lưu thay đổi hồ sơ (US02) qua Backend.');
-        
-        // Hide modal on fake success
-        const modalEl = document.getElementById('editProfileModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) {
-            modal.hide();
-        }
-    }
+    // Xóa bỏ các JS giả lập đã không còn cần thiết do form đã tích hợp API
 </script>
 
 <%@ include file="/WEB-INF/views/common/footer.jsp" %>
