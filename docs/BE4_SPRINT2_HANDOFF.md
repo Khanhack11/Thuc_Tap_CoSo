@@ -95,3 +95,12 @@ Không kết luận owner chỉ dựa vào trang 500; đối chiếu exception/l
 - PR #25 sẵn sàng tích hợp vào develop. FE3 PR #26 cần cập nhật theo develop có
   #24/#25 để kiểm tra giao diện kết hợp. Các kiểm tra Tomcat/UI và nghiệm thu của
   QA không được suy ra chỉ từ build; checklist Q01–Q09 vẫn là điều kiện bàn giao.
+
+### Bổ sung định danh kết quả đánh giá (05/10/2026)
+
+- PR #25 đã merge vào develop `1016905`.
+- Bổ sung `internProfileId` cho `GET /hr/be4/evaluations`, giữ nguyên trường cũ
+  và constructor Java cũ. Không cần migration.
+- Số người đã đánh giá phải đếm theo mã hồ sơ, không theo họ tên hay số enrollment.
+- Chạy lại **147 test, 0 failure/error/skip** trên MySQL thật, gồm regression
+  hai người trùng tên và một người có nhiều đợt đánh giá.
