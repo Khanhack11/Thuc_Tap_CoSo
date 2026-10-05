@@ -688,6 +688,69 @@ a:hover {
     color: var(--text-muted);
 }
 
+/* ---------------------------------------------------------- Timeline --- */
+/* Dung cho man hinh "Chuong trinh thuc tap cua toi" (US14).
+   Thanh tien do chi hien thi - khong tuong tac, khong phu thuoc JS. */
+
+.timeline {
+    padding-top: 6px;
+}
+
+.timeline__track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.timeline__fill {
+    height: 100%;
+    background: var(--brand);
+    border-radius: 999px 0 0 999px;
+    transition: width .3s ease;
+}
+
+.timeline__fill--done {
+    background: var(--border-strong);
+}
+
+.timeline__marks {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.timeline__mark {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.timeline__mark--end {
+    text-align: right;
+}
+
+.timeline__label {
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.timeline__value {
+    font-size: 14.5px;
+    font-weight: 600;
+}
+
+.timeline__note {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
 /* ------------------------------------------------------------ Login ---- */
 
 .auth-page {
