@@ -134,7 +134,17 @@
 .fe3-metric span { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; }
 .fe3-metric span .bi { color: var(--brand); font-size: 1rem; }
 .fe3-metric strong { color: var(--text); font-size: clamp(1.65rem, 2vw, 2rem); }
-.fe3-page .table { --bs-table-bg: transparent; }
+.fe3-page .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text);
+    --bs-table-border-color: var(--border);
+    --bs-table-striped-bg: var(--surface-sunken);
+    --bs-table-striped-color: var(--text);
+    --bs-table-hover-bg: var(--surface-sunken);
+    --bs-table-hover-color: var(--text);
+    --bs-table-active-bg: var(--surface-sunken);
+    --bs-table-active-color: var(--text);
+}
 .fe3-page .table thead th {
     padding: 13px 12px;
     border-bottom: 1px solid var(--border-strong);

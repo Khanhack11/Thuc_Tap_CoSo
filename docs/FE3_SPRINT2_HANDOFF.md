@@ -150,3 +150,20 @@ Không commit/push cấu hình database, mật khẩu, dữ liệu giả lập, 
 Phạm vi code/tích hợp FE3 đã hoàn tất và bàn giao QA của nhóm. Các kết quả trên
 là kiểm chứng kỹ thuật với dữ liệu thử, không thay thế nghiệm thu của QA hoặc
 khẳng định các module ngoài scope của FE3 đã hoàn thành.
+
+### Chốt sau tích hợp #26 (05/10/2026)
+
+- PR #26 đã merge vào `develop` tại `ae942ccd`; bản sửa tiếp theo chỉ bổ sung
+  độ tương phản bảng FE3 và regression test, không sửa CSS chung của FE1.
+- Đồng bộ biến màu Bootstrap cho ô bảng và trạng thái hover/striped/active
+  với palette của theme trong phạm vi `.fe3-page .table`.
+- Build WAR cập nhật trên máy FE3: **157 test, 0 failure/error, 13 skip**.
+  Các test MySQL opt-in vẫn chưa chạy trên máy FE3 do thiếu cấu hình DB.
+- Build cùng source trong môi trường thử riêng có MySQL thật:
+  **161 test, 0 failure/error/skip**; JavaScript behavior test **4/4 pass**.
+- Tổng kiểm chứng web/API trong đợt tích hợp: **283 assertion đạt**, gồm
+  91 kiểm tra cuối sau nạp lại WAR. Không sử dụng dữ liệu ứng dụng của nhóm.
+- Trình duyệt xác nhận 3 đánh giá thuộc 2 hồ sơ trùng tên được đếm đúng là
+  2 TTS; chữ trong ô bảng có màu `rgb(230, 235, 242)`, đúng màu chữ của theme
+  tối đang dùng và đọc được trên nền tối.
+- Các checklist QA bên trên vẫn cần nhóm nghiệm thu trên bản develop mới.
