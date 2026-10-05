@@ -75,6 +75,7 @@ final class Be4Json {
     static Map<String, Object> evaluationSummary(EvaluationSummary value) {
         return fields("evaluationId", value.evaluationId(),
                 "enrollmentId", value.enrollmentId(),
+                "internProfileId", value.internProfileId(),
                 "internName", value.internName(),
                 "programName", value.programName(),
                 "mentorName", value.mentorName(),
