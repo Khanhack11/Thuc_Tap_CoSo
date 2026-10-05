@@ -10,7 +10,9 @@
 
 ## Phụ thuộc và thứ tự tích hợp
 
-Nhánh FE3 được tạo trực tiếp từ `develop` (`8af20bc`). PR chỉ chứa thay đổi FE3, **không kéo theo các commit BE3/BE4**.
+Nhánh FE3 được tạo trực tiếp từ `develop` (`8af20bc`). Sau cập nhật ngày 05/10,
+nhánh đã merge bình thường develop có BE2/BE3/BE4; diff PR so với develop chỉ
+chứa thay đổi FE3, không đưa phiên bản prerequisite cũ trở lại.
 
 1. Tích hợp bản khôi phục FE3 Sprint 1 **PR #27** để giữ `/hr/dashboard` và layout HR của #17/#18. Nhánh FE3 Sprint 2 đã merge bình thường nhánh khôi phục (không force-push); khi #27 được merge, diff #26 sẽ tập trung lại vào Sprint 2.
 2. Cần tích hợp BE3 Sprint 2 **PR #24** trước khi merge #26 để có bộ lọc phòng ban, danh sách tài khoản đủ điều kiện, mentor cùng phòng ban/còn sức chứa và quy tắc ghi danh ACTIVE.
@@ -117,4 +119,34 @@ Không commit/push cấu hình database, mật khẩu, dữ liệu giả lập, 
 - Menu/file dùng chung sau khi FE1/FE2 cập nhật; màn hình chương trình và form ghi danh của FE2 không bị thay thế.
 - Kiểm tra light/dark, bàn phím, mobile, chuỗi tiếng Việt và chuỗi có ký tự đặc biệt.
 
-Hoàn thành code và smoke check, **sẵn sàng review/tích hợp/QA**; chưa tuyên bố đã merge hoặc toàn bộ QA đã pass.
+## Kiểm chứng tích hợp ngày 05/10/2026
+
+- Các phụ thuộc đã merge: BE2 #37, BE3 #24, BE4 #25 và bổ sung định danh BE4 #38.
+  Nhánh FE3 cập nhật theo develop `ee07cef` bằng merge thường, không conflict,
+  không force-push và không ghi trực tiếp vào main/develop.
+- Giữ layout HR đã khôi phục #27; catalog/enrollments vẫn còn đầy đủ form,
+  thao tác và regression của BE3/FE2. Mentor UI chỉ thay phần hiển thị có phạm vi riêng.
+- Sửa thống kê TTS đã đánh giá: đếm `internProfileId`, không gộp người trùng tên
+  hoặc đếm một người nhiều lần vì nhiều enrollment. Nếu API cũ thiếu định danh,
+  hiển thị `—`, không đưa ra con số đoán từ tên.
+- Build WAR trên máy FE3: **156 test, 0 failure/error, 13 skip**; các ca MySQL
+  opt-in không được tính là đã chạy trên máy FE3 vì máy đó chưa cấu hình DB.
+- Bản source giống máy FE3 được build trong môi trường thử riêng với MySQL thật:
+  `mvn -Dbe3.mysql=true -Dbe4.mysql=true clean package`:
+  **160 test, 0 failure/error/skip**. Không tác động database ứng dụng của nhóm.
+- `node --test src/test/js/fe3-evaluation.test.cjs`: **4/4 pass**; kiểm tra người
+  trùng tên, nhiều đợt cùng người, đổi tên, API cũ thiếu mã và danh sách rỗng.
+- JavaScript syntax check thành công; 14 JSP HR/Mentor/Intern compile bằng
+  Jasper trên Tomcat 10.1.60 với **0 lỗi**.
+- **192 kiểm tra HTTP/API** trước/sau bàn giao trên Tomcat và database giả lập:
+  đăng nhập các role, quyền/CSRF, task → tiến độ → báo cáo → phản hồi → đánh giá,
+  mentor cũ mất quyền, mentor mới tiếp tục phản hồi; enrollment, dữ liệu và tác giả cũ giữ nguyên.
+- Kiểm tra trình duyệt: tìm tên không dấu, lọc đủ tải, thêm hồ sơ mentor,
+  phân/đổi và redirect, lý do chỉ có khoảng trắng bị chặn, lịch sử có chuỗi
+  `<script>` hiển thị như chữ. Dashboard và kết quả đánh giá lấy dữ liệu thật.
+- Mobile 390px: không tràn ngang trang; bảng dài cuộn trong khung; menu mobile
+  mở/đóng được. Mỗi trang chỉ có một sidebar; UTF-8 hiển thị đúng.
+
+Phạm vi code/tích hợp FE3 đã hoàn tất và bàn giao QA của nhóm. Các kết quả trên
+là kiểm chứng kỹ thuật với dữ liệu thử, không thay thế nghiệm thu của QA hoặc
+khẳng định các module ngoài scope của FE3 đã hoàn thành.
