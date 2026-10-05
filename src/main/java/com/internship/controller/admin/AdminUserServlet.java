@@ -1,36 +1,65 @@
 package com.internship.controller.admin;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.internship.dao.RoleDAO;
 import com.internship.dao.UserDAO;
 import com.internship.service.UserService;
+import com.internship.service.email.EmailException;
+import com.internship.service.email.EmailService;
 import com.internship.service.email.SmtpEmailService;
+import com.internship.util.CsrfToken;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.IOException;
-
 @WebServlet("/admin/users")
 public class AdminUserServlet extends HttpServlet {
 
+    private static final Logger LOGGER =
+            Logger.getLogger(AdminUserServlet.class.getName());
+
     private UserService userService;
 
+    public AdminUserServlet() {
+    }
+
+    public AdminUserServlet(UserService userService) {
+        this.userService = userService;
+    }
+
     @Override
-    public void init() throws ServletException {
+    public void init() {
+        if (userService != null) {
+            return;
+        }
+
+        EmailService emailService;
         try {
-            userService = new UserService(
-                    new UserDAO(),
-                    new RoleDAO(),
-                    new SmtpEmailService()
-            );
+            emailService = new SmtpEmailService();
         } catch (RuntimeException e) {
-            throw new ServletException(
-                    "Unable to initialize AdminUserServlet.",
+            LOGGER.log(
+                    Level.WARNING,
+                    "EmailService initialization failed; account emails disabled.",
                     e
             );
+            emailService = (recipient, subject, content) -> {
+                throw new EmailException("Email service unavailable", e);
+            };
         }
+
+        UserDAO userDAO = new UserDAO();
+        RoleDAO roleDAO = new RoleDAO();
+        userService = new UserService(
+                userDAO,
+                roleDAO,
+                emailService
+        );
     }
 
     @Override
@@ -41,6 +70,15 @@ public class AdminUserServlet extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
+
+        if (!CsrfToken.valid(request)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            writeError(
+                    response,
+                    "Invalid CSRF token."
+            );
+            return;
+        }
 
         String username = request.getParameter("username");
         String email = request.getParameter("email");
@@ -58,17 +96,31 @@ public class AdminUserServlet extends HttpServlet {
 
             response.setStatus(HttpServletResponse.SC_CREATED);
 
-            response.getWriter().printf(
-                    """
-                    {
-                      "success": true,
-                      "userId": %d,
-                      "emailSent": %s
-                    }
-                    """,
-                    result.user().getUserId(),
-                    result.emailSent()
-            );
+            if (result.emailSent()) {
+                response.getWriter().printf(
+                        """
+                        {
+                          "success": true,
+                          "userId": %d,
+                          "emailSent": true
+                        }
+                        """,
+                        result.user().getUserId()
+                );
+            } else {
+                response.getWriter().printf(
+                        """
+                        {
+                          "success": true,
+                          "userId": %d,
+                          "emailSent": false,
+                          "temporaryPassword": "%s"
+                        }
+                        """,
+                        result.user().getUserId(),
+                        escapeJson(result.temporaryPassword())
+                );
+            }
 
         } catch (IllegalArgumentException e) {
 
