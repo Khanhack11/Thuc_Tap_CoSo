@@ -1,5 +1,11 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%-- Each presentation includes its own shared layout exactly once. --%>
+<c:choose>
+<c:when test="${param.ui eq 'mentor' and viewMode ne 'enroll-form'}">
+    <jsp:include page="/WEB-INF/views/hr/mentor-management.jsp" />
+</c:when>
+<c:otherwise>
 <c:set var="pageTitle" value="Ghi danh & phân mentor" />
 <c:set var="activePage" value="hr-enrollments" />
 <c:set var="pageStylesheet" value="fe3.css" />
@@ -157,3 +163,5 @@
 </section>
 
 <%@ include file="/WEB-INF/views/common/footer.jsp" %>
+</c:otherwise>
+</c:choose>

@@ -1,5 +1,11 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%-- Mentor UI owns its layout; the catalog keeps the restored HR layout. --%>
+<c:choose>
+<c:when test="${requestScope['jakarta.servlet.forward.servlet_path'] eq '/hr/mentors'}">
+    <jsp:include page="/WEB-INF/views/hr/mentors.jsp" />
+</c:when>
+<c:otherwise>
 <c:set var="pageTitle" value="Chương trình thực tập" />
 <c:set var="activePage" value="hr-catalog" />
 <c:set var="pageStylesheet" value="fe3.css" />
@@ -159,3 +165,5 @@
 </section>
 
 <%@ include file="/WEB-INF/views/common/footer.jsp" %>
+</c:otherwise>
+</c:choose>
