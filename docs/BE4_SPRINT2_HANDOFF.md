@@ -79,3 +79,19 @@ QA ghi bug gồm branch/commit/WAR đang dùng, URL, role, ID dữ liệu, bư�
 - FE đúng màn hình: render, điều hướng, thông báo và lỗi hiển thị.
 
 Không kết luận owner chỉ dựa vào trang 500; đối chiếu exception/log và phiên bản deploy trước.
+
+## Cập nhật tích hợp ngày 05/10/2026
+
+- BE2 PR #37 và BE3 PR #24 đã merge vào develop. Nhánh BE4 đã merge bình thường
+  develop `1a96a9e`, không conflict; không rebase/force-push hoặc đưa BE2 cũ trở lại.
+- `mvn -Dbe3.mysql=true -Dbe4.mysql=true clean package` trên máy BE4:
+  **144 tests, 0 failures/errors/skipped**, WAR thành công. Có chạy đủ 14 ca MySQL
+  BE4 và 2 ca MySQL BE3 trên database tạm riêng, không ghi vào database ứng dụng.
+- Đã rà lại shared enrollment lock và thứ tự transaction với BE3 hiện tại:
+  giao task/phản hồi/đánh giá giữ khóa đến commit, mentor cũ bị chặn sau bàn giao;
+  enrollment và tác giả dữ liệu lịch sử không bị thay đổi.
+- Không cần migration BE4 mới; database cũ vẫn cần migration tài liệu BE2 theo
+  `sql/migrate_be2_documents.sql` khi dùng BE2 Sprint 2.
+- PR #25 sẵn sàng tích hợp vào develop. FE3 PR #26 cần cập nhật theo develop có
+  #24/#25 để kiểm tra giao diện kết hợp. Các kiểm tra Tomcat/UI và nghiệm thu của
+  QA không được suy ra chỉ từ build; checklist Q01–Q09 vẫn là điều kiện bàn giao.
