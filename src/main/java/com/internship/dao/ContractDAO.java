@@ -14,13 +14,17 @@ public class ContractDAO {
 
     public int saveOrUpdateContract(Contract contract) throws SQLException {
         // Kiểm tra xem application_id đã có hợp đồng chưa vì application_id là UNIQUE
-        String checkSql = "SELECT contract_id FROM contracts WHERE application_id = ?";
+        String checkSql = "SELECT contract_id, status FROM contracts WHERE application_id = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(checkSql)) {
             ps.setInt(1, contract.getApplicationId());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     int existingId = rs.getInt("contract_id");
+                    String currentStatus = rs.getString("status");
+                    if ("CONFIRMED".equalsIgnoreCase(currentStatus)) {
+                        throw new IllegalStateException("Hợp đồng đã ở trạng thái CONFIRMED, không được phép ghi đè trong Sprint 2.");
+                    }
                     String updateSql = "UPDATE contracts SET file_name = ?, file_path = ?, file_size = ?, "
                                      + "mime_type = ?, uploaded_by = ?, uploaded_at = CURRENT_TIMESTAMP, "
                                      + "status = 'PENDING_CONFIRMATION', confirmed_at = NULL WHERE contract_id = ?";
