@@ -33,6 +33,17 @@ public class UserService {
 
     public UserService(
             UserDAO userDAO,
+            RoleDAO roleDAO
+    ) {
+        this(userDAO, roleDAO, (recipient, subject, content) -> {
+            throw new EmailException(
+                    "Email service is not configured for this operation."
+            );
+        });
+    }
+
+    public UserService(
+            UserDAO userDAO,
             RoleDAO roleDAO,
             EmailService emailService
     ) {
