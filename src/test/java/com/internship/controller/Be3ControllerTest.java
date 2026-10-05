@@ -8,10 +8,13 @@ import com.internship.util.CsrfToken;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.Proxy;
 import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -22,6 +25,7 @@ class Be3ControllerTest {
         final Map<String, Object> sessionValues = new HashMap<>();
         final Map<String, Object> attributes = new HashMap<>();
         final Map<String, String> parameters = new HashMap<>();
+        final Map<String, String> headers = new HashMap<>();
         String forwarded;
         String redirected;
         int status = 200;
@@ -47,6 +51,7 @@ class Be3ControllerTest {
         final HttpServletResponse response = proxy(HttpServletResponse.class, (method, args) -> {
             if ("sendError".equals(method)) status = (Integer) args[0];
             if ("sendRedirect".equals(method)) redirected = (String) args[0];
+            if ("setHeader".equals(method)) headers.put((String) args[0], (String) args[1]);
             return null;
         });
 
@@ -121,38 +126,158 @@ class Be3ControllerTest {
         assertEquals(Date.valueOf("2028-02-29"), HRCatalogServlet.dateParam(http.request, "startDate"));
     }
 
-    @Test void internOverviewUsesSessionUserNotClientIds() throws Exception {
+    // US14 protects the BE3 -> FE1 data contract without prescribing JSP markup.
+    @Test void internOverviewExposesDisplayDataForSessionUserNotClientIds() throws Exception {
         AtomicLong requestedUser = new AtomicLong();
         InternProfileDAO profiles = new InternProfileDAO() {
             @Override public InternProfile getProfileByUserId(long id) {
                 requestedUser.set(id); InternProfile profile = new InternProfile(); profile.setProfileId(8); return profile;
             }
         };
-        ProgramEnrollment enrollment = new ProgramEnrollment(); enrollment.setEnrollmentId(12);
-        enrollment.setDepartmentName("Engineering"); enrollment.setStartDate(Date.valueOf("2026-10-01"));
+        ProgramEnrollment enrollment = sampleEnrollment();
+        MentorAssignment mentor = new MentorAssignment();
+        mentor.setEnrollmentId(12); mentor.setMentorId(3); mentor.setMentorName("Nguyễn Văn An");
+        mentor.setAssignedAt(Timestamp.valueOf("2026-10-02 09:00:00"));
         EnrollmentService service = new EnrollmentService() {
             @Override public ProgramEnrollment getActiveEnrollmentByIntern(int id) { assertEquals(8, id); return enrollment; }
-            @Override public MentorAssignment getCurrentMentor(int id) { assertEquals(12, id); return null; }
+            @Override public MentorAssignment getCurrentMentor(int id) { assertEquals(12, id); return mentor; }
         };
         Http http = new Http("INTERN"); http.parameters.put("userId", "99"); http.parameters.put("enrollmentId", "999");
+        http.parameters.put("profileId", "888");
         new InternEnrollmentServlet(service, profiles).doGet(http.request, http.response);
-        assertEquals(4_000_000_000L, requestedUser.get()); assertSame(enrollment, http.attributes.get("enrollment"));
-        assertNull(http.attributes.get("currentMentor")); assertEquals("/WEB-INF/views/intern/enrollment.jsp", http.forwarded);
+        assertEquals(4_000_000_000L, requestedUser.get());
+        assertSame(enrollment, http.attributes.get("enrollment"));
+        assertSame(mentor, http.attributes.get("currentMentor"));
+        ProgramEnrollment displayed = (ProgramEnrollment) http.attributes.get("enrollment");
+        assertAll("FE1 enrollment bean properties",
+                () -> assertEquals("Thực tập <Engineering>", displayed.getProgramName()),
+                () -> assertEquals("R&D", displayed.getDepartmentName()),
+                () -> assertEquals(Date.valueOf("2026-10-01"), displayed.getStartDate()),
+                () -> assertEquals(Date.valueOf("2026-12-31"), displayed.getEndDate()),
+                () -> assertEquals("ACTIVE", displayed.getStatus()),
+                () -> assertEquals(Timestamp.valueOf("2026-10-01 08:30:00"), displayed.getEnrolledAt()),
+                () -> assertEquals(3, displayed.getCurrentMentorId()),
+                () -> assertEquals("Nguyễn Văn An", displayed.getCurrentMentorName()));
+        MentorAssignment displayedMentor = (MentorAssignment) http.attributes.get("currentMentor");
+        assertEquals("Nguyễn Văn An", displayedMentor.getMentorName());
+        assertEquals(Timestamp.valueOf("2026-10-02 09:00:00"), displayedMentor.getAssignedAt());
+        assertNull(http.attributes.get("errorMessage"));
+        assertInternOverviewResponse(http);
     }
 
-    @Test void internOverviewSeparatesNoProfileFromDatabaseFailure() throws Exception {
-        Http empty = new Http("INTERN");
-        new InternEnrollmentServlet(new EnrollmentService(), new InternProfileDAO() {
+    @Test void internOverviewKeepsEnrollmentWhenNoMentorIsAssigned() throws Exception {
+        ProgramEnrollment enrollment = sampleEnrollment();
+        enrollment.setCurrentMentorId(null); enrollment.setCurrentMentorName(null);
+        Http http = new Http("INTERN");
+        new InternEnrollmentServlet(new EnrollmentService() {
+            @Override public ProgramEnrollment getActiveEnrollmentByIntern(int id) { assertEquals(8, id); return enrollment; }
+            @Override public MentorAssignment getCurrentMentor(int id) { assertEquals(12, id); return null; }
+        }, internProfile()).doGet(http.request, http.response);
+        assertSame(enrollment, http.attributes.get("enrollment"));
+        assertNull(http.attributes.get("currentMentor"));
+        assertNull(http.attributes.get("errorMessage"));
+        assertInternOverviewResponse(http);
+    }
+
+    @Test void internOverviewWithoutProfileIsAnEmptyStateNotAnError() throws Exception {
+        Http http = new Http("INTERN");
+        new InternEnrollmentServlet(new EnrollmentService() {
+            @Override public ProgramEnrollment getActiveEnrollmentByIntern(int id) {
+                fail("Do not load enrollment without an intern profile"); return null;
+            }
+        }, new InternProfileDAO() {
             @Override public InternProfile getProfileByUserId(long id) { return null; }
-        }).doGet(empty.request, empty.response);
-        assertNull(empty.attributes.get("enrollment")); assertNull(empty.attributes.get("errorMessage"));
-        Http failure = new Http("INTERN");
-        new InternEnrollmentServlet(new EnrollmentService(), new InternProfileDAO() {
-            @Override public InternProfile getProfileByUserId(long id) throws SQLException { throw new SQLException("Simulated"); }
-        }).doGet(failure.request, failure.response);
-        assertNotNull(failure.attributes.get("errorMessage")); assertNull(failure.attributes.get("enrollment"));
-        Http hr = new Http("HR");
-        new InternEnrollmentServlet().doGet(hr.request, hr.response); assertEquals(403, hr.status);
+        }).doGet(http.request, http.response);
+        assertNull(http.attributes.get("enrollment"));
+        assertNull(http.attributes.get("currentMentor"));
+        assertNull(http.attributes.get("errorMessage"));
+        assertInternOverviewResponse(http);
+    }
+
+    @Test void internOverviewWithoutActiveEnrollmentIsAnEmptyStateNotAnError() throws Exception {
+        Http http = new Http("INTERN");
+        new InternEnrollmentServlet(new EnrollmentService() {
+            @Override public ProgramEnrollment getActiveEnrollmentByIntern(int id) { assertEquals(8, id); return null; }
+            @Override public MentorAssignment getCurrentMentor(int id) {
+                fail("Do not load mentor without an enrollment"); return null;
+            }
+        }, internProfile()).doGet(http.request, http.response);
+        assertNull(http.attributes.get("enrollment"));
+        assertNull(http.attributes.get("currentMentor"));
+        assertNull(http.attributes.get("errorMessage"));
+        assertInternOverviewResponse(http);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"profile", "enrollment", "mentor"})
+    void internOverviewDatabaseFailuresExposeAnErrorNotPartialOrEmptySuccess(String stage) throws Exception {
+        SQLException failure = new SQLException("private database detail: simulated " + stage + " failure");
+        Http http = new Http("INTERN");
+        new InternEnrollmentServlet(new EnrollmentService() {
+            @Override public ProgramEnrollment getActiveEnrollmentByIntern(int id) throws SQLException {
+                assertNotEquals("profile", stage, "Do not continue after a profile lookup failure");
+                assertEquals(8, id);
+                if ("enrollment".equals(stage)) throw failure;
+                return sampleEnrollment();
+            }
+            @Override public MentorAssignment getCurrentMentor(int id) throws SQLException {
+                assertEquals("mentor", stage, "Do not continue after an earlier lookup failure");
+                assertEquals(12, id);
+                throw failure;
+            }
+        }, new InternProfileDAO() {
+            @Override public InternProfile getProfileByUserId(long id) throws SQLException {
+                if ("profile".equals(stage)) throw failure;
+                InternProfile profile = new InternProfile(); profile.setProfileId(8); return profile;
+            }
+        }).doGet(http.request, http.response);
+        String error = (String) http.attributes.get("errorMessage");
+        assertNotNull(error);
+        assertFalse(error.isBlank());
+        assertFalse(error.contains(failure.getMessage()), "Database details must not leak into the view");
+        assertNull(http.attributes.get("enrollment"), "Discard partial enrollment data when loading fails");
+        assertNull(http.attributes.get("currentMentor"));
+        assertInternOverviewResponse(http);
+    }
+
+    @Test void internOverviewRejectsUnauthenticatedAndOtherRolesBeforeDataAccess() throws Exception {
+        for (String role : Arrays.asList(null, "HR", "ADMIN", "MENTOR")) {
+            Http http = new Http(role);
+            new InternEnrollmentServlet(new EnrollmentService(), new InternProfileDAO() {
+                @Override public InternProfile getProfileByUserId(long id) {
+                    fail("Forbidden requests must not load private intern data"); return null;
+                }
+            }).doGet(http.request, http.response);
+            assertEquals(403, http.status, "Role: " + role);
+            assertNull(http.forwarded);
+            assertNull(http.attributes.get("enrollment"));
+            assertNull(http.attributes.get("currentMentor"));
+        }
+    }
+
+    private static void assertInternOverviewResponse(Http http) {
+        assertEquals(200, http.status);
+        assertEquals("/WEB-INF/views/intern/enrollment.jsp", http.forwarded);
+        assertEquals("no-store", http.headers.get("Cache-Control"));
+    }
+
+    private static InternProfileDAO internProfile() {
+        return new InternProfileDAO() {
+            @Override public InternProfile getProfileByUserId(long id) {
+                assertEquals(4_000_000_000L, id);
+                InternProfile profile = new InternProfile(); profile.setProfileId(8); return profile;
+            }
+        };
+    }
+
+    private static ProgramEnrollment sampleEnrollment() {
+        ProgramEnrollment enrollment = new ProgramEnrollment();
+        enrollment.setEnrollmentId(12); enrollment.setInternProfileId(8);
+        enrollment.setProgramName("Thực tập <Engineering>"); enrollment.setDepartmentName("R&D");
+        enrollment.setStartDate(Date.valueOf("2026-10-01")); enrollment.setEndDate(Date.valueOf("2026-12-31"));
+        enrollment.setStatus("ACTIVE"); enrollment.setEnrolledAt(Timestamp.valueOf("2026-10-01 08:30:00"));
+        enrollment.setCurrentMentorId(3); enrollment.setCurrentMentorName("Nguyễn Văn An");
+        return enrollment;
     }
 
     @Test void mentorFormOnlyOffersSameDepartmentWithSpace() throws Exception {
