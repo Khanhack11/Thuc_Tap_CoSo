@@ -100,6 +100,13 @@ class Fe3PageServletTest {
         assertFalse(source.contains("return entry.internName;"));
     }
 
+    @Test void bootstrapTableColorsMustFollowTheSharedTheme() throws Exception {
+        String source = Files.readString(Path.of("src/main/webapp/assets/css/fe3.css"), StandardCharsets.UTF_8);
+        for (String state : new String[]{"color", "hover-color", "striped-color", "active-color"}) {
+            assertTrue(source.contains("--bs-table-" + state + ": var(--text);"), state);
+        }
+    }
+
     private static User user(String name) {
         Role role = new Role(); role.setRoleName(name);
         User user = new User(); user.setRole(role); user.setUserId(1L);
