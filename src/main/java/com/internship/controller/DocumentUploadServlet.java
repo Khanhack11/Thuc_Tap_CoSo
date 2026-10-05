@@ -68,7 +68,7 @@ public class DocumentUploadServlet extends HttpServlet {
                 // US04: TTS Upload CV / Đơn xin thực tập
                 handleUploadDocument(request, response, currentUser, uploadDir);
             }
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             session.setAttribute("flashError", e.getMessage());
             redirectBack(request, response, path);
         } catch (SQLException e) {

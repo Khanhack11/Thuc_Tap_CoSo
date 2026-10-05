@@ -2,6 +2,7 @@ package com.internship.service;
 
 import com.internship.dao.InternProfileDAO;
 import com.internship.model.InternProfile;
+import com.internship.model.User;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -110,6 +111,50 @@ public class InternProfileService {
         }
 
         return profileDAO.updateProfile(profile);
+    }
+
+    /**
+     * HR/Admin chỉnh sửa hồ sơ thực tập sinh (US02 - Sprint 2).
+     * Tuân thủ quy ước 4:
+     * - Whitelist các trường thông tin: fullName, dob, gender, phone, email, university, major, gpa, skills.
+     * - KHÔNG nhận hay thay đổi userId, role, trạng thái Application từ form.
+     * - profileId phải tồn tại trong CSDL.
+     */
+    public boolean updateProfileByHr(InternProfile input, User hrUser) 
+            throws IllegalArgumentException, IllegalAccessException, SQLException {
+        if (!DocumentService.isHR(hrUser) && !DocumentService.isAdmin(hrUser)) {
+            throw new IllegalAccessException("Chỉ HR hoặc Admin mới có quyền chỉnh sửa hồ sơ thực tập sinh.");
+        }
+
+        if (input == null || input.getProfileId() <= 0) {
+            throw new IllegalArgumentException("Mã hồ sơ (profileId) không hợp lệ.");
+        }
+
+        InternProfile existing = profileDAO.getProfileById(input.getProfileId());
+        if (existing == null) {
+            throw new IllegalArgumentException("Không tìm thấy hồ sơ có ID: " + input.getProfileId());
+        }
+
+        // Áp dụng whitelist an toàn: chỉ cập nhật thông tin cá nhân và học vấn
+        existing.setFullName(input.getFullName() != null ? input.getFullName().trim() : null);
+        existing.setDob(input.getDob());
+        if (input.getGender() != null && !input.getGender().trim().isEmpty()) {
+            existing.setGender(input.getGender().trim());
+        }
+        existing.setPhone(input.getPhone() != null ? input.getPhone().trim() : null);
+        existing.setEmail(input.getEmail() != null ? input.getEmail().trim() : null);
+        existing.setUniversity(input.getUniversity() != null ? input.getUniversity().trim() : null);
+        existing.setMajor(input.getMajor() != null ? input.getMajor().trim() : null);
+        existing.setGpa(input.getGpa());
+        existing.setSkills(input.getSkills());
+
+        // Validate lại toàn bộ dữ liệu trước khi lưu
+        List<String> errors = validateProfile(existing);
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(String.join("; ", errors));
+        }
+
+        return profileDAO.updateProfile(existing);
     }
 
     public InternProfile getProfileById(int profileId) throws SQLException {

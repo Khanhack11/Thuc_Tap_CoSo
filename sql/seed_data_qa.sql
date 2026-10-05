@@ -58,16 +58,19 @@ ON DUPLICATE KEY UPDATE
     reject_reason = VALUES(reject_reason);
 
 -- 5. Thêm Documents mẫu (CV, Đơn xin thực tập)
-INSERT INTO documents (document_id, profile_id, document_type, file_name, file_path, file_size, mime_type, status, uploaded_at) VALUES
-(1, 1, 'CV', 'CV_NguyenVanNam_JavaBackend.pdf', 'uploads/documents/CV_NguyenVanNam_JavaBackend.pdf', 1048576, 'application/pdf', 'APPROVED', '2026-09-01 08:35:00'),
-(2, 1, 'APPLICATION_LETTER', 'DonXinThucTap_NguyenVanNam.pdf', 'uploads/documents/DonXinThucTap_NguyenVanNam.pdf', 524288, 'application/pdf', 'APPROVED', '2026-09-01 08:36:00'),
-(3, 2, 'CV', 'CV_TranThiHoa_BA.pdf', 'uploads/documents/CV_TranThiHoa_BA.pdf', 838860, 'application/pdf', 'PENDING', '2026-09-10 14:20:00')
+INSERT INTO documents (document_id, profile_id, document_type, file_name, file_path, file_size, mime_type, status, reviewed_by, reviewed_at, reject_reason, uploaded_at) VALUES
+(1, 1, 'CV', 'CV_NguyenVanNam_JavaBackend.pdf', 'uploads/documents/CV_NguyenVanNam_JavaBackend.pdf', 1048576, 'application/pdf', 'APPROVED', 1, '2026-09-02 09:00:00', NULL, '2026-09-01 08:35:00'),
+(2, 1, 'APPLICATION_LETTER', 'DonXinThucTap_NguyenVanNam.pdf', 'uploads/documents/DonXinThucTap_NguyenVanNam.pdf', 524288, 'application/pdf', 'APPROVED', 1, '2026-09-02 09:05:00', NULL, '2026-09-01 08:36:00'),
+(3, 2, 'CV', 'CV_TranThiHoa_BA.pdf', 'uploads/documents/CV_TranThiHoa_BA.pdf', 838860, 'application/pdf', 'PENDING', NULL, NULL, NULL, '2026-09-10 14:20:00')
 ON DUPLICATE KEY UPDATE 
     file_name = VALUES(file_name),
     file_path = VALUES(file_path),
     file_size = VALUES(file_size),
     mime_type = VALUES(mime_type),
-    status = VALUES(status);
+    status = VALUES(status),
+    reviewed_by = VALUES(reviewed_by),
+    reviewed_at = VALUES(reviewed_at),
+    reject_reason = VALUES(reject_reason);
 
 -- 6. Thêm Hợp đồng mẫu (Contracts)
 INSERT INTO contracts (contract_id, application_id, file_name, file_path, file_size, mime_type, uploaded_by, uploaded_at, status, confirmed_at) VALUES
