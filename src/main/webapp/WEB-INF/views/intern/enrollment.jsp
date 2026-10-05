@@ -23,6 +23,13 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
+<%-- Chot locale cho fmt:* . Khong co dong nay, khi request thieu
+     Accept-Language thi JSTL khong xac dinh duoc locale va roi ve
+     value.toString(): ngay ra "2026-09-01", so ra "56.10468880787037".
+     Trinh duyet luon gui header nay nen nguoi dung that khong thay, nhung
+     curl / client API / bot thi thay gia tri tho. Da kiem chung tren Tomcat. --%>
+<fmt:setLocale value="vi_VN" />
+
 <c:set var="pageTitle" value="Chương trình thực tập của tôi" />
 <c:set var="activePage" value="intern-enrollment" />
 

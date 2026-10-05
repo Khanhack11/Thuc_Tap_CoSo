@@ -23,6 +23,13 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
+<%-- Chốt locale cho fmt:* . Thiếu dòng này, khi request không có
+     Accept-Language thì JSTL không xác định được locale và rơi về
+     value.toString(): ngày ra "2026-09-22 10:15:30.0", dung lượng ra
+     "1234.5678 KB" — đúng hai lỗi hiển thị mà trang này sinh ra để sửa.
+     Trình duyệt luôn gửi header đó nên người dùng thật không thấy. --%>
+<fmt:setLocale value="vi_VN" />
+
 <c:set var="pageTitle" value="Hợp đồng thực tập" />
 <c:set var="activePage" value="contract" />
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
