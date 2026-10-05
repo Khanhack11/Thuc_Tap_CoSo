@@ -241,3 +241,25 @@ không dùng số bài test để thay thế xác nhận của QA.
    của chính mình. Thử role sai, URL giả mạo ID, chưa ghi danh và lỗi tải.
 6. QA xác nhận các màn FE1 US14, FE2 US11/12/13, FE3 US29/30/31 trên bản
    tích hợp thực tế. Việc review/merge các PR FE còn mở không thuộc PR BE3 #24.
+
+## Điều chỉnh kiểm thử US14 để không khóa markup FE1 — 05/10/2026
+
+- Bỏ test dò chuỗi trong `intern/enrollment.jsp` từng bắt đúng thẻ `c:out`,
+  câu chữ/dấu chấm, thứ tự viết JSTL và vị trí include layout. BE3 không quy định
+  FE1 phải giữ nguyên markup, CSS hoặc cách định dạng ngày giờ của bản QA cũ.
+- Thay bằng các controller contract test trong `Be3ControllerTest`: dữ liệu
+  `enrollment`/`currentMentor` với các bean property đã bàn giao; User lấy từ
+  session (BIGINT), không từ ID trên URL; quyền INTERN và `Cache-Control: no-store`.
+- Kiểm tra riêng có mentor, chưa phân mentor, chưa có profile, chưa có enrollment,
+  và lỗi tại từng bước đọc profile/enrollment/mentor. Khi lỗi phải có `errorMessage`,
+  không để lại dữ liệu từng phần, không lộ chi tiết SQLException cho view.
+- Không sửa JSP/CSS của FE1, controller/service/model/schema, pom.xml hoặc các test
+  CSRF/role của BE3. Các test view HR không thuộc thay đổi US14 này.
+- FE1 được dùng `fmt:formatDate`, biến trung gian, đổi câu chữ/bố cục. Việc render
+  đúng ba trạng thái, UTF-8 và escape nội dung không tin cậy vẫn là điều kiện QA
+  giao diện, không được thay bằng assertion bắt đúng một cách viết JSP.
+- Việc cập nhật nhánh và resolve conflict của PR FE1 #31 thuộc phía FE1. Thay đổi
+  test này không tự giải quyết conflict hoặc nghiệm thu giao diện FE1.
+- Kiểm chứng bản sửa: `mvn clean package` thành công, 149 test đạt, 0 failures/errors;
+  13 MySQL integration test opt-in không chạy trong lượt sửa test này. Không truy cập
+  hoặc thay đổi database. Nhóm kiểm tra BE3 controller/HR view: 18 test đạt.
