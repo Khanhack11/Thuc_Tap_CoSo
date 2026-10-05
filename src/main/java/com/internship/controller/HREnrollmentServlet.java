@@ -1,8 +1,6 @@
 package com.internship.controller;
 
 import com.internship.model.*;
-import com.internship.model.InternProfile;
-import com.internship.dao.InternProfileDAO;
 import com.internship.dao.InternshipProgramDAO;
 import com.internship.dao.MentorDAO;
 import com.internship.service.EnrollmentService;
@@ -32,11 +30,19 @@ public class HREnrollmentServlet extends HttpServlet {
     private InternshipProgramDAO programDAO;
     private MentorDAO mentorDAO;
 
+    public HREnrollmentServlet() { }
+
+    HREnrollmentServlet(EnrollmentService service, InternshipProgramDAO programs, MentorDAO mentors) {
+        enrollmentService = service;
+        programDAO = programs;
+        mentorDAO = mentors;
+    }
+
     @Override
     public void init() throws ServletException {
-        enrollmentService = new EnrollmentService();
-        programDAO = new InternshipProgramDAO();
-        mentorDAO = new MentorDAO();
+        if (enrollmentService == null) enrollmentService = new EnrollmentService();
+        if (programDAO == null) programDAO = new InternshipProgramDAO();
+        if (mentorDAO == null) mentorDAO = new MentorDAO();
     }
 
     /**
@@ -133,10 +139,11 @@ public class HREnrollmentServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         long hrUserId = currentUser.getUserId();
+        String redirect = request.getContextPath() + "/hr/enrollments";
 
         try {
             switch (action != null ? action : "") {
-                case "enroll" -> handleEnroll(request, hrUserId);
+                case "enroll" -> redirect += "?action=detail&id=" + handleEnroll(request, hrUserId);
                 case "assign-mentor" -> handleAssignMentor(request, hrUserId);
                 case "change-mentor" -> handleChangeMentor(request, hrUserId);
                 default -> request.getSession().setAttribute("errorMessage",
@@ -150,18 +157,26 @@ public class HREnrollmentServlet extends HttpServlet {
                     "Lỗi hệ thống khi xử lý. Vui lòng thử lại.");
         }
 
-        response.sendRedirect(request.getContextPath() + "/hr/enrollments");
+        response.sendRedirect(redirect);
     }
 
     // --- Action handlers ---
 
-    private void handleEnroll(HttpServletRequest request, long hrUserId) throws SQLException {
+    private int handleEnroll(HttpServletRequest request, long hrUserId) throws SQLException {
         int applicationId = parseIntParam(request, "applicationId");
         int programId = parseIntParam(request, "programId");
 
-        int enrollmentId = enrollmentService.enrollIntern(applicationId, programId, hrUserId);
+        String mentorValue = request.getParameter("mentorId");
+        Integer mentorId = mentorValue == null || mentorValue.isBlank() ? null
+                : parseIntParam(request, "mentorId");
+        var result = enrollmentService.enrollInternWithMentor(applicationId, programId, mentorId, hrUserId);
         request.getSession().setAttribute("successMessage",
-                "Đã ghi danh thành công (mã enrollment: " + enrollmentId + ").");
+                "Đã ghi danh thành công (mã enrollment: " + result.enrollmentId() + ")."
+                        + (result.assignmentId() != null ? " Đã phân mentor." : " Chưa phân mentor."));
+        if (result.mentorWarning() != null) {
+            request.getSession().setAttribute("errorMessage", result.mentorWarning());
+        }
+        return result.enrollmentId();
     }
 
     private void handleAssignMentor(HttpServletRequest request, long hrUserId) throws SQLException {
@@ -203,10 +218,12 @@ public class HREnrollmentServlet extends HttpServlet {
     private void handleEnrollForm(HttpServletRequest request) throws SQLException {
         String appIdStr = request.getParameter("applicationId");
         if (appIdStr != null) {
-            request.setAttribute("applicationId", Integer.parseInt(appIdStr.trim()));
+            request.setAttribute("applicationId", parseIntParam(request, "applicationId"));
         }
         List<InternshipProgram> programs = programDAO.getActivePrograms();
         request.setAttribute("programs", programs);
+        request.setAttribute("mentors", mentorDAO.getActiveMentors().stream()
+                .filter(m -> !m.isAtCapacity()).toList());
         request.setAttribute("viewMode", "enroll-form");
     }
 
@@ -218,7 +235,23 @@ public class HREnrollmentServlet extends HttpServlet {
             loadList(request);
             return;
         }
-        List<Mentor> mentors = mentorDAO.getActiveMentors();
+        if (!"ACTIVE".equals(enrollment.getStatus())) {
+            throw new IllegalArgumentException("Chỉ được phân hoặc đổi mentor cho ghi danh ACTIVE.");
+        }
+        if ("assign-form".equals(action) && enrollment.getCurrentMentorId() != null) {
+            throw new IllegalArgumentException("Đã có mentor; hãy dùng chức năng đổi mentor.");
+        }
+        if ("change-form".equals(action) && enrollment.getCurrentMentorId() == null) {
+            throw new IllegalArgumentException("Chưa có mentor; hãy dùng chức năng phân mentor.");
+        }
+        InternshipProgram program = programDAO.getProgramById(enrollment.getProgramId());
+        if (program == null) throw new IllegalArgumentException("Chương trình không tồn tại.");
+        List<Mentor> mentors = mentorDAO.getActiveMentors().stream()
+                .filter(m -> m.getDepartmentId() != null
+                        && m.getDepartmentId() == program.getDepartmentId()
+                        && !m.isAtCapacity()
+                        && !java.util.Objects.equals(m.getMentorId(), enrollment.getCurrentMentorId()))
+                .toList();
         request.setAttribute("enrollment", enrollment);
         request.setAttribute("mentors", mentors);
         request.setAttribute("viewMode", action);
@@ -237,7 +270,9 @@ public class HREnrollmentServlet extends HttpServlet {
             throw new IllegalArgumentException("Thiếu tham số: " + paramName);
         }
         try {
-            return Integer.parseInt(value.trim());
+            int id = Integer.parseInt(value.trim());
+            if (id <= 0) throw new NumberFormatException();
+            return id;
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Tham số không hợp lệ: " + paramName);
         }

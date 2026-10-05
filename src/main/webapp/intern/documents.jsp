@@ -101,6 +101,11 @@
                                     <span class="mx-1">-</span>
                                     ${doc.fileSize / 1024} KB
                                 </span>
+                                <c:if test="${doc.status eq 'REJECTED' and not empty doc.rejectReason}">
+                                    <div class="small text-danger mt-1">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Lý do từ chối: <c:out value="${doc.rejectReason}" />
+                                    </div>
+                                </c:if>
                             </div>
 
                             <span class="badge-status

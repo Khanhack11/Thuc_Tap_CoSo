@@ -117,10 +117,22 @@
 
         <main class="app-content">
 
+            <%--
+                BA KENH THONG BAO - LUON PHAI QUA <c:out>.
+                flashSuccess/flashError/errorMessage duoc BE dat bang
+                setAttribute tu nhieu servlet, trong do co chuoi sinh ra tu
+                du lieu DB (vi du ContractServlet dat "Loi CSDL: " +
+                e.getMessage()). Neu in thang ${...} thi HTML trong chuoi do
+                duoc trinh duyet dien giai -> stored XSS. Da ra soat 41 cho
+                set: khong cho nao co y dua the HTML vao, nen escape khong
+                lam mat dinh dang nao.
+                KHONG doi lai thanh ${...} khi sua file nay.
+            --%>
+
             <c:if test="${not empty sessionScope.flashSuccess}">
                 <div class="alert alert-success d-flex align-items-start gap-2" role="alert">
                     <i class="bi bi-check-circle-fill mt-1"></i>
-                    <div class="flex-grow-1">${sessionScope.flashSuccess}</div>
+                    <div class="flex-grow-1"><c:out value="${sessionScope.flashSuccess}" /></div>
                     <button type="button" class="btn-close" data-dismiss="alert" aria-label="Đóng"></button>
                 </div>
                 <c:remove var="flashSuccess" scope="session" />
@@ -129,7 +141,7 @@
             <c:if test="${not empty sessionScope.flashError}">
                 <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
                     <i class="bi bi-exclamation-triangle-fill mt-1"></i>
-                    <div class="flex-grow-1">${sessionScope.flashError}</div>
+                    <div class="flex-grow-1"><c:out value="${sessionScope.flashError}" /></div>
                     <button type="button" class="btn-close" data-dismiss="alert" aria-label="Đóng"></button>
                 </div>
                 <c:remove var="flashError" scope="session" />
@@ -138,7 +150,7 @@
             <c:if test="${not empty errorMessage}">
                 <div class="alert alert-danger d-flex align-items-start gap-2" role="alert">
                     <i class="bi bi-exclamation-octagon-fill mt-1"></i>
-                    <div class="flex-grow-1">${errorMessage}</div>
+                    <div class="flex-grow-1"><c:out value="${errorMessage}" /></div>
                     <button type="button" class="btn-close" data-dismiss="alert" aria-label="Đóng"></button>
                 </div>
             </c:if>

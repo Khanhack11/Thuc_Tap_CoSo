@@ -50,7 +50,8 @@ public class EvaluationDAO {
 
     public List<EvaluationSummary> findAllSummaries(Connection connection) throws SQLException {
         String sql = """
-                SELECT e.evaluation_id, e.enrollment_id, ip.full_name AS intern_name,
+                SELECT e.evaluation_id, e.enrollment_id, ip.profile_id AS intern_profile_id,
+                       ip.full_name AS intern_name,
                        p.program_name, u.full_name AS mentor_name, e.score,
                        e.comment, e.created_at
                 FROM evaluations e
@@ -71,7 +72,8 @@ public class EvaluationDAO {
                         rows.getString("intern_name"), rows.getString("program_name"),
                         rows.getString("mentor_name"), rows.getBigDecimal("score"),
                         rows.getString("comment"),
-                        createdAt == null ? null : createdAt.toLocalDateTime()));
+                        createdAt == null ? null : createdAt.toLocalDateTime(),
+                        rows.getInt("intern_profile_id")));
             }
         }
         return summaries;

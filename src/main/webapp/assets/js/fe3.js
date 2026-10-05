@@ -566,9 +566,12 @@
         var scored = entries.map(function (entry) { return Number(entry.score); })
             .filter(function (score) { return Number.isFinite(score); });
         byId('metricEvaluationCount').textContent = entries.length;
-        byId('metricEvaluatedInterns').textContent = new Set(entries.map(function (entry) {
-            return entry.internName;
-        })).size;
+        var profileIds = entries.map(function (entry) { return entry.internProfileId; });
+        var identitiesAvailable = profileIds.every(function (id) {
+            return Number.isSafeInteger(id) && id > 0;
+        });
+        byId('metricEvaluatedInterns').textContent = identitiesAvailable
+            ? new Set(profileIds).size : '—';
         byId('metricAverageScore').textContent = scored.length
             ? (scored.reduce(function (sum, score) { return sum + score; }, 0) / scored.length).toFixed(1)
             : '—';

@@ -69,25 +69,12 @@
         <%-- ========================= 3. ĐANG THAM GIA ========================= --%>
         <c:when test="${not empty enrollment}">
 
-            <%--
-                CAU NOI TAM THOI - go khi PR BE3 da vao develop.
-                ProgramEnrollment tren develop hien CHUA co departmentName /
-                startDate / endDate; BE3 bo sung o nhanh
-                feature/be3-sprint2-program-mentor. Doc truc tiep
-                ${enrollment.departmentName} luc nay nem PropertyNotFoundException
-                -> HTTP 500 cho moi TTS. c:catch hap thu loi do, cac bien mang gia
-                tri null va giao dien roi vao nhanh "chua co thong tin" thay vi
-                trang 500. Khi BE3 da merge thi khoi nay khong con tac dung, xoa di.
-            --%>
-            <c:catch var="missingDepartmentName">
-                <c:set var="programDepartment" value="${enrollment.departmentName}" />
-            </c:catch>
-            <c:catch var="missingStartDate">
-                <c:set var="programStart" value="${enrollment.startDate}" />
-            </c:catch>
-            <c:catch var="missingEndDate">
-                <c:set var="programEnd" value="${enrollment.endDate}" />
-            </c:catch>
+            <%-- BE3 da merge vao develop (a61249f): ProgramEnrollment co
+                 departmentName / startDate / endDate, nen doc truc tiep duoc.
+                 Cau noi c:catch tam thoi da go bo o day. --%>
+            <c:set var="programDepartment" value="${enrollment.departmentName}" />
+            <c:set var="programStart" value="${enrollment.startDate}" />
+            <c:set var="programEnd" value="${enrollment.endDate}" />
 
             <div class="row g-4">
 
