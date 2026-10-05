@@ -99,7 +99,7 @@ public class ContractServlet extends HttpServlet {
                 int contractId = Integer.parseInt(contractIdStr);
                 documentService.confirmContract(contractId, currentUser);
                 session.setAttribute("flashSuccess", "Bạn đã xác nhận hợp đồng thực tập thành công trên hệ thống!");
-            } catch (IllegalAccessException e) {
+            } catch (IllegalAccessException | IllegalArgumentException e) {
                 session.setAttribute("flashError", e.getMessage());
             } catch (SQLException e) {
                 log("Lỗi CSDL khi xác nhận hợp đồng", e);

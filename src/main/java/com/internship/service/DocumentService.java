@@ -1,8 +1,10 @@
 package com.internship.service;
 
+import com.internship.dao.ApplicationDAO;
 import com.internship.dao.ContractDAO;
 import com.internship.dao.DocumentDAO;
 import com.internship.dao.InternProfileDAO;
+import com.internship.model.Application;
 import com.internship.model.Contract;
 import com.internship.model.Document;
 import com.internship.model.InternProfile;
@@ -29,6 +31,7 @@ public class DocumentService {
     private final DocumentDAO documentDAO;
     private final ContractDAO contractDAO;
     private final InternProfileDAO profileDAO;
+    private final ApplicationDAO applicationDAO;
 
     // Giới hạn dung lượng: 5MB
     public static final long MAX_FILE_SIZE = 5 * 1024 * 1024; 
@@ -40,12 +43,18 @@ public class DocumentService {
         this.documentDAO = new DocumentDAO();
         this.contractDAO = new ContractDAO();
         this.profileDAO = new InternProfileDAO();
+        this.applicationDAO = new ApplicationDAO();
     }
 
     public DocumentService(DocumentDAO documentDAO, ContractDAO contractDAO, InternProfileDAO profileDAO) {
+        this(documentDAO, contractDAO, profileDAO, new ApplicationDAO());
+    }
+
+    public DocumentService(DocumentDAO documentDAO, ContractDAO contractDAO, InternProfileDAO profileDAO, ApplicationDAO applicationDAO) {
         this.documentDAO = documentDAO;
         this.contractDAO = contractDAO;
         this.profileDAO = profileDAO;
+        this.applicationDAO = applicationDAO;
     }
 
     /**
@@ -107,10 +116,28 @@ public class DocumentService {
 
     /**
      * Lưu hợp đồng (HR upload) theo US9.
+     * Quy ước Sprint 2:
+     * - Chỉ upload cho Application có trạng thái APPROVED.
+     * - Chỉ thay file trước xác nhận; bản CONFIRMED không bị ghi đè.
      */
     public Contract saveContract(int applicationId, long hrUserId, Part filePart, String baseUploadDir) 
-            throws IllegalArgumentException, IOException, SQLException {
+            throws IllegalArgumentException, IllegalStateException, IOException, SQLException {
         validateFile(filePart);
+
+        // Kiểm tra Application phải tồn tại và có trạng thái APPROVED
+        Application app = applicationDAO.getApplicationById(applicationId);
+        if (app == null) {
+            throw new IllegalArgumentException("Không tìm thấy đơn ứng tuyển (applicationId: " + applicationId + ").");
+        }
+        if (!"APPROVED".equalsIgnoreCase(app.getStatus())) {
+            throw new IllegalArgumentException("Chỉ được tải lên hợp đồng cho đơn ứng tuyển đã được duyệt (APPROVED). Trạng thái đơn hiện tại: " + app.getStatus());
+        }
+
+        // Kiểm tra hợp đồng hiện có, không cho phép ghi đè bản CONFIRMED
+        Contract existing = contractDAO.getContractByApplicationId(applicationId);
+        if (existing != null && "CONFIRMED".equalsIgnoreCase(existing.getStatus())) {
+            throw new IllegalStateException("Hợp đồng này đã được thực tập sinh xác nhận (CONFIRMED), không thể thay thế hoặc ghi đè trong Sprint 2.");
+        }
 
         String originalFileName = Paths.get(filePart.getSubmittedFileName()).getFileName().toString();
         String safeFileName = "contract_" + UUID.randomUUID().toString() + "_" + originalFileName.replaceAll("[^a-zA-Z0-9._-]", "_");
@@ -141,8 +168,17 @@ public class DocumentService {
 
     /**
      * TTS xác nhận hợp đồng (US10): Lưu confirmed_at và chuyển trạng thái sang CONFIRMED.
+     * Chỉ TTS sở hữu hợp đồng mới được thực hiện.
      */
     public boolean confirmContract(int contractId, User currentUser) throws SQLException, IllegalAccessException {
+        if (currentUser == null) {
+            throw new IllegalAccessException("Vui lòng đăng nhập để thực hiện thao tác.");
+        }
+
+        if (!isIntern(currentUser)) {
+            throw new IllegalAccessException("Chỉ thực tập sinh sở hữu hợp đồng mới có quyền xác nhận hợp đồng.");
+        }
+
         Contract contract = contractDAO.getContractById(contractId);
         if (contract == null) {
             throw new IllegalArgumentException("Không tìm thấy hợp đồng ID: " + contractId);
@@ -152,7 +188,47 @@ public class DocumentService {
             throw new IllegalAccessException("Bạn không có quyền xác nhận hợp đồng này.");
         }
 
+        if ("CONFIRMED".equalsIgnoreCase(contract.getStatus())) {
+            return true; // Đã xác nhận trước đó
+        }
+
         return contractDAO.confirmContract(contractId);
+    }
+
+    /**
+     * HR duyệt tài liệu của TTS (US05 - BE2): PENDING -> APPROVED
+     */
+    public boolean approveDocument(int documentId, User reviewer) throws SQLException, IllegalAccessException {
+        if (!isHR(reviewer) && !isAdmin(reviewer)) {
+            throw new IllegalAccessException("Chỉ HR hoặc Admin mới có quyền duyệt tài liệu.");
+        }
+
+        Document doc = documentDAO.getDocumentById(documentId);
+        if (doc == null) {
+            throw new IllegalArgumentException("Không tìm thấy tài liệu ID: " + documentId);
+        }
+
+        return documentDAO.approveDocument(documentId, reviewer.getUserId());
+    }
+
+    /**
+     * HR từ chối tài liệu của TTS (US05 - BE2): PENDING -> REJECTED (Bắt buộc lý do từ chối)
+     */
+    public boolean rejectDocument(int documentId, User reviewer, String rejectReason) throws SQLException, IllegalAccessException {
+        if (!isHR(reviewer) && !isAdmin(reviewer)) {
+            throw new IllegalAccessException("Chỉ HR hoặc Admin mới có quyền từ chối tài liệu.");
+        }
+
+        if (rejectReason == null || rejectReason.trim().isEmpty()) {
+            throw new IllegalArgumentException("Lý do từ chối tài liệu là thông tin bắt buộc.");
+        }
+
+        Document doc = documentDAO.getDocumentById(documentId);
+        if (doc == null) {
+            throw new IllegalArgumentException("Không tìm thấy tài liệu ID: " + documentId);
+        }
+
+        return documentDAO.rejectDocument(documentId, reviewer.getUserId(), rejectReason.trim());
     }
 
     /**
