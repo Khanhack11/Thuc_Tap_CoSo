@@ -186,3 +186,58 @@ Kết quả kiểm chứng sau kết hợp:
 - Không triển khai đè Tomcat của nhóm; không commit db.properties, secrets,
   WAR hoặc dữ liệu preview. QA vẫn cần nghiệm thu thao tác POST và giao diện
   FE Sprint 2 trên bản tích hợp chung sau review/merge PR #24.
+
+## Hoàn tất cập nhật với BE2 Sprint 2 — 05/10/2026
+
+- BE2 PR #37 đã merge vào `develop` tại `b87742a`. Merge bình thường bản develop
+  này vào nhánh BE3; không kéo lại BE2 cũ, không rebase/force-push, không sửa
+  User/auth/session, pom.xml, DBConnection hoặc nghiệp vụ/schema của BE2.
+- Xung đột duy nhất ở `intern/enrollment.jsp`: giữ header/footer và card layout
+  FE1, kết hợp lại phòng ban/ngày bắt đầu/ngày kết thúc của BE3 US14. Lỗi tải
+  dữ liệu được xử lý trước trạng thái chưa ghi danh; thông báo lỗi chi tiết chỉ
+  render ở header chung, không lặp lại. Giữ escape dữ liệu và UTF-8.
+- Thêm regression test cho layout/dữ liệu/trạng thái lỗi US14, và MySQL
+  integration test cho ranh giới BE2–BE3 với userId BIGINT vượt giới hạn int:
+  duyệt CV không duyệt Application; duyệt Application không tự ghi danh;
+  ghi danh khi hợp đồng còn PENDING_CONFIRMATION; chỉ TTS sở hữu xác nhận
+  hợp đồng; xác nhận idempotent không đổi enrollment hoặc Application.
+
+Kết quả kiểm chứng trên bản đã cập nhật:
+
+- `mvn -Dbe3.mysql=true clean package`: **121 tests, 0 failures/errors/skipped**;
+  WAR build thành công. MySQL test tạo và tự dọn database tạm riêng.
+- Jasper/Tomcat 10.1 precompile 6 JSP: `hr/catalog`, `hr/enrollments`,
+  `hr/dashboard-overview`, `hr/applications`, `intern/enrollment`,
+  `intern/applications`: **0 lỗi**.
+- Tomcat kiểm thử riêng trên loopback, database mới `be3_finish_preview_<uuid>`:
+  **243 HTTP/content assertions đạt** và **9 kiểm tra trạng thái DB đạt**.
+  Có gửi POST nghiệp vụ thật trên dữ liệu tổng hợp, không chỉ xem trang.
+  Đã kiểm tra tạo/sửa/kích hoạt/trùng chương trình, ngày sai, tạo mentor trùng,
+  lọc phòng ban, ghi danh trùng/sức chứa/chương trình PLANNED, giữ enrollment
+  khi mentor đầy, phân lại/đổi/lịch sử mentor, chặn khác phòng ban,
+  khóa sửa cấu trúc sau ghi danh, nộp đơn trùng/từ chối đơn, quyền HR/Admin/
+  Mentor/Intern, CSRF thiếu/sai, US14 riêng tư/no-store và escape lý do đổi.
+- Không triển khai đè Tomcat hoặc ghi vào `internship_management` của nhóm.
+  Cấu hình SMTP thật không được đưa vào preview; lỗi gửi email không làm mất
+  quyết định đã lưu. Việc gửi email đến hộp thư thật chưa nghiệm thu trong lần này.
+- Không commit db.properties, mail.properties, dữ liệu thử, WAR hoặc cấu hình preview.
+
+### Điều kiện bàn giao cho QA tích hợp
+
+Backend BE3 đã sẵn sàng tích hợp PR #24. Không còn phụ thuộc chờ BE2 PR #37.
+QA vẫn cần xác nhận nghiệm thu trên develop và giao diện FE Sprint 2 của nhóm;
+không dùng số bài test để thay thế xác nhận của QA.
+
+1. Lấy develop sau khi PR #24 được merge. Database đã có dữ liệu cần áp dụng
+   migration BE2 `sql/migrate_be2_documents.sql` theo hướng dẫn BE2; BE3 không
+   thêm migration riêng. Không chạy script xóa/reset dữ liệu để cập nhật.
+2. HR tạo chương trình → sửa trước ghi danh → kích hoạt → duyệt Application
+   → ghi danh với mentor hoặc phân sau. CV được duyệt không thay bước duyệt Application.
+3. Sau ghi danh, chỉ sửa tên/mô tả; thử input giả để đổi phòng ban/ngày/sức chứa
+   phải bị chặn. Mentor cùng phòng ban/còn chỗ mới được phân hoặc đổi.
+4. Đổi mentor có lý do, giữ enrollmentId và lịch sử/Task/Report/Evaluation.
+   Nếu bước mentor lỗi sau ghi danh, retry trên enrollment hiện có, không ghi danh lại.
+5. TTS xem `/intern/enrollment`: chương trình/phòng ban/khoảng ngày/mentor
+   của chính mình. Thử role sai, URL giả mạo ID, chưa ghi danh và lỗi tải.
+6. QA xác nhận các màn FE1 US14, FE2 US11/12/13, FE3 US29/30/31 trên bản
+   tích hợp thực tế. Việc review/merge các PR FE còn mở không thuộc PR BE3 #24.

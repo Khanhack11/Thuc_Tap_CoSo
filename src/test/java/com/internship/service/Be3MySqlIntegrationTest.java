@@ -168,4 +168,71 @@ class Be3MySqlIntegrationTest {
             assertTrue(results.next()); return results.getInt(1);
         }
     }
+
+    @Test
+    void be2DocumentAndContractStatesStayIndependentOfBe3Enrollment() throws Exception {
+        long reviewerId = 3_000_000_010L;
+        long internUserId = 3_000_000_011L;
+        long otherInternUserId = 3_000_000_012L;
+        try (Connection connection = DBConnection.getConnection(); Statement statement = connection.createStatement()) {
+            for (long id : new long[]{reviewerId, internUserId, otherInternUserId}) {
+                String role = id == reviewerId ? "HR" : "INTERN";
+                statement.executeUpdate("INSERT INTO users(user_id,username,email,password_hash,full_name,role_id) "
+                        + "SELECT " + id + ", 'integration_" + id + "', 'integration" + id
+                        + "@example.test', 'not-a-login-hash', 'BE2 BE3 Integration', role_id FROM roles WHERE role_name='" + role + "'");
+            }
+            for (int profileId : new int[]{211, 212}) {
+                long userId = profileId == 211 ? internUserId : otherInternUserId;
+                statement.executeUpdate("INSERT INTO intern_profiles(profile_id,user_id,full_name,phone,email,university,major) "
+                        + "VALUES(" + profileId + "," + userId + ",'Integration Intern','0000000000','integration"
+                        + profileId + "@example.test','ICTU','IT')");
+            }
+            statement.executeUpdate("INSERT INTO applications(application_id,intern_id,status) VALUES(211,211,'PENDING')");
+        }
+        UserDAO users = new UserDAO();
+        User reviewer = users.findById(reviewerId);
+        User owner = users.findById(internUserId);
+        User otherIntern = users.findById(otherInternUserId);
+        Document document = new Document();
+        document.setProfileId(211); document.setDocumentType("CV");
+        document.setFileName("integration.pdf"); document.setFilePath("test-only/integration.pdf");
+        document.setFileSize(100); document.setMimeType("application/pdf"); document.setStatus("PENDING");
+        int documentId = new DocumentDAO().addDocument(document);
+        DocumentService documents = new DocumentService();
+        assertTrue(documents.approveDocument(documentId, reviewer));
+        assertEquals(reviewerId, documents.getDocumentById(documentId).getReviewedBy());
+        assertNotNull(documents.getDocumentById(documentId).getReviewedAt());
+        ApplicationDAO applications = new ApplicationDAO();
+        assertEquals("PENDING", applications.getApplicationById(211).getStatus(),
+                "Reviewing a document must not approve an application");
+
+        CatalogService catalog = new CatalogService();
+        int department = catalog.createDepartment("BE2 BE3 Integration", null);
+        int program = catalog.createProgram("Contract compatibility", department, null,
+                Date.valueOf("2026-10-05"), Date.valueOf("2026-12-31"), 2);
+        catalog.activateProgram(program);
+        EnrollmentService enrollments = new EnrollmentService();
+        assertThrows(IllegalStateException.class, () -> enrollments.enrollIntern(211, program, reviewerId));
+        new ApplicationService((recipient, subject, content) -> { }).approveApplication(211, reviewerId);
+        assertEquals(reviewerId, applications.getApplicationById(211).getReviewedBy());
+        assertNull(enrollments.getActiveEnrollmentByIntern(211), "Approval must not auto-enroll an intern");
+
+        Contract contract = new Contract(); contract.setApplicationId(211);
+        contract.setFileName("contract.pdf"); contract.setFilePath("test-only/contract.pdf");
+        contract.setFileSize(100); contract.setMimeType("application/pdf");
+        contract.setUploadedBy(reviewerId); contract.setStatus("PENDING_CONFIRMATION");
+        int contractId = new ContractDAO().saveOrUpdateContract(contract);
+        int enrollmentId = enrollments.enrollIntern(211, program, reviewerId);
+        assertNull(enrollments.getCurrentMentor(enrollmentId));
+        assertEquals("PENDING_CONFIRMATION", documents.getContractById(contractId).getStatus(),
+                "Enrollment does not require or confirm a contract");
+        assertThrows(IllegalAccessException.class, () -> documents.confirmContract(contractId, otherIntern));
+        assertTrue(documents.confirmContract(contractId, owner));
+        assertTrue(documents.confirmContract(contractId, owner), "Confirmation remains idempotent");
+        Contract confirmed = documents.getContractById(contractId);
+        assertEquals("CONFIRMED", confirmed.getStatus()); assertNotNull(confirmed.getConfirmedAt());
+        assertEquals(reviewerId, confirmed.getUploadedBy());
+        assertEquals(enrollmentId, enrollments.getActiveEnrollmentByIntern(211).getEnrollmentId());
+        assertEquals("APPROVED", applications.getApplicationById(211).getStatus());
+    }
 }

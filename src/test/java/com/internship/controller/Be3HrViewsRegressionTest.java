@@ -70,6 +70,29 @@ class Be3HrViewsRegressionTest {
         assertEquals(8, total);
     }
 
+    @Test
+    void internOverviewPreservesFe1LayoutAndBe3DataAfterDevelopMerge() throws Exception {
+        String source = Files.readString(Path.of("src/main/webapp/WEB-INF/views/intern/enrollment.jsp"),
+                StandardCharsets.UTF_8);
+        assertTrue(source.contains("contentType=\"text/html; charset=UTF-8\""));
+        assertTrue(source.contains("pageEncoding=\"UTF-8\""));
+        assertEquals(1, occurrences(source, "/WEB-INF/views/common/header.jsp"));
+        assertEquals(1, occurrences(source, "/WEB-INF/views/common/footer.jsp"));
+        for (String field : new String[]{"programName", "departmentName", "startDate", "endDate", "status", "enrolledAt"}) {
+            assertTrue(source.contains("<c:out value=\"${enrollment." + field + "}\""), field);
+        }
+        assertTrue(source.contains("<c:out value=\"${currentMentor.mentorName}\""));
+        assertTrue(source.contains("Chưa được phân mentor."));
+        int error = source.indexOf("<c:when test=\"${not empty errorMessage}\">");
+        int enrollment = source.indexOf("<c:when test=\"${not empty enrollment}\">");
+        int empty = source.indexOf("Bạn chưa được ghi danh vào chương trình nào.");
+        assertTrue(error >= 0 && error < enrollment && enrollment < empty,
+                "A database error must not be rendered as no enrollment");
+        assertFalse(source.contains("<c:out value=\"${errorMessage}\""),
+                "The common header already renders the flash message");
+        for (String marker : new String[]{"<<<<<<<", "=======", ">>>>>>>"}) assertFalse(source.contains(marker));
+    }
+
     private static String view(String name) throws Exception {
         return Files.readString(Path.of("src/main/webapp/WEB-INF/views/hr", name), StandardCharsets.UTF_8);
     }
