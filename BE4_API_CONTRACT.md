@@ -50,11 +50,11 @@ BE4 cung cấp JSON API trên cùng ứng dụng Tomcat. Không cần server/API
 |---|---|---|---|
 | GET | `/dashboard` | - | `HrDashboard` |
 | GET | `/evaluations` | - | `EvaluationSummary[]` gồm mã enrollment, `internProfileId`, tên TTS, chương trình, mentor đánh giá, điểm, nhận xét và ngày đánh giá |
+| GET | `/evaluation` | `enrollmentId` | `Evaluation` hoặc `null` |
 
 `internProfileId` là mã hồ sơ TTS ổn định, dùng để đếm số người đã được đánh giá.
 Không dùng tên TTS làm khóa: hai người có thể trùng tên và một người có nhiều đợt thực tập.
 Đây là trường JSON bổ sung; các trường cũ và route không thay đổi, không cần migration DB.
-| GET | `/evaluation` | `enrollmentId` | `Evaluation` hoặc `null` |
 
 `HrDashboard` gồm `totalInterns`, `activeEnrollments`, `completedEnrollments`, `completionRatePercent`, `internsByUniversity`, `internsByMajor`, `activeInternsByMentor`. Ba mảng cuối gồm `{ "label": "...", "count": 1 }`. Tỷ lệ = completed / (active + completed) × 100; không tính enrollment cancelled. `MentorDashboard` gồm `activeInterns`, `tasksTodo`, `tasksInProgress`, `tasksDone`, `reportsSubmitted`, `reportsReviewed`, `evaluationsCompleted`.
 
