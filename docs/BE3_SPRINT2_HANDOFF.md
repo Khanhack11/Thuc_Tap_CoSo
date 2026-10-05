@@ -258,5 +258,8 @@ không dùng số bài test để thay thế xác nhận của QA.
 - FE1 được dùng `fmt:formatDate`, biến trung gian, đổi câu chữ/bố cục. Việc render
   đúng ba trạng thái, UTF-8 và escape nội dung không tin cậy vẫn là điều kiện QA
   giao diện, không được thay bằng assertion bắt đúng một cách viết JSP.
-- PR FE1 #31 vẫn cần cập nhật từ develop và resolve conflict của `intern/enrollment.jsp`.
-  Thay đổi test này không tự giải quyết conflict hoặc nghiệm thu giao diện FE1.
+- Việc cập nhật nhánh và resolve conflict của PR FE1 #31 thuộc phía FE1. Thay đổi
+  test này không tự giải quyết conflict hoặc nghiệm thu giao diện FE1.
+- Kiểm chứng bản sửa: `mvn clean package` thành công, 149 test đạt, 0 failures/errors;
+  13 MySQL integration test opt-in không chạy trong lượt sửa test này. Không truy cập
+  hoặc thay đổi database. Nhóm kiểm tra BE3 controller/HR view: 18 test đạt.
