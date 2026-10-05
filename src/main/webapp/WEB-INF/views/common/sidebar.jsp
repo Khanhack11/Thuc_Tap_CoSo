@@ -55,6 +55,16 @@
                 <i class="bi bi-folder2-open"></i><span>CV và đơn ứng tuyển</span>
             </a>
 
+            <%-- /intern/applications (InternApplicationServlet) - truoc day route nay
+                 KHONG co muc nao trong menu, TTS chi vao duoc bang cach go URL.
+                 Tach activePage rieng khoi 'documents': 'documents' thuoc muc
+                 "CV và đơn ứng tuyển" o tren (tro /intern/profile#documents), dung
+                 chung se sang nham muc khi dang o trang don. --%>
+            <a class="app-nav__link ${activePage eq 'intern-applications' ? 'is-active' : ''}"
+               href="${ctx}/intern/applications">
+                <i class="bi bi-send"></i><span>Đơn ứng tuyển của tôi</span>
+            </a>
+
             <a class="app-nav__link ${activePage eq 'contract' ? 'is-active' : ''}"
                href="${ctx}/contract/view">
                 <i class="bi bi-file-earmark-text"></i><span>Hợp đồng thực tập</span>
