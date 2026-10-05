@@ -107,6 +107,26 @@ class Be4Sprint2MySqlTest {
     }
 
     @Test
+    void evaluationSummariesIdentifyPeopleEvenWithMatchingNamesAndMultipleEnrollments() throws Exception {
+        execute("UPDATE intern_profiles SET full_name='Nguyễn Văn An' WHERE profile_id IN (1,2)");
+        int secondEnrollment = enrollments.enrollIntern(2, 1, HR);
+        enrollments.assignMentor(secondEnrollment, 1, HR);
+        evaluations.create(OLD, enrollmentId, BigDecimal.TEN, "Người thứ nhất");
+        evaluations.create(OLD, secondEnrollment, BigDecimal.TEN, "Người thứ hai");
+        execute("INSERT INTO applications(application_id,intern_id,status,reviewed_by) VALUES(3,1,'APPROVED',?)", HR);
+        execute("INSERT INTO program_enrollments(enrollment_id,application_id,program_id,intern_profile_id,status) "
+                + "VALUES(100,3,1,1,'COMPLETED')");
+        execute("INSERT INTO evaluations(enrollment_id,mentor_id,score,comment) VALUES(100,1,10,'Đợt trước')");
+
+        List<EvaluationSummary> summaries = evaluations.findAllForHr(HR);
+        assertEquals(3, summaries.size());
+        assertEquals(1, summaries.stream().map(EvaluationSummary::internName).distinct().count());
+        assertEquals(2, summaries.stream().map(EvaluationSummary::internProfileId).distinct().count());
+        assertEquals(2, summaries.stream().filter(item -> Integer.valueOf(1).equals(item.internProfileId())).count());
+        assertTrue(summaries.stream().allMatch(item -> item.internProfileId() != null && item.internProfileId() > 0));
+    }
+
+    @Test
     void schemaKeepsEnrollmentAndActorTypesAndRejectsBrokenReferences() throws Exception {
         for (String table : List.of("task_assignments", "weekly_reports", "evaluations")) {
             assertEquals("int", scalarString("SELECT COLUMN_TYPE FROM information_schema.COLUMNS "
