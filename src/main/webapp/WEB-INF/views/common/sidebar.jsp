@@ -50,16 +50,22 @@
                 <i class="bi bi-person-vcard"></i><span>Hồ sơ cá nhân</span>
             </a>
 
+            <%-- /intern/profile phuc vu 2 muc: "Hồ sơ cá nhân" (khong tham so) va
+                 muc nay. Truoc day cho nay de nhan "CV và đơn ứng tuyển" nhung
+                 activePage='documents' KHONG trang nao set (profile.jsp luon dat
+                 'profile' vi #documents khong duoc gui len server), nen bam vao
+                 muc nay thi sidebar sang nham "Hồ sơ cá nhân" - trong nhu bam
+                 khong co gi xay ra. Nay profile.jsp tu dat 'documents' theo
+                 ?view=documents. --%>
             <a class="app-nav__link ${activePage eq 'documents' ? 'is-active' : ''}"
-               href="${ctx}/intern/profile#documents">
-                <i class="bi bi-folder2-open"></i><span>CV và đơn ứng tuyển</span>
+               href="${ctx}/intern/profile?view=documents#documents">
+                <i class="bi bi-folder2-open"></i><span>Tài liệu của tôi</span>
             </a>
 
             <%-- /intern/applications (InternApplicationServlet) - truoc day route nay
                  KHONG co muc nao trong menu, TTS chi vao duoc bang cach go URL.
-                 Tach activePage rieng khoi 'documents': 'documents' thuoc muc
-                 "CV và đơn ứng tuyển" o tren (tro /intern/profile#documents), dung
-                 chung se sang nham muc khi dang o trang don. --%>
+                 activePage rieng 'intern-applications', KHONG dung 'documents':
+                 'documents' thuoc muc "Tài liệu của tôi" o tren. --%>
             <a class="app-nav__link ${activePage eq 'intern-applications' ? 'is-active' : ''}"
                href="${ctx}/intern/applications">
                 <i class="bi bi-send"></i><span>Đơn ứng tuyển của tôi</span>
