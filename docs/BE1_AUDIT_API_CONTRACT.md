@@ -20,3 +20,6 @@ Response example:
 Included hooks: LOGIN success/failure (unknown/rejected actor IDs null; attempted username not stored), LOGOUT success, Admin ACCOUNT_CREATE success (email delivery result not represented by account-creation result). Public registration and BE2/3/4 business actions are not yet wired; owners can integrate the shared entry point in a follow-up. No bulk HTTP request logging: a 200 form validation response must not be mistaken for a successful business action.
 
 US42 scope: common persistence and Admin querying supplied; cross-module event coverage and FE2 page still require integration. No UI files modified. This is not complete system-wide audit coverage.
+
+## UTC correction
+Audit DAO sets `SET SESSION time_zone = '+00:00'` on its own short-lived connection before each insert/query and explicitly supplies a UTC Calendar for JDBC timestamp reads and date-filter bindings. This aligns DB values and JDBC interpretation even when the shared URL declares serverTimezone=Asia/Ho_Chi_Minh. It changes neither global MySQL timezone nor db.properties nor another module's connection. Existing TIMESTAMP rows do not need rewriting. SQL inspection in a UTC MySQL session and API Z timestamps must agree (e.g. ID4 2026-10-07 11:24:53.246524 -> 2026-10-07T11:24:53.246524Z). This adds one session initialization statement per audit connection.
