@@ -1,6 +1,7 @@
 package com.internship.controller.admin;
 
 import java.io.IOException;
+import com.internship.service.AuditLogService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,6 +21,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @WebServlet("/admin/users")
 public class AdminUserServlet extends HttpServlet {
+
+    private final AuditLogService auditLog = new AuditLogService();
 
     private static final Logger LOGGER =
             Logger.getLogger(AdminUserServlet.class.getName());
@@ -93,6 +96,11 @@ public class AdminUserServlet extends HttpServlet {
                             fullName,
                             role
                     );
+
+            var session = request.getSession(false);
+            Long actorId = session != null && session.getAttribute("currentUser") instanceof com.internship.model.User actor
+                    ? actor.getUserId() : null;
+            auditLog.recordBestEffort(actorId, "ACCOUNT_CREATE", "USER", result.user().getUserId(), "SUCCESS");
 
             response.setStatus(HttpServletResponse.SC_CREATED);
 
