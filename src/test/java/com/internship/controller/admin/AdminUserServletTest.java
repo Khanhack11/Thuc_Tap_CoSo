@@ -13,6 +13,8 @@ import com.internship.dao.UserDAO;
 import com.internship.model.Role;
 import com.internship.model.User;
 import com.internship.service.UserService;
+import com.internship.service.AuditLogService;
+import com.internship.dao.AuditLogDAO;
 import com.internship.util.CsrfToken;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,12 +36,14 @@ class AdminUserServletTest {
             }
         };
 
-        AdminUserServlet servlet = new AdminUserServlet(userService);
+        CapturingAudit audit = new CapturingAudit();
+        AdminUserServlet servlet = new AdminUserServlet(userService, audit);
         FakeHttp http = new FakeHttp();
 
         servlet.doPost(http.request, http.response);
 
         assertEquals(HttpServletResponse.SC_FORBIDDEN, http.getStatus());
+        assertEquals(0, audit.calls);
         assertTrue(http.getBody().contains("Invalid CSRF token."));
         assertFalse(createUserCalled.get(), "UserService.createUser must not be called when CSRF token is missing");
     }
@@ -55,13 +59,15 @@ class AdminUserServletTest {
             }
         };
 
-        AdminUserServlet servlet = new AdminUserServlet(userService);
+        CapturingAudit audit = new CapturingAudit();
+        AdminUserServlet servlet = new AdminUserServlet(userService, audit);
         FakeHttp http = new FakeHttp();
         http.params.put("csrfToken", "invalid-or-forged-token");
 
         servlet.doPost(http.request, http.response);
 
         assertEquals(HttpServletResponse.SC_FORBIDDEN, http.getStatus());
+        assertEquals(0, audit.calls);
         assertTrue(http.getBody().contains("Invalid CSRF token."));
         assertFalse(createUserCalled.get(), "UserService.createUser must not be called when CSRF token is invalid");
     }
@@ -81,7 +87,8 @@ class AdminUserServletTest {
             }
         };
 
-        AdminUserServlet servlet = new AdminUserServlet(userService);
+        CapturingAudit audit = new CapturingAudit();
+        AdminUserServlet servlet = new AdminUserServlet(userService, audit);
         FakeHttp http = new FakeHttp();
         String token = CsrfToken.expose(http.request);
         http.params.put("csrfToken", token);
@@ -93,6 +100,11 @@ class AdminUserServletTest {
         servlet.doPost(http.request, http.response);
 
         assertEquals(HttpServletResponse.SC_CREATED, http.getStatus());
+        assertEquals(1, audit.calls);
+        assertEquals(99L, audit.actor);
+        assertEquals(user.getUserId(), audit.target);
+        assertEquals("ACCOUNT_CREATE", audit.action);
+        assertEquals("SUCCESS", audit.result);
         String body = http.getBody();
         assertTrue(body.contains("\"success\": true"));
         assertTrue(body.contains("\"userId\": 42"));
@@ -116,7 +128,8 @@ class AdminUserServletTest {
             }
         };
 
-        AdminUserServlet servlet = new AdminUserServlet(userService);
+        CapturingAudit audit = new CapturingAudit();
+        AdminUserServlet servlet = new AdminUserServlet(userService, audit);
         FakeHttp http = new FakeHttp();
         String token = CsrfToken.expose(http.request);
         http.params.put("csrfToken", token);
@@ -128,6 +141,11 @@ class AdminUserServletTest {
         servlet.doPost(http.request, http.response);
 
         assertEquals(HttpServletResponse.SC_CREATED, http.getStatus());
+        assertEquals(1, audit.calls);
+        assertEquals(99L, audit.actor);
+        assertEquals(user.getUserId(), audit.target);
+        assertEquals("ACCOUNT_CREATE", audit.action);
+        assertEquals("SUCCESS", audit.result);
         String body = http.getBody();
         assertTrue(body.contains("\"success\": true"));
         assertTrue(body.contains("\"userId\": 84"));
@@ -145,7 +163,8 @@ class AdminUserServletTest {
             }
         };
 
-        AdminUserServlet servlet = new AdminUserServlet(userService);
+        CapturingAudit audit = new CapturingAudit();
+        AdminUserServlet servlet = new AdminUserServlet(userService, audit);
         FakeHttp http = new FakeHttp();
         String token = CsrfToken.expose(http.request);
         http.params.put("csrfToken", token);
@@ -154,6 +173,7 @@ class AdminUserServletTest {
         servlet.doPost(http.request, http.response);
 
         assertEquals(HttpServletResponse.SC_BAD_REQUEST, http.getStatus());
+        assertEquals(0, audit.calls);
         String body = http.getBody();
         assertTrue(body.contains("\"success\": false"));
         assertTrue(body.contains("Username already exists."));
@@ -172,8 +192,31 @@ class AdminUserServletTest {
         assertNotNull(userServiceInstance, "userService must be instantiated with fallback email service after init()");
     }
 
+    private static final class CapturingAudit extends AuditLogService {
+        int calls;
+        Long actor, target;
+        String action, result;
+        CapturingAudit() {
+            super(new AuditLogDAO(() -> { throw new AssertionError("Unit test must never open an audit DB connection"); }));
+        }
+        @Override public boolean recordBestEffort(Long actor, String action, String type, Long target, String result) {
+            this.calls++;
+            this.actor = actor;
+            this.target = target;
+            this.action = action;
+            this.result = result;
+            assertEquals("USER", type);
+            return true;
+        }
+    }
+
     private static final class FakeHttp {
         final Map<String, Object> sessionAttributes = new HashMap<>();
+        FakeHttp() {
+            User admin = new User();
+            admin.setUserId(99L);
+            sessionAttributes.put("currentUser", admin);
+        }
         final Map<String, Object> requestAttributes = new HashMap<>();
         final Map<String, String> params = new HashMap<>();
         final StringWriter out = new StringWriter();

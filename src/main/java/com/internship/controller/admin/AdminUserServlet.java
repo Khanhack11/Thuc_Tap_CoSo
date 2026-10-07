@@ -22,7 +22,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @WebServlet("/admin/users")
 public class AdminUserServlet extends HttpServlet {
 
-    private final AuditLogService auditLog = new AuditLogService();
+    private final AuditLogService auditLog;
 
     private static final Logger LOGGER =
             Logger.getLogger(AdminUserServlet.class.getName());
@@ -30,10 +30,16 @@ public class AdminUserServlet extends HttpServlet {
     private UserService userService;
 
     public AdminUserServlet() {
+        this(null, new AuditLogService());
     }
 
     public AdminUserServlet(UserService userService) {
+        this(userService, new AuditLogService());
+    }
+
+    public AdminUserServlet(UserService userService, AuditLogService auditLog) {
         this.userService = userService;
+        this.auditLog = java.util.Objects.requireNonNull(auditLog);
     }
 
     @Override
