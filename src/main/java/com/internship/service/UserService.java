@@ -1,6 +1,9 @@
 package com.internship.service;
 
 import java.security.SecureRandom;
+import java.util.Locale;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,9 +77,9 @@ public class UserService {
         validateInput(username, email, fullName, roleName);
 
         String normalizedUsername = username.trim();
-        String normalizedEmail = email.trim().toLowerCase();
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
         String normalizedFullName = fullName.trim();
-        String normalizedRole = roleName.trim().toUpperCase();
+        String normalizedRole = roleName.trim().toUpperCase(Locale.ROOT);
 
         try {
             if (userDAO.existsByUsername(normalizedUsername)) {
@@ -174,7 +177,7 @@ public class UserService {
             );
         }
 
-        if (!email.contains("@")) {
+        if (!isValidEmail(email)) {
             throw new IllegalArgumentException(
                     "Email không hợp lệ."
             );
@@ -185,6 +188,8 @@ public class UserService {
                     "Họ tên không được để trống."
             );
         }
+
+        validateFieldLengths(username, email, fullName);
 
         if (password == null || password.length() < 8) {
             throw new IllegalArgumentException(
@@ -199,7 +204,7 @@ public class UserService {
         }
 
         String normalizedUsername = username.trim();
-        String normalizedEmail = email.trim().toLowerCase();
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
         String normalizedFullName = fullName.trim();
 
         try {
@@ -278,10 +283,35 @@ public class UserService {
             );
         }
 
-        if (!email.contains("@")) {
+        validateFieldLengths(username, email, fullName);
+
+        if (!isValidEmail(email)) {
             throw new IllegalArgumentException(
                     "Invalid email format."
             );
+        }
+    }
+
+    private static void validateFieldLengths(String username, String email, String fullName) {
+        if (username.trim().length() > 100 || email.trim().length() > 255
+                || fullName.trim().length() > 150) {
+            throw new IllegalArgumentException("Thông tin tài khoản vượt quá độ dài cho phép.");
+        }
+    }
+
+    private static boolean isValidEmail(String email) {
+        String value = email.trim();
+        if (value.chars().anyMatch(Character::isWhitespace)
+                || value.contains("\r") || value.contains("\n")) {
+            return false;
+        }
+        try {
+            InternetAddress address = new InternetAddress(value, true);
+            address.validate();
+            return !address.isGroup() && address.getPersonal() == null
+                    && value.equals(address.getAddress());
+        } catch (AddressException e) {
+            return false;
         }
     }
 
