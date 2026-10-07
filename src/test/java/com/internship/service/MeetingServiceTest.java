@@ -69,6 +69,25 @@ class MeetingServiceTest {
         var s = new MeetingService(() -> { fail("DB opened"); return null; },new MeetingDAO(),Clock.fixed(NOW.plusSeconds(4000),ZoneOffset.UTC));
         assertThrows(IllegalArgumentException.class, () -> s.create(9,request(List.of(1))));
     }
+    @Test void internDetailsHideOtherParticipantIds() throws Exception {
+        Harness h=new Harness();h.role="INTERN";
+        assertEquals(List.of(),h.service().get(9,31).enrollmentIds());
+        assertTrue(h.committed);
+    }
+    @Test void inaccessibleDetailsAreUnavailable() {
+        Harness h=new Harness();h.allowed=false;
+        assertThrows(MeetingService.NotFound.class,()->h.service().get(9,31));
+        assertTrue(h.rolledBack);
+    }
+    @Test void listRechecksVisibilityBeforeReturning() throws Exception {
+        Harness h=new Harness();h.allowed=false;
+        assertTrue(h.service().list(9,null,null,1,20).items().isEmpty());
+    }
+    @Test void invalidPaginationDoesNotOpenConnection() {
+        Harness h=new Harness();
+        assertThrows(IllegalArgumentException.class,()->h.service().list(9,null,null,0,20));
+        assertFalse(h.closed);
+    }
     static class Harness {
         String role="HR"; boolean allowed=true,failWrite,wrote,committed,rolledBack,closed;
         Long checkedMentor; List<Integer> checkedIds=new ArrayList<>();
@@ -82,6 +101,8 @@ class MeetingServiceTest {
             default -> null;
         });
         MeetingDAO dao = new MeetingDAO() {
+            @Override public List<Long> visibleIds(Connection c,long actor,String role,Integer program,String status,int page,int size) {return List.of(31L);}
+            @Override public boolean canRead(Connection c,long actor,String role,Meeting m) {return allowed;}
             @Override public String lockActor(Connection c,long actor) {return role;}
             @Override public boolean lockProgram(Connection c,int program) {return true;}
             @Override public boolean lockParticipant(Connection c,int program,int enrollment,Long mentor) {

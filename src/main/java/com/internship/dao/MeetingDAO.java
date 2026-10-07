@@ -9,6 +9,65 @@ import java.util.*;
 public class MeetingDAO {
     private static Calendar utc() { return Calendar.getInstance(TimeZone.getTimeZone("UTC")); }
 
+    /** SQL applies visibility before pagination; caller rechecks ACTIVE actor in transaction. */
+    public List<Long> visibleIds(Connection c, long actor, String role, Integer program,
+                                 String status, int page, int size) throws SQLException {
+        String scope = switch (role) {
+            case "ADMIN", "HR" -> "1=1";
+            case "INTERN" -> """
+                EXISTS (SELECT 1 FROM meeting_participants mp
+                JOIN program_enrollments e ON e.enrollment_id=mp.enrollment_id
+                JOIN intern_profiles ip ON ip.profile_id=e.intern_profile_id
+                WHERE mp.meeting_id=m.meeting_id AND ip.user_id=?)
+                """;
+            case "MENTOR" -> """
+                EXISTS (SELECT 1 FROM meeting_participants mp WHERE mp.meeting_id=m.meeting_id)
+                AND NOT EXISTS (SELECT 1 FROM meeting_participants mp
+                WHERE mp.meeting_id=m.meeting_id AND NOT EXISTS (
+                    SELECT 1 FROM program_enrollments e
+                    JOIN mentor_assignments ma ON ma.enrollment_id=e.enrollment_id AND ma.ended_at IS NULL
+                    JOIN mentors mentor ON mentor.mentor_id=ma.mentor_id
+                    WHERE e.enrollment_id=mp.enrollment_id AND e.status='ACTIVE'
+                    AND mentor.status='ACTIVE' AND mentor.user_id=?))
+                """;
+            default -> throw new SecurityException("Invalid role");
+        };
+        String sql = "SELECT m.meeting_id FROM meetings m WHERE ("+scope+")"
+                +(program==null?"":" AND m.program_id=?")
+                +(status==null?"":" AND m.status=?")
+                +" ORDER BY m.starts_at,m.meeting_id LIMIT ? OFFSET ?";
+        try (PreparedStatement s = c.prepareStatement(sql)) {
+            int i=1;
+            if (!Set.of("ADMIN","HR").contains(role)) s.setLong(i++,actor);
+            if (program!=null) s.setInt(i++,program);
+            if (status!=null) s.setString(i++,status);
+            s.setInt(i++,size); s.setLong(i,(long)(page-1)*size);
+            List<Long> ids=new ArrayList<>();
+            try (ResultSet r=s.executeQuery()) { while(r.next()) ids.add(r.getLong(1)); }
+            return ids;
+        }
+    }
+
+    public boolean canRead(Connection c, long actor, String role, Meeting m) throws SQLException {
+        if (Set.of("ADMIN","HR").contains(role)) return true;
+        if ("MENTOR".equals(role)) {
+            if(m.enrollmentIds().isEmpty()) return false;
+            for (int enrollment : m.enrollmentIds())
+                if (!lockParticipant(c,m.programId(),enrollment,actor)) return false;
+            return true;
+        }
+        if (!"INTERN".equals(role)) return false;
+        try (PreparedStatement s=c.prepareStatement("""
+                SELECT 1 FROM meeting_participants mp
+                JOIN program_enrollments e ON e.enrollment_id=mp.enrollment_id
+                JOIN intern_profiles ip ON ip.profile_id=e.intern_profile_id
+                WHERE mp.meeting_id=? AND ip.user_id=?
+                """)) {
+            s.setLong(1,m.id());s.setLong(2,actor);
+            try(ResultSet r=s.executeQuery()) {return r.next();}
+        }
+    }
+
     public String lockActor(Connection c, long actor) throws SQLException {
         try (PreparedStatement s = c.prepareStatement("""
                 SELECT r.role_name FROM users u JOIN roles r ON r.role_id=u.role_id

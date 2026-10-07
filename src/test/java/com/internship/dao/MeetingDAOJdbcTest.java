@@ -44,6 +44,10 @@ class MeetingDAOJdbcTest {
                 assertEquals(List.of(1),stored.enrollmentIds());
                 assertEquals(3,stored.organizerUserId());
                 assertEquals(1,stored.revision());
+                assertTrue(dao.visibleIds(c,3,"HR",1,null,1,100).contains(meetingId));
+                assertTrue(dao.visibleIds(c,5,"INTERN",1,null,1,100).contains(meetingId));
+                assertTrue(dao.canRead(c,5,"INTERN",stored));
+                assertFalse(dao.canRead(c,999999,"INTERN",stored));
                 var changed = new MeetingRequest(1,"BE1 JDBC updated",null,"New room",start.plusSeconds(60),start.plusSeconds(1860),List.of(1));
                 dao.update(c,meetingId,changed);
                 stored = dao.lockMeeting(c,meetingId);

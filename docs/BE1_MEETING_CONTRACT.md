@@ -1,6 +1,6 @@
 # BE1 US35 Task 35.1 — meeting data source
 
-Status: draft backend foundation; not complete US35. Base develop 3e3b043.
+Status: draft backend with HTTP API; not complete US35. Base develop 3e3b043.
 
 The authoritative meeting source is the new `meetings` and `meeting_participants` tables. Apply `sql/schema_be1_meetings.sql` manually after core/BE2/BE3 schema, initially on an isolated test DB. Existing program/enrollment/mentor tables are read and locked for authorization, never modified by this module. No runtime DDL, seed data, email sends or UI changes.
 
@@ -12,8 +12,15 @@ Actor IDs must come from authenticated server sessions, never a request field. S
 
 Both meeting data and participants commit/rollback together. Dedicated connection sets SESSION timezone UTC; JDBC date reads/binds use UTC Calendar. Foreign keys use existing signed INT program/enrollment and signed BIGINT user IDs. No cascading deletion. Participant changes replace current links; there is not yet a versioned attendee history.
 
-No HTTP routes/list/detail API provided in this foundation yet: FE must not assume an endpoint exists. The next increment must add authorized read/list routes and CSRF-protected writes with clear HTTP validation/conflict/error handling before UI integration. MeetingService is the backend entry point for that increment.
+## HTTP contract (BE1, for FE integration)
+GET `{contextPath}/meetings`: `programId` optional positive INT, `status` optional SCHEDULED/CANCELLED, `page` default1 (1..1000000), `size` default20 (1..100). Returns `{items:[...],page,size,csrfToken}`; no total-count field. Ascending startsAt then ID. Filters applied before pagination; concurrent scope changes can shorten a page. GET with `id` returns `{item:{...},csrfToken}`. Details contain id,programId,organizerUserId,title,description,location,startsAt,endsAt,status,revision,enrollmentIds. Intern gets an empty enrollmentIds array to avoid exposing other participants' enrollment identifiers.
+
+POST same route with `application/x-www-form-urlencoded` body and `csrfToken` from authenticated GET. `action=create`: programId,title,optional description,location,startsAt,endsAt,enrollmentIds (comma-separated enrollment IDs). `action=update`: same fields plus id,revision. `action=cancel`: id,revision. Create returns201 `{id}`; update/cancel200 `{id}`. Actor comes from currentUser in the session, not client actorUserId. Re-fetch details for current revision after changes. Do not send a JSON body.
+
+Read scope: ACTIVE ADMIN/HR all meetings; ACTIVE INTERN only meetings linked to their own profile/enrollment (including cancelled history); ACTIVE MENTOR only if every participant is their currently assigned active mentee. Creator alone does not confer continued Mentor access after reassignment. Writes use the policy above. No shared filter changes; AuthenticationFilter still validates sessions before this endpoint. Anonymous requests normally redirect to login; direct servlet calls401. No-store/nosniff. Errors400 invalid data,403 role/scope/CSRF denied,404 missing or unreadable detail,409 stale revision or cancelled update,415 wrong POST encoding,503 DB unavailable. Returned errors do not contain SQL or credentials.
+
+The HTTP API is new and still needs WSL full build and real Tomcat role/CSRF smoke before merge. UI remains owned by FE.
 
 Task 35.2 must add transactional outbox/versioned delivery snapshots before sending mail: CREATE/CHANGE/CANCEL/reminder events, recipients including removed participants, retry schedule/claim locking and dedup by meeting/revision/event/recipient. Never perform SMTP while holding the scheduling transaction. Existing EmailService.sendEmail is reusable; no external messages sent in Task 35.1. Email exactly-once delivery must not be promised when SMTP acknowledgment is uncertain.
 
-Open integration decisions: HR scope is currently all programs (existing project role policy); reminders and allowed lead time require a documented setting. Delivery recipient address (users.email vs profile contact email) must be explicitly selected in Task 35.2. Existing enrollment/mentor lifecycle owners retain their modules. Task 35.1 remains In Progress until migration and JDBC behavior are tested against MySQL, read/write API is supplied and FE/BE3 integration contract is reviewed.
+Open integration decisions: HR scope is currently all programs (existing project role policy); reminders and allowed lead time require a documented setting. Delivery recipient address (users.email vs profile contact email) must be explicitly selected in Task 35.2. Existing enrollment/mentor lifecycle owners retain their modules. Task 35.1 remains In Progress until migration and JDBC behavior are tested against MySQL, new API passes runtime role/CSRF checks and FE/BE3 integration contract is reviewed.
