@@ -70,16 +70,21 @@
         <c:if test="${empty sessionScope.currentUser}">
 
             <%-- Thông báo sau khi đăng ký thành công, hoặc sau khi đăng xuất --%>
+            <%-- Hai khối dưới đây in flash bằng EL trần, KHÔNG qua <c:out>, trong khi
+                 header.jsp vẫn escape đúng hai kênh này. ContractServlet và
+                 DocumentUploadServlet đổ e.getMessage() (có thể là thông báo lỗi SQL)
+                 vào flashError, nên EL trần ở đây là lỗ hổng XSS/HTML injection.
+                 Escape cho khớp header.jsp. --%>
             <c:if test="${not empty sessionScope.flashSuccess}">
                 <div class="alert alert-success" role="alert">
-                    <i class="bi bi-check-circle-fill me-1"></i>${sessionScope.flashSuccess}
+                    <i class="bi bi-check-circle-fill me-1"></i><c:out value="${sessionScope.flashSuccess}" />
                 </div>
                 <c:remove var="flashSuccess" scope="session" />
             </c:if>
 
             <c:if test="${not empty sessionScope.flashError}">
                 <div class="alert alert-danger" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>${sessionScope.flashError}
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i><c:out value="${sessionScope.flashError}" />
                 </div>
                 <c:remove var="flashError" scope="session" />
             </c:if>
