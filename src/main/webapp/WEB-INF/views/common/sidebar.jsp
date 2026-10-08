@@ -102,8 +102,35 @@
 
             <div class="app-nav__group">Thời gian và quyền lợi</div>
 
+            <%-- ================= Sprint 3 - cac muc chua co backend =================
+                 Bay man hinh duoi day nam trong pham vi Sprint 3 cua FE1 nhung
+                 CHUA co servlet, chua co bang CSDL va chua co hop dong API nao
+                 trong docs/ (xem bao cao BLOCKED gui kem). Vi vay chung van la
+                 <span> "Sắp có", KHONG duoc doi thanh <a href> - lam vay se tao
+                 link 404 ngay trong menu chung cua ca ba vai tro.
+
+                 Khi backend tuong ung merge vao develop thi moi doi:
+                     - 21.2 Chấm công        -> /intern/attendance      (BE2)
+                     - 23.3 Lịch làm việc    -> /intern/schedule       (BE3)
+                     - 24.2 Nghỉ phép        -> /intern/leave-requests (BE3)
+                     - 26.2 Phụ cấp          -> /intern/allowances     (BE2)
+                     - 27.2 Yêu cầu hỗ trợ   -> /intern/support        (BE2)
+                     - 35.5 Lịch họp         -> xem chu thich rieng ben duoi
+                     - 36.2 Thông báo        -> /intern/notifications  (BE1)
+
+                 Muc "Lịch họp" da co hop dong HTTP cua BE1
+                 (docs/BE1_MEETING_CONTRACT.md, GET/POST ${ctx}/meetings) nhung
+                 nhanh do CHUA merge develop va chua co route nao phuc vu trang
+                 => van de "Sắp có" cho toi khi BE1 merge.
+                 ==================================================================== --%>
+
             <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-clock-history"></i><span>Chấm công</span>
+                <span class="app-nav__soon">Sắp có</span>
+            </span>
+
+            <span class="app-nav__link is-soon" aria-disabled="true">
+                <i class="bi bi-calendar-week"></i><span>Lịch làm việc</span>
                 <span class="app-nav__soon">Sắp có</span>
             </span>
 
@@ -113,7 +140,29 @@
             </span>
 
             <span class="app-nav__link is-soon" aria-disabled="true">
+                <i class="bi bi-cash-coin"></i><span>Phụ cấp</span>
+                <span class="app-nav__soon">Sắp có</span>
+            </span>
+
+            <div class="app-nav__group">Hỗ trợ và trao đổi</div>
+
+            <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-life-preserver"></i><span>Yêu cầu hỗ trợ</span>
+                <span class="app-nav__soon">Sắp có</span>
+            </span>
+
+            <%-- Trang da dung san khung: WEB-INF/views/intern/meetings.jsp
+                 (doc GET ${ctx}/meetings theo hop dong BE1). Con thieu route
+                 phuc vu trang - chu so huu servlet trang (BE1 hoac BE3) phai
+                 forward "/intern/meetings" -> view nay, sau do doi span nay
+                 thanh the <a> tro toi ${ctx}/intern/meetings. --%>
+            <span class="app-nav__link is-soon" aria-disabled="true">
+                <i class="bi bi-camera-video"></i><span>Lịch họp</span>
+                <span class="app-nav__soon">Sắp có</span>
+            </span>
+
+            <span class="app-nav__link is-soon" aria-disabled="true">
+                <i class="bi bi-bell"></i><span>Thông báo</span>
                 <span class="app-nav__soon">Sắp có</span>
             </span>
 
