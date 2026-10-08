@@ -1,6 +1,6 @@
 # BE1 US35 — Task 35.2 notification design
 
-Status: design only, not implemented. Branch stacks on Task35.1 commit1e432b4; do not merge directly to develop until prerequisite is integrated.
+Status: draft implementation added; validation incomplete. See BE1_MEETING_NOTIFICATION_RUNBOOK.md. Branch stacks on Task35.1 commit1e432b4; do not merge directly to develop until prerequisite is integrated.
 
 ## Confirmed choices (user, 2026-10-08)
 - Intern recipient address: users.email, never an address supplied in the meeting HTTP request.
@@ -45,4 +45,4 @@ Required tests before completion:
 - injected sender failure preserves meeting, no credentials in errors;
 - full Maven, opt-in MySQL, Tomcat smoke with fake/local capture only.
 
-Current scope is design preparation. None of the migration, outbox integration, worker or tests above is implemented by this document.
+Migration, outbox integration, worker/listener, unit tests and12 disposable-MySQL tests are now implemented on this branch.42 non-DB tests pass. JDBC execution is blocked by unavailable MySQL socket in the review environment; no JDBC/full Maven/Tomcat35.2 pass is asserted. Default enqueue/send remain disabled; no real email has been sent.
