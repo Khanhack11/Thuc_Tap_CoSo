@@ -88,7 +88,33 @@ class MeetingServiceTest {
         assertThrows(IllegalArgumentException.class,()->h.service().list(9,null,null,0,20));
         assertFalse(h.closed);
     }
+
+    @Test void nonOrganizerDeniedBeforeStaleRevisionOnCancel() {
+        Harness h=new Harness();h.role="MENTOR";h.organizer=3;
+        assertThrows(SecurityException.class,()->h.service().cancel(9,31,2));
+        assertFalse(h.wrote);assertTrue(h.rolledBack);
+    }
+    @Test void nonOrganizerDeniedBeforeCancelledStateOnUpdate() {
+        Harness h=new Harness();h.role="MENTOR";h.organizer=3;h.meetingStatus="CANCELLED";
+        assertThrows(SecurityException.class,()->h.service().update(9,31,1,request(List.of(1))));
+        assertFalse(h.wrote);
+    }
+    @Test void formerOrganizerDeniedBeforeStaleRevision() {
+        Harness h=new Harness();h.role="MENTOR";h.allowed=false;
+        assertThrows(SecurityException.class,()->h.service().cancel(9,31,2));
+        assertFalse(h.wrote);
+    }
+    @Test void authorizedCancelledUpdateStillConflicts() {
+        Harness h=new Harness();h.meetingStatus="CANCELLED";
+        assertThrows(IllegalStateException.class,()->h.service().update(9,31,1,request(List.of(1))));
+        assertFalse(h.wrote);
+    }
+    @Test void currentRevisionRepeatedCancellationIsNoOp() throws Exception {
+        Harness h=new Harness();h.meetingStatus="CANCELLED";
+        h.service().cancel(9,31,1);assertFalse(h.wrote);assertTrue(h.committed);
+    }
     static class Harness {
+        long organizer=9; String meetingStatus="SCHEDULED";
         String role="HR"; boolean allowed=true,failWrite,wrote,committed,rolledBack,closed;
         Long checkedMentor; List<Integer> checkedIds=new ArrayList<>();
         Connection connection = (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(),new Class[]{Connection.class},(p,m,a)->switch(m.getName()) {
@@ -112,7 +138,7 @@ class MeetingServiceTest {
                 if(failWrite)throw new SQLException("test");wrote=true;return 31;
             }
             @Override public Meeting lockMeeting(Connection c,long id) {
-                return new Meeting(id,1,9,"Meeting",null,"Room",NOW.plusSeconds(3600),NOW.plusSeconds(7200),"SCHEDULED",1,List.of(1));
+                return new Meeting(id,1,organizer,"Meeting",null,"Room",NOW.plusSeconds(3600),NOW.plusSeconds(7200),meetingStatus,1,List.of(1));
             }
             @Override public void update(Connection c,long id,MeetingRequest q) {wrote=true;}
             @Override public void cancel(Connection c,long id) {wrote=true;}

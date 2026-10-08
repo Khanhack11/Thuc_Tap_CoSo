@@ -74,13 +74,15 @@ public class MeetingService {
     }
 
     public void update(long actor, long meetingId, int expectedRevision, MeetingRequest q) throws SQLException {
-        positive(actor); positive(meetingId); Objects.requireNonNull(q); future(q);
+        positive(actor); positive(meetingId); Objects.requireNonNull(q);
         transaction(c -> {
             String role = writer(c, actor);
-            Meeting old = existing(c, meetingId, expectedRevision);
+            Meeting old = existing(c, meetingId);
+            authorizeExisting(c, actor, role, old);
+            checkRevision(old, expectedRevision);
             if (!"SCHEDULED".equals(old.status())) throw new IllegalStateException("Meeting cancelled");
             if (old.programId() != q.programId()) throw new IllegalArgumentException("Program cannot change");
-            authorizeExisting(c, actor, role, old);
+            future(q);
             validateParticipants(c, actor, role, q.programId(), q.enrollmentIds());
             dao.update(c, meetingId, q); return null;
         });
@@ -90,19 +92,22 @@ public class MeetingService {
         positive(actor); positive(meetingId);
         transaction(c -> {
             String role = writer(c, actor);
-            Meeting old = existing(c, meetingId, expectedRevision);
+            Meeting old = existing(c, meetingId);
             authorizeExisting(c, actor, role, old);
+            checkRevision(old, expectedRevision);
             if ("SCHEDULED".equals(old.status())) dao.cancel(c, meetingId);
             return null;
         });
     }
 
-    private Meeting existing(Connection c, long id, int revision) throws SQLException {
-        if (revision < 1) throw new IllegalArgumentException("Invalid revision");
+    private Meeting existing(Connection c, long id) throws SQLException {
         Meeting old = dao.lockMeeting(c, id);
         if (old == null) throw new NotFound();
-        if (old.revision() != revision) throw new IllegalStateException("Meeting changed; reload first");
         return old;
+    }
+    private static void checkRevision(Meeting old, int revision) {
+        if (revision < 1) throw new IllegalArgumentException("Invalid revision");
+        if (old.revision() != revision) throw new IllegalStateException("Meeting changed; reload first");
     }
     private String writer(Connection c, long actor) throws SQLException {
         String role = dao.lockActor(c, actor);

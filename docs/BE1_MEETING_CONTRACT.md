@@ -19,7 +19,9 @@ POST same route with `application/x-www-form-urlencoded` body and `csrfToken` fr
 
 Read scope: ACTIVE ADMIN/HR all meetings; ACTIVE INTERN only meetings linked to their own profile/enrollment (including cancelled history); ACTIVE MENTOR only if every participant is their currently assigned active mentee. Creator alone does not confer continued Mentor access after reassignment. Writes use the policy above. No shared filter changes; AuthenticationFilter still validates sessions before this endpoint. Anonymous requests normally redirect to login; direct servlet calls401. No-store/nosniff. Errors400 invalid data,403 role/scope/CSRF denied,404 missing or unreadable detail,409 stale revision or cancelled update,415 wrong POST encoding,503 DB unavailable. Returned errors do not contain SQL or credentials.
 
-The HTTP API is new and still needs WSL full build and real Tomcat role/CSRF smoke before merge. UI remains owned by FE.
+WSL build, opt-in local MySQL DAO test and core Tomcat role/CSRF smoke evidence are recorded in PR #53 for head 8554f29. Review fixes require fresh validation; these results do not prove concurrent lifecycle behavior. UI remains owned by FE.
+
+Existing-meeting writes check Mentor ownership/current scope before revision and cancelled-state errors. Authorized stale writes return409; unauthorized Mentor writes return403. Basic request parsing/validation can still return400 before service authorization. Mentor SQL list visibility uses the same active Intern user/role, enrollment/program and current assignment conditions as detail reads; concurrent changes can still shorten pages.
 
 Task 35.2 must add transactional outbox/versioned delivery snapshots before sending mail: CREATE/CHANGE/CANCEL/reminder events, recipients including removed participants, retry schedule/claim locking and dedup by meeting/revision/event/recipient. Never perform SMTP while holding the scheduling transaction. Existing EmailService.sendEmail is reusable; no external messages sent in Task 35.1. Email exactly-once delivery must not be promised when SMTP acknowledgment is uncertain.
 

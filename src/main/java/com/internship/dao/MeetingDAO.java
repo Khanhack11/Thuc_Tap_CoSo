@@ -25,9 +25,13 @@ public class MeetingDAO {
                 AND NOT EXISTS (SELECT 1 FROM meeting_participants mp
                 WHERE mp.meeting_id=m.meeting_id AND NOT EXISTS (
                     SELECT 1 FROM program_enrollments e
+                    JOIN intern_profiles ip ON ip.profile_id=e.intern_profile_id
+                    JOIN users iu ON iu.user_id=ip.user_id
+                    JOIN roles ir ON ir.role_id=iu.role_id
                     JOIN mentor_assignments ma ON ma.enrollment_id=e.enrollment_id AND ma.ended_at IS NULL
                     JOIN mentors mentor ON mentor.mentor_id=ma.mentor_id
                     WHERE e.enrollment_id=mp.enrollment_id AND e.status='ACTIVE'
+                    AND e.program_id=m.program_id AND iu.status='ACTIVE' AND ir.role_name='INTERN'
                     AND mentor.status='ACTIVE' AND mentor.user_id=?))
                 """;
             default -> throw new SecurityException("Invalid role");
