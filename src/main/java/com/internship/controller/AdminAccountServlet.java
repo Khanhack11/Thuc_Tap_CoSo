@@ -5,6 +5,7 @@ import com.internship.dao.UserDAO;
 import com.internship.model.Role;
 import com.internship.model.User;
 import com.internship.service.UserService;
+import com.internship.service.AuditLogService;
 import com.internship.service.email.EmailException;
 import com.internship.service.email.SmtpEmailService;
 import com.internship.util.CsrfToken;
@@ -47,6 +48,17 @@ public class AdminAccountServlet extends HttpServlet {
     private static final String ROUTE = "/admin/accounts";
     private static final String VIEW = "/WEB-INF/views/admin/accounts.jsp";
 
+    private final AuditLogService auditLog;
+
+    public AdminAccountServlet() {
+        this(null, new AuditLogService());
+    }
+
+    public AdminAccountServlet(UserService userService, AuditLogService auditLog) {
+        this.userService = userService;
+        this.auditLog = java.util.Objects.requireNonNull(auditLog);
+    }
+
     private UserDAO userDAO;
     private RoleDAO roleDAO;
     private UserService userService;
@@ -56,6 +68,8 @@ public class AdminAccountServlet extends HttpServlet {
 
         userDAO = new UserDAO();
         roleDAO = new RoleDAO();
+
+        if (userService != null) return;
 
         try {
             userService = new UserService(
@@ -155,6 +169,10 @@ public class AdminAccountServlet extends HttpServlet {
         try {
             UserService.CreateUserResult result =
                     userService.createUser(username, email, fullName, role);
+
+            User actor = (User) session.getAttribute("currentUser");
+            auditLog.recordBestEffort(actor.getUserId(), "ACCOUNT_CREATE", "USER",
+                    result.user().getUserId(), "SUCCESS");
 
             session.setAttribute(
                     "successMessage",
@@ -267,3 +285,4 @@ public class AdminAccountServlet extends HttpServlet {
         }
     }
 }
+

@@ -5,6 +5,14 @@
     TÊN CÁC FIELD KHÔNG ĐƯỢC ĐỔI - InternProfileServlet của BE2 đang đọc đúng:
         profileId, fullName, dob, gender, phone, email, university, major, gpa, skills
     Giá trị gender giữ nguyên 'Nam' / 'Nữ' / 'Khác' như bản BE2 đang lưu.
+
+    MỌI giá trị lấy từ profile PHẢI bọc <c:out>. Đây là dữ liệu người dùng
+    nhập ở trang này rồi render lại chính trang này, nên không escape là
+    stored XSS. QA-11 (06/10/2026) đã tái hiện: skills chứa
+    "</textarea><b id=...>" thì thẻ <b> thoát khỏi textarea và thành phần tử
+    HTML thật. Chú ý 2 ngữ cảnh khác nhau:
+        - trong attribute: value="<c:out value="${profile.x}"/>"
+        - trong textarea : ><c:out value="${profile.x}"/></textarea>
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -23,7 +31,7 @@
     <input type="hidden" name="csrfToken" value="${csrfToken}" />
         <div class="card-body">
 
-            <input type="hidden" name="profileId" value="${profile.profileId}">
+            <input type="hidden" name="profileId" value="<c:out value="${profile.profileId}"/>">
 
             <div class="mb-3">
                 <label class="form-label" for="fullName">Họ và tên <span class="req">*</span></label>

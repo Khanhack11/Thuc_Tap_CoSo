@@ -1,6 +1,7 @@
 package com.internship.controller.auth;
 
 import java.io.IOException;
+import com.internship.service.AuditLogService;
 
 import com.internship.model.User;
 import com.internship.service.AuthService;
@@ -14,6 +15,8 @@ import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/auth/login")
 public class LoginServlet extends HttpServlet {
+
+    private final AuditLogService auditLog = new AuditLogService();
 
     private AuthService authService;
 
@@ -69,6 +72,7 @@ public class LoginServlet extends HttpServlet {
                     );
 
             if (user == null) {
+                auditLog.recordBestEffort(null, "LOGIN", "USER", null, "FAILURE");
 
                 request.setAttribute(
                         "error",
@@ -86,6 +90,8 @@ public class LoginServlet extends HttpServlet {
 
                 return;
             }
+
+            auditLog.recordBestEffort(user.getUserId(), "LOGIN", "USER", user.getUserId(), "SUCCESS");
 
             HttpSession oldSession =
                     request.getSession(false);

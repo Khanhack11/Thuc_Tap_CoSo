@@ -1,7 +1,9 @@
 <%@ page contentType="text/html; charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <c:set var="pageTitle" value="Đơn ứng tuyển của tôi" />
-<c:set var="activePage" value="documents" />
+<%-- activePage rieng, KHONG dung 'documents': gia tri do thuoc muc
+     "CV và đơn ứng tuyển" -> /intern/profile#documents trong sidebar. --%>
+<c:set var="activePage" value="intern-applications" />
 
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 

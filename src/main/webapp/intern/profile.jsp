@@ -12,7 +12,11 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 
 <c:set var="pageTitle" value="Hồ sơ cá nhân" />
-<c:set var="activePage" value="profile" />
+<%-- Trang nay phuc vu 2 muc menu: "Hồ sơ cá nhân" (/intern/profile) va
+     "Tài liệu của tôi" (/intern/profile?view=documents#documents).
+     Trinh duyet KHONG gui phan #documents len server, nen neu chi dua vao
+     fragment thi server khong the biet dang o muc nao - phai dung query param. --%>
+<c:set var="activePage" value="${param.view eq 'documents' ? 'documents' : 'profile'}" />
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <div class="page-head">
