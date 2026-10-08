@@ -51,5 +51,7 @@ JDBC test chỉ chấp nhận URL cố định jdbc:mysql://127.0.0.1:13318/be1_
 ## Bằng chứng trong môi trường review
 - Java21 compile: PASS.
 -42 test unit/service/servlet/transaction hooks: PASS,0 skipped/failed.
--12 JDBC tests đã viết và compile, chưa chạy thành công: MySQL server không mở được UNIX socket trong môi trường review,9 ca ở lần chạy đầu lỗi kết nối; sau đó bổ sung3 ca, chưa tuyên bố pass. Script container tạm dành cho WSL để xác minh.
+- WSL/MySQL8.0.46 tại commit6a7bc69:54 tests,53 pass,1 fail,0 errors/skipped. Ca twoWorkersCannotClaimSameEventConcurrently thất bại ở assertion yêu cầu đúng một claim thành công trong một lần poll. Log cũ chưa phân biệt hai claim rỗng với hai claim thành công.
+- Test concurrency được sửa để cấm hai claim thành công, kiểm tra claim được sau khi hai transaction đóng nếu cả hai trả về rỗng, attempts=1, đúng một IN_FLIGHT, không claim lại lease đang hoạt động và ack đúng token chỉ một lần. SKIP LOCKED có thể trả về rỗng khi có contention; một poll không bảo đảm tiến triển. Chưa xác nhận nguyên nhân của lần fail cũ; cần chạy lại script trên WSL trước khi coi JDBC là PASS.
+- Java21 compile test mới và42 test không cần DB: PASS. Không chạy được MySQL tại môi trường review do giới hạn socket.
 - Không gửi email, không đổi DB local của người dùng, không merge. Full Maven/Tomcat cho35.2 chưa có bằng chứng.

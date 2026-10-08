@@ -128,7 +128,20 @@ class MeetingNotificationJdbcTest {
             var a=pool.submit(()->{gate.await();return worker((x,y,z)->{},NOW,5).claim();});
             var b=pool.submit(()->{gate.await();return worker((x,y,z)->{},NOW,5).claim();});gate.countDown();
             var first=a.get(10,java.util.concurrent.TimeUnit.SECONDS);var second=b.get(10,java.util.concurrent.TimeUnit.SECONDS);
-            assertTrue((first==null)!=(second==null));
+            // SKIP LOCKED can return no row while the other transaction holds
+            // cleanup/join locks. A single poll is not an eventual-progress guarantee.
+            assertFalse(first!=null && second!=null,
+                "Only one event is due; two successful claims are forbidden: first="+first+", second="+second);
+            var owner=worker((x,y,z)->{},NOW,5);
+            var claimed=first!=null?first:second;
+            if(claimed==null)claimed=owner.claim(); // Both concurrent transactions have now closed.
+            assertNotNull(claimed,"The due event must be claimable after contention ends");
+            assertEquals(1,claimed.attempt(),"Contention must not consume delivery attempts");
+            assertEquals(1,count("SELECT COUNT(*) FROM meeting_notification_outbox WHERE state='IN_FLIGHT' AND attempts=1"));
+            assertNull(owner.claim(),"An active lease must exclude another claim");
+            assertTrue(owner.finish(claimed,true,null,false),"The winning token must acknowledge its event");
+            assertFalse(owner.finish(claimed,true,null,false),"Acknowledgment must be single-use");
+            assertEquals(1,count("SELECT COUNT(*) FROM meeting_notification_outbox WHERE state='SENT'"));
         }finally{pool.shutdownNow();}
     }
     @Test void legacyMeetingCapturesRecipientsBeforeReplacement()throws Exception {
