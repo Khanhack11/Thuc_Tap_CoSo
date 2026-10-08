@@ -1,20 +1,31 @@
 package com.internship.service;
 
 import com.internship.dao.MeetingDAO;
+import com.internship.dao.MeetingNotificationDAO;
+import com.internship.service.meeting.*;
 import com.internship.model.Meeting;
 import com.internship.util.DBConnection;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
 
-/** BE1 scheduling source. SMTP/notification side effects are intentionally outside Task 35.1. */
+/** BE1 scheduling source. Optional outbox hooks use this transaction; SMTP never runs here. */
 public class MeetingService {
     @FunctionalInterface public interface ConnectionFactory { Connection open() throws SQLException; }
     private final ConnectionFactory connections;
     private final MeetingDAO dao;
     private final Clock clock;
-    public MeetingService() { this(DBConnection::getConnection, new MeetingDAO(), Clock.systemUTC()); }
+    private final MeetingNotifications notifications;
+    public MeetingService() { this(DBConnection::getConnection, new MeetingDAO(), Clock.systemUTC(), configuredNotifications()); }
+    private static MeetingNotifications configuredNotifications() {
+        var settings=MeetingNotificationSettings.system();
+        return settings.enqueue()?new MeetingNotificationDAO(Clock.systemUTC(),settings.reminderMinutes()):MeetingNotifications.disabled();
+    }
     public MeetingService(ConnectionFactory connections, MeetingDAO dao, Clock clock) {
+        this(connections,dao,clock,MeetingNotifications.disabled());
+    }
+    public MeetingService(ConnectionFactory connections,MeetingDAO dao,Clock clock,MeetingNotifications notifications) {
+        this.notifications=Objects.requireNonNull(notifications);
         this.connections = Objects.requireNonNull(connections);
         this.dao = Objects.requireNonNull(dao); this.clock = Objects.requireNonNull(clock);
     }
@@ -69,7 +80,9 @@ public class MeetingService {
         return transaction(c -> {
             String role = writer(c, actor);
             validateParticipants(c, actor, role, q.programId(), q.enrollmentIds());
-            return dao.create(c, actor, q);
+            long id=dao.create(c, actor, q);
+            notifications.record(c,null,Map.of(),dao.lockMeeting(c,id));
+            return id;
         });
     }
 
@@ -84,7 +97,10 @@ public class MeetingService {
             if (old.programId() != q.programId()) throw new IllegalArgumentException("Program cannot change");
             future(q);
             validateParticipants(c, actor, role, q.programId(), q.enrollmentIds());
-            dao.update(c, meetingId, q); return null;
+            Map<Long,String> previous=notifications.beforeChange(c,old);
+            dao.update(c, meetingId, q);
+            notifications.record(c,old,previous,dao.lockMeeting(c,meetingId));
+            return null;
         });
     }
 
@@ -95,7 +111,11 @@ public class MeetingService {
             Meeting old = existing(c, meetingId);
             authorizeExisting(c, actor, role, old);
             checkRevision(old, expectedRevision);
-            if ("SCHEDULED".equals(old.status())) dao.cancel(c, meetingId);
+            if ("SCHEDULED".equals(old.status())) {
+                Map<Long,String> previous=notifications.beforeChange(c,old);
+                dao.cancel(c, meetingId);
+                notifications.record(c,old,previous,dao.lockMeeting(c,meetingId));
+            }
             return null;
         });
     }
@@ -149,3 +169,4 @@ public class MeetingService {
         }
     }
 }
+
