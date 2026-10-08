@@ -97,8 +97,8 @@
         row.appendChild(value);
         body.appendChild(row);
     }
-    function date(value) { return value ? String(value).slice(0, 10) : '—'; }
-    function moment(value) { return value ? String(value).replace('T', ' ').slice(0, 16) : '—'; }
+    function date(value) { return value ? new Date(value).toLocaleDateString('vi-VN') : '—'; }
+    function moment(value) { return value ? new Date(value).toLocaleString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
     function status(value) {
         return ({ ACTIVE: 'Đang tham gia', COMPLETED: 'Hoàn thành', CANCELLED: 'Đã hủy',
             TODO: 'Chưa bắt đầu', IN_PROGRESS: 'Đang thực hiện', DONE: 'Hoàn thành',

@@ -15,6 +15,7 @@
                 <div class="card-body">
                     <!-- Form gửi dữ liệu phân công lên API của BE3 -->
                     <form action="${pageContext.request.contextPath}/hr/mentor-assignment/save" method="POST">
+    <input type="hidden" name="csrfToken" value="${csrfToken}" />
                         
                         <div class="mb-3">
                             <label class="form-label fw-bold">Thực Tập Sinh (Đợt Thực Tập) <span class="text-danger">*</span></label>

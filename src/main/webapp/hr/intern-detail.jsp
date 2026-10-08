@@ -45,7 +45,8 @@
 
                     <!-- Nút chuyển trạng thái hồ sơ (BE2 Logic) -->
                     <div class="border-top pt-3">
-                        <form action="${pageContext.request.contextPath}/intern/profile" method="post">
+                        <form action="${pageContext.request.contextPath}/hr/intern-detail" method="post">
+    <input type="hidden" name="csrfToken" value="${csrfToken}" />
                             <input type="hidden" name="action" value="update_status">
                             <input type="hidden" name="profileId" value="${profile.profileId}">
                             <input type="hidden" name="status" value="${profile.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}">
@@ -177,6 +178,7 @@
                                                         <c:when test="${doc.status == 'PENDING'}">
                                                             <!-- Form Duyệt tài liệu -->
                                                             <form action="${pageContext.request.contextPath}/document/review" method="POST" style="display: inline-block; margin-bottom: 0;">
+    <input type="hidden" name="csrfToken" value="${csrfToken}" />
                                                                 <input type="hidden" name="documentId" value="${doc.documentId}">
                                                                 <input type="hidden" name="action" value="approve">
                                                                 <button type="submit" class="btn btn-sm btn-success shadow-sm me-1" title="Duyệt">
@@ -186,11 +188,15 @@
 
                                                             <!-- Form Từ chối tài liệu -->
                                                             <form action="${pageContext.request.contextPath}/document/review" method="POST" style="display: inline-block; margin-bottom: 0;">
+    <input type="hidden" name="csrfToken" value="${csrfToken}" />
                                                                 <input type="hidden" name="documentId" value="${doc.documentId}">
                                                                 <input type="hidden" name="action" value="reject">
-                                                                <button type="submit" class="btn btn-sm btn-danger shadow-sm" title="Từ chối">
-                                                                    <i class="fas fa-times me-1"></i>Từ chối
-                                                                </button>
+                                                                <div class="input-group input-group-sm">
+                                                                    <input type="text" class="form-control" name="rejectReason" placeholder="Lý do từ chối..." required>
+                                                                    <button type="submit" class="btn btn-danger shadow-sm" title="Từ chối">
+                                                                        <i class="fas fa-times me-1"></i>Từ chối
+                                                                    </button>
+                                                                </div>
                                                             </form>
                                                         </c:when>
                                                         <c:otherwise>
@@ -219,13 +225,10 @@
                         <div class="tab-pane fade" id="contract" role="tabpanel" aria-labelledby="contract-tab">
                             <h6 class="mb-3 text-secondary"><i class="fas fa-cloud-upload-alt me-1"></i>Đính kèm hợp đồng thực tập</h6>
                             <form action="${pageContext.request.contextPath}/contract/upload" method="POST" enctype="multipart/form-data">
-                                <input type="hidden" name="profileId" value="${profile.profileId}">
+    <input type="hidden" name="csrfToken" value="${csrfToken}" />
+                                <input type="hidden" name="applicationId" value="${profile.profileId}">
                                 <div class="row g-3">
-                                    <div class="col-md-5">
-                                        <label class="form-label fw-semibold">Ngày ký <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control" name="signDate" required>
-                                    </div>
-                                    <div class="col-md-7">
+                                    <div class="col-md-12">
                                         <label class="form-label fw-semibold">File hợp đồng đính kèm <span class="text-danger">*</span></label>
                                         <input type="file" class="form-control" name="contractFile" accept=".pdf,.doc,.docx" required>
                                         <div class="form-text">Định dạng hỗ trợ: PDF, DOC, DOCX. Tối đa 5MB.</div>
@@ -250,6 +253,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <form action="${pageContext.request.contextPath}/hr/intern-detail" method="POST">
+    <input type="hidden" name="csrfToken" value="${csrfToken}" />
                 <div class="modal-header bg-light">
                     <h5 class="modal-title fw-bold" id="editProfileModalLabel">
                         <i class="fas fa-user-edit me-2 text-primary"></i>Cập nhật thông tin Thực tập sinh
@@ -260,6 +264,7 @@
                     <!-- RÀNG BUỘC BẢO MẬT: CHỈ CÓ profileId LÀ TRƯỜNG ẨN DUY NHẤT -->
                     <!-- TUYỆT ĐỐI KHÔNG chứa thông tin về Role, UserID, hay Application Status -->
                     <input type="hidden" name="profileId" value="${profile.profileId}">
+                    <input type="hidden" name="action" value="hr_edit">
                     
                     <div class="row g-3">
                         <!-- Nhóm thông tin cá nhân -->
@@ -269,20 +274,23 @@
                         
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="fullName" value="${profile.fullName}" required>
+                            <input type="text" class="form-control" name="fullName" value="<c:out value="${profile.fullName}" />" required>
                         </div>
                         
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Ngày sinh</label>
-                            <input type="date" class="form-control" name="dob" value="${profile.dob}">
+                            <input type="date" class="form-control" name="dob" value="<c:out value="${profile.dob}" />">
                         </div>
                         
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
-                            <input type="tel" class="form-control" name="phone" value="${profile.phone}" required>
+                            <input type="tel" class="form-control" name="phone" value="<c:out value="${profile.phone}" />" required>
                         </div>
                         
-                        <!-- Lưu ý: Email, Giới tính, Status không thuộc whitelist nên KHÔNG hiển thị và KHÔNG ẩn -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" name="email" value="<c:out value="${profile.email}" />" required>
+                        </div>
 
                         <!-- Nhóm học vấn -->
                         <div class="col-12 mt-4">
@@ -291,22 +299,22 @@
                         
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Trường Đại học/Cao đẳng</label>
-                            <input type="text" class="form-control" name="university" value="${profile.university}">
+                            <input type="text" class="form-control" name="university" value="<c:out value="${profile.university}" />">
                         </div>
                         
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Chuyên ngành</label>
-                            <input type="text" class="form-control" name="major" value="${profile.major}">
+                            <input type="text" class="form-control" name="major" value="<c:out value="${profile.major}" />">
                         </div>
                         
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Điểm GPA</label>
-                            <input type="number" step="0.01" min="0" max="4" class="form-control" name="gpa" value="${profile.gpa}">
+                            <input type="number" step="0.01" min="0" max="4" class="form-control" name="gpa" value="<c:out value="${profile.gpa}" />">
                         </div>
                         
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Kỹ năng chuyên môn</label>
-                            <textarea class="form-control" name="skills" rows="3" placeholder="Ví dụ: Java, Spring Boot, MySQL...">${profile.skills}</textarea>
+                            <textarea class="form-control" name="skills" rows="3" placeholder="Ví dụ: Java, Spring Boot, MySQL..."><c:out value="${profile.skills}" /></textarea>
                         </div>
                     </div>
                 </div>
