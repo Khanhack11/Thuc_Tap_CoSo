@@ -48,7 +48,7 @@ class RegisterServletTest {
     void doPostWithValidationErrorSetsErrorMessageAndForwardsToRegisterJsp() throws Exception {
         UserService userService = new UserService(new UserDAO(), new RoleDAO()) {
             @Override
-            public User registerIntern(String username, String email, String fullName, String password, String confirmPassword) {
+            public User registerIntern(String username, String email, String fullName, String password, String confirmPassword, String phone, String university, String major, String gpa) {
                 throw new IllegalArgumentException("Mật khẩu xác nhận không khớp.");
             }
         };
@@ -74,7 +74,9 @@ class RegisterServletTest {
         AtomicBoolean registered = new AtomicBoolean(false);
         UserService userService = new UserService(new UserDAO(), new RoleDAO()) {
             @Override
-            public User registerIntern(String username, String email, String fullName, String password, String confirmPassword) {
+            public User registerIntern(String username, String email, String fullName, String password, String confirmPassword, String phone, String university, String major, String gpa) {
+                assertEquals("0912345678",phone);assertEquals("ICTU",university);
+                assertEquals("ATTT",major);assertEquals("3.75",gpa);
                 registered.set(true);
                 User user = new User();
                 user.setUserId(1L);
@@ -84,6 +86,8 @@ class RegisterServletTest {
 
         RegisterServlet servlet = new RegisterServlet(userService);
         FakeHttp http = new FakeHttp();
+        http.params.put("phone", "0912345678");http.params.put("university", "ICTU");
+        http.params.put("major", "ATTT");http.params.put("gpa", "3.75");
         http.params.put("username", "intern_john");
         http.params.put("email", "john@example.com");
         http.params.put("fullName", "John Intern");

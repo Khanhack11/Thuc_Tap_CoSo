@@ -64,7 +64,11 @@ public class RegisterServlet extends HttpServlet {
                 email,
                 fullName,
                 password,
-                confirmPassword
+                confirmPassword,
+                request.getParameter("phone"),
+                request.getParameter("university"),
+                request.getParameter("major"),
+                request.getParameter("gpa")
         );
 
         request.getSession(true).setAttribute(

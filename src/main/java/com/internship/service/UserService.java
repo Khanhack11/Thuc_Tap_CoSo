@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 import com.internship.dao.RoleDAO;
 import com.internship.dao.UserDAO;
 import com.internship.model.Role;
+import com.internship.model.RegistrationProfile;
 import com.internship.model.User;
 import com.internship.model.UserStatus;
 import com.internship.service.email.EmailException;
@@ -165,6 +166,22 @@ public class UserService {
             String password,
             String confirmPassword
     ) {
+        return registerInternInternal(username, email, fullName, password, confirmPassword, null);
+    }
+
+    public User registerIntern(String username, String email, String fullName,
+            String password, String confirmPassword, String phone, String university,
+            String major, String gpa) {
+        RegistrationProfile profile = RegistrationProfile.parse(phone, university, major, gpa);
+        if (fullName != null && fullName.trim().length() > 100
+                || email != null && email.trim().length() > 100) {
+            throw new IllegalArgumentException("Họ tên và email tối đa 100 ký tự cho hồ sơ thực tập.");
+        }
+        return registerInternInternal(username, email, fullName, password, confirmPassword, profile);
+    }
+
+    private User registerInternInternal(String username, String email, String fullName,
+            String password, String confirmPassword, RegistrationProfile profile) {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException(
                     "Tên đăng nhập không được để trống."
@@ -239,7 +256,7 @@ public class UserService {
             user.setRole(internRole);
             user.setStatus(UserStatus.ACTIVE);
 
-            long userId = userDAO.create(user);
+            long userId = profile == null ? userDAO.create(user) : userDAO.createWithProfile(user, profile);
             user.setUserId(userId);
 
             return user;
