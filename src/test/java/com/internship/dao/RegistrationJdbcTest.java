@@ -25,13 +25,15 @@ class RegistrationJdbcTest {
         assertEquals(URL,System.getProperty("be1.registration.jdbc.url",URL));
         try(var c=open();var s=c.createStatement()) {
             try(var rs=s.executeQuery("SELECT DATABASE()")) { assertTrue(rs.next());assertEquals("be1_registration_test",rs.getString(1)); }
-            s.execute("DROP TABLE IF EXISTS intern_profiles");s.execute("DROP TABLE IF EXISTS users");s.execute("DROP TABLE IF EXISTS roles");
+            s.execute("DROP TABLE IF EXISTS audit_logs");s.execute("DROP TABLE IF EXISTS intern_profiles");s.execute("DROP TABLE IF EXISTS users");s.execute("DROP TABLE IF EXISTS roles");
             String core=Files.readString(Path.of("database/schema.sql"));
             for(String command:core.replaceAll("(?m)^--.*$","").split(";"))
                 if(!command.isBlank() && !command.strip().toUpperCase().startsWith("CREATE DATABASE") && !command.strip().toUpperCase().startsWith("USE ")) s.execute(command);
             String schema=Files.readString(Path.of("sql/schema_be2.sql"));
             String profile=schema.substring(schema.indexOf("CREATE TABLE IF NOT EXISTS intern_profiles"),schema.indexOf("-- 4."));
             s.execute(profile.substring(0,profile.lastIndexOf(';')));
+            String audit=Files.readString(Path.of("sql/schema_be1_audit.sql")).replaceAll("(?m)^--.*$","");
+            for(String command:audit.split(";"))if(!command.isBlank())s.execute(command);
         }
     }
     private int count(String table) throws Exception {
@@ -47,6 +49,19 @@ class RegistrationJdbcTest {
         assertEquals(1,count("users"));assertEquals(1,count("intern_profiles"));
         assertTrue(com.internship.util.PasswordUtil.verifyPassword("Pass12345",u.getPasswordHash()));
     }
+    @Test void registrationAuditIsAnonymousAndContainsOnlyObjectMetadata() throws Exception {
+        User user=service().registerIntern("hue","hue@example.com","Minh Huệ","Pass12345","Pass12345",null,null,null,null);
+        try(var c=open();var st=c.createStatement();var r=st.executeQuery("SELECT * FROM audit_logs")) {
+            assertTrue(r.next());assertNull(r.getObject("actor_user_id"));assertEquals("REGISTER",r.getString("action"));
+            assertEquals("USER",r.getString("object_type"));assertEquals(user.getUserId(),r.getLong("object_id"));
+            assertEquals("SUCCESS",r.getString("result"));assertFalse(r.next());
+        }
+    }
+    @Test void auditFailureRollsBackRegistrationAndProfile() throws Exception {
+        try(var c=open();var st=c.createStatement()){st.execute("CREATE TRIGGER fail_audit BEFORE INSERT ON audit_logs FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture audit failure'");}
+        assertThrows(IllegalStateException.class,()->service().registerIntern("hue","hue@example.com","Minh Huệ","Pass12345","Pass12345",null,null,null,null));
+        assertEquals(0,count("users"));assertEquals(0,count("intern_profiles"));assertEquals(0,count("audit_logs"));
+    }
     @Test void optionalProfileFieldsAreSavedAsEmptyAndGpaNull() throws Exception {
         service().registerIntern("hue","hue@example.com","Minh Huệ","Pass12345","Pass12345",null,null,null,null);
         try(var c=open();var s=c.createStatement();var rs=s.executeQuery("SELECT phone,university,major,gpa FROM intern_profiles")) {
@@ -56,7 +71,7 @@ class RegistrationJdbcTest {
     @Test void profileFailureRollsBackAccount() throws Exception {
         try(var c=open();var s=c.createStatement()) {s.execute("CREATE TRIGGER fail_profile BEFORE INSERT ON intern_profiles FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture failure'");}
         assertThrows(IllegalStateException.class,()->service().registerIntern("hue","hue@example.com","Minh Huệ","Pass12345","Pass12345",null,null,null,null));
-        assertEquals(0,count("users"));assertEquals(0,count("intern_profiles"));
+        assertEquals(0,count("users"));assertEquals(0,count("intern_profiles"));assertEquals(0,count("audit_logs"));
     }
     @Test void duplicateAccountDoesNotCreateAnotherProfile() throws Exception {
         service().registerIntern("hue","hue@example.com","Minh Huệ","Pass12345","Pass12345",null,null,null,null);
@@ -66,6 +81,6 @@ class RegistrationJdbcTest {
     @Test void invalidGpaAndProfileLengthsCreateNoAccount() throws Exception {
         assertThrows(IllegalArgumentException.class,()->service().registerIntern("hue","hue@example.com","Minh Huệ","Pass12345","Pass12345",null,null,null,"4.01"));
         assertThrows(IllegalArgumentException.class,()->service().registerIntern("hue","hue@example.com","x".repeat(101),"Pass12345","Pass12345",null,null,null,null));
-        assertEquals(0,count("users"));assertEquals(0,count("intern_profiles"));
+        assertEquals(0,count("users"));assertEquals(0,count("intern_profiles"));assertEquals(0,count("audit_logs"));
     }
 }

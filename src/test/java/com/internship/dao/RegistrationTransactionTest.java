@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RegistrationTransactionTest {
     private static class Fixture {
         List<String> events=new ArrayList<>();Map<Integer,Object> profileBindings=new HashMap<>();
-        boolean profileFailure,missingKey,rollbackFailure;int accountRows=1;
+        boolean auditFailure,profileFailure,missingKey,rollbackFailure;int accountRows=1;
         Connection connection=proxy(Connection.class,(name,args)->switch(name) {
             case "setAutoCommit" -> {assertEquals(false,args[0]);events.add("begin");yield null;}
             case "prepareStatement" -> statement(((String)args[0]).contains("intern_profiles"));
@@ -39,6 +39,10 @@ class RegistrationTransactionTest {
         }
         UserDAO dao() {return new UserDAO() {
             @Override protected Connection openRegistrationConnection() {return connection;}
+            @Override protected void recordRegistrationAudit(Connection c,long id) throws SQLException {
+                assertSame(connection,c);assertEquals(77,id);events.add("audit");
+                if(auditFailure)throw new SQLException("audit");
+            }
         };}
         long create() throws SQLException {
             User u=new User();u.setUsername("hue");u.setEmail("hue@example.com");u.setFullName("Minh Huệ");
@@ -48,10 +52,14 @@ class RegistrationTransactionTest {
     }
     @Test void bothInsertsPrecedeSingleCommitAndShareGeneratedUserId() throws Exception {
         Fixture f=new Fixture();assertEquals(77,f.create());
-        assertEquals(List.of("begin","account","profile","commit","close"),f.events);
+        assertEquals(List.of("begin","account","profile","audit","commit","close"),f.events);
         assertEquals(77L,f.profileBindings.get(1));assertEquals("Minh Huệ",f.profileBindings.get(2));
         assertEquals("0912345678",f.profileBindings.get(4));assertEquals("ICTU",f.profileBindings.get(5));
         assertEquals("ATTT",f.profileBindings.get(6));assertEquals("3.75",f.profileBindings.get(7).toString());
+    }
+    @Test void auditFailureRollsBackAccountAndProfile() {
+        Fixture f=new Fixture();f.auditFailure=true;assertThrows(SQLException.class,f::create);
+        assertEquals(List.of("begin","account","profile","audit","rollback","close"),f.events);
     }
     @Test void failedProfileRollsBackAndNeverCommits() {
         Fixture f=new Fixture();f.profileFailure=true;

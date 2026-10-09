@@ -35,6 +35,19 @@ public class AuditLogDAO {
             s.setObject(4, object, Types.BIGINT); s.setString(5, result); s.executeUpdate();
         }
     }
+    /** Shares the caller's transaction; never opens, commits, or closes its connection. */
+    public void insertInTransaction(Connection c, Long actor, String action, String type, Long object) throws SQLException {
+        if (c.getAutoCommit()) throw new IllegalArgumentException("Caller transaction required");
+        if (action == null || object == null || object <= 0 || actor != null && actor <= 0
+                || !Set.of("REGISTER", "MEETING_CREATE", "MEETING_UPDATE", "MEETING_CANCEL").contains(action)
+                || !("REGISTER".equals(action) ? "USER" : "MEETING").equals(type))
+            throw new IllegalArgumentException("Invalid business audit event");
+        try (PreparedStatement s=c.prepareStatement(
+                "INSERT INTO audit_logs(actor_user_id,action,object_type,object_id,result) VALUES(?,?,?,?,'SUCCESS')")) {
+            s.setObject(1,actor,Types.BIGINT);s.setString(2,action);s.setString(3,type);s.setLong(4,object);
+            if (s.executeUpdate()!=1) throw new SQLException("Audit insert failed");
+        }
+    }
     public Page search(Query q) throws SQLException {
         List<Object> args = new ArrayList<>();
         StringBuilder where = new StringBuilder(" WHERE 1=1");

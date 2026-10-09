@@ -26,7 +26,7 @@ class InAppNotificationJdbcTest {
         assertEquals("jdbc:mysql://127.0.0.1:13319/be1_inapp_test?connectionTimeZone=UTC",url,"Only the disposable fixture DB is accepted");
         try(var c=open();var s=c.createStatement()) {
             s.execute("SET FOREIGN_KEY_CHECKS=0");
-            for(String t:List.of("inapp_notifications","meeting_participants","meetings","mentor_assignments","mentors","program_enrollments","intern_profiles","users","roles","internship_programs"))s.execute("DROP TABLE IF EXISTS "+t);
+            for(String t:List.of("audit_logs","inapp_notifications","meeting_participants","meetings","mentor_assignments","mentors","program_enrollments","intern_profiles","users","roles","internship_programs"))s.execute("DROP TABLE IF EXISTS "+t);
             s.execute("SET FOREIGN_KEY_CHECKS=1");
             s.execute("CREATE TABLE roles(role_id BIGINT PRIMARY KEY,role_name VARCHAR(20)) ENGINE=InnoDB");
             s.execute("CREATE TABLE users(user_id BIGINT PRIMARY KEY,email VARCHAR(255),role_id BIGINT,status VARCHAR(20)) ENGINE=InnoDB");
@@ -35,7 +35,7 @@ class InAppNotificationJdbcTest {
             s.execute("CREATE TABLE program_enrollments(enrollment_id INT PRIMARY KEY,program_id INT,intern_profile_id INT,status VARCHAR(20)) ENGINE=InnoDB");
             s.execute("CREATE TABLE mentors(mentor_id INT PRIMARY KEY,user_id BIGINT,status VARCHAR(20)) ENGINE=InnoDB");
             s.execute("CREATE TABLE mentor_assignments(assignment_id INT PRIMARY KEY,enrollment_id INT,mentor_id INT,ended_at DATETIME) ENGINE=InnoDB");
-            for(String file:List.of("sql/schema_be1_meetings.sql","sql/schema_be1_inapp_notifications.sql")) {
+            for(String file:List.of("sql/schema_be1_audit.sql","sql/schema_be1_meetings.sql","sql/schema_be1_inapp_notifications.sql")) {
                 String raw=Files.readString(Path.of(file)).replaceAll("(?m)^--.*$","");
                 for(String command:raw.split(";"))if(!command.isBlank())s.execute(command);
             }
@@ -56,6 +56,32 @@ class InAppNotificationJdbcTest {
         assertEquals(2,count("SELECT COUNT(*) FROM inapp_notifications"));
         assertEquals(1,inbox().list(5,false,1,20).items().size());assertEquals(1,inbox().list(5,false,1,20).unreadCount());
         assertEquals(0,inbox().list(6,false,1,20).items().size());
+    }
+    @Test void meetingAuditMatchesCommittedWritesAndRepeatCancelDoesNotDuplicate() throws Exception {
+        long id=meetings().create(3,request(List.of(1)));
+        meetings().update(3,id,1,request(List.of(1)));meetings().cancel(3,id,2);meetings().cancel(3,id,3);
+        assertEquals(3,count("SELECT COUNT(*) FROM audit_logs WHERE actor_user_id=3 AND object_type='MEETING' AND object_id="+id+" AND result='SUCCESS'"));
+        for(String action:List.of("MEETING_CREATE","MEETING_UPDATE","MEETING_CANCEL"))
+            assertEquals(1,count("SELECT COUNT(*) FROM audit_logs WHERE action='"+action+"' AND object_id="+id));
+    }
+    @Test void auditFailureRollsBackMeetingParticipantsAndBothNotificationRows() throws Exception {
+        sql("CREATE TRIGGER fail_audit BEFORE INSERT ON audit_logs FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture audit failure'");
+        assertThrows(SQLException.class,()->meetings().create(3,request(List.of(1))));
+        for(String table:List.of("meetings","meeting_participants","inapp_notifications","audit_logs"))
+            assertEquals(0,count("SELECT COUNT(*) FROM "+table));
+    }
+    @Test void auditFailureRollsBackUpdateAndCancelWithInboxState() throws Exception {
+        long id=meetings().create(3,request(List.of(1)));
+        long rows=count("SELECT COUNT(*) FROM inapp_notifications");
+        sql("CREATE TRIGGER fail_audit BEFORE INSERT ON audit_logs FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture audit failure'");
+        assertThrows(SQLException.class,()->meetings().update(3,id,1,request(List.of(2))));
+        assertThrows(SQLException.class,()->meetings().cancel(3,id,1));
+        assertEquals(1,count("SELECT revision FROM meetings WHERE meeting_id="+id));
+        assertEquals(1,count("SELECT COUNT(*) FROM meetings WHERE meeting_id="+id+" AND status='SCHEDULED'"));
+        assertEquals(1,count("SELECT enrollment_id FROM meeting_participants WHERE meeting_id="+id));
+        assertEquals(rows,count("SELECT COUNT(*) FROM inapp_notifications"));
+        assertEquals(0,count("SELECT COUNT(*) FROM inapp_notifications WHERE superseded_at IS NOT NULL"));
+        assertEquals(1,count("SELECT COUNT(*) FROM audit_logs"));
     }
     @Test void localTimezoneConnectionStillStoresAndReadsUtc() throws Exception {
         TimeZone previous = TimeZone.getDefault();
@@ -92,7 +118,7 @@ class InAppNotificationJdbcTest {
     }
     @Test void inboxFailureRollsBackBusinessWrite()throws Exception {
         sql("DROP TABLE inapp_notifications");assertThrows(SQLException.class,()->meetings().create(3,request(List.of(1))));
-        assertEquals(0,count("SELECT COUNT(*) FROM meetings"));assertEquals(0,count("SELECT COUNT(*) FROM meeting_participants"));
+        assertEquals(0,count("SELECT COUNT(*) FROM meetings"));assertEquals(0,count("SELECT COUNT(*) FROM meeting_participants"));assertEquals(0,count("SELECT COUNT(*) FROM audit_logs"));
     }
     @Test void changeNotifiesRemovedAndAddedAndCancelIsIdempotent()throws Exception {
         var svc=meetings();long id=svc.create(3,request(List.of(1)));svc.update(3,id,1,request(List.of(2)));

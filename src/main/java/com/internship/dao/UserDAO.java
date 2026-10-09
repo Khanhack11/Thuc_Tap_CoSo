@@ -219,6 +219,7 @@ public class UserDAO {
                     ps.setString(8, "ACTIVE");
                     if (ps.executeUpdate() != 1) throw new SQLException("Profile insert failed.");
                 }
+                recordRegistrationAudit(connection,id);
                 connection.commit();
                 return id;
             } catch (SQLException | RuntimeException failure) {
@@ -226,6 +227,11 @@ public class UserDAO {
                 throw failure;
             }
         }
+    }
+
+    protected void recordRegistrationAudit(Connection connection,long userId) throws SQLException {
+        // Public registration has no authenticated actor. Record only the new object ID.
+        new AuditLogDAO().insertInTransaction(connection,null,"REGISTER","USER",userId);
     }
 
     protected Connection openRegistrationConnection() throws SQLException {

@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     INDEX idx_audit_time (occurred_at, audit_id),
     INDEX idx_audit_actor_time (actor_user_id, occurred_at),
     INDEX idx_audit_action_time (action, occurred_at)
-) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 -- No FK: history remains readable after actor/object deletion.
