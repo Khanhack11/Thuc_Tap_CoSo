@@ -27,5 +27,5 @@ if [ "$ready" != true ]; then
 fi
 docker exec "$container_id" mysql --protocol=TCP -h127.0.0.1 -uroot -e \
   'CREATE DATABASE be1_inapp_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
-mvn -Dbe1.inapp.jdbc=true \
+mvn -Duser.timezone=Asia/Ho_Chi_Minh -Dbe1.inapp.jdbc=true \
   -Dtest=InAppNotificationJdbcTest,InAppNotificationServiceTest,NotificationEventTest,NotificationServletTest,MeetingInboxTransactionTest,MeetingNotificationTransactionTest,MeetingServiceTest,MeetingServletTest,MeetingNotificationTest test

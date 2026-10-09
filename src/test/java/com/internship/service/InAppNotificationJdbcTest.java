@@ -57,6 +57,39 @@ class InAppNotificationJdbcTest {
         assertEquals(1,inbox().list(5,false,1,20).items().size());assertEquals(1,inbox().list(5,false,1,20).unreadCount());
         assertEquals(0,inbox().list(6,false,1,20).items().size());
     }
+    @Test void localTimezoneConnectionStillStoresAndReadsUtc() throws Exception {
+        TimeZone previous = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+            String localUrl = url.replace("connectionTimeZone=UTC", "connectionTimeZone=LOCAL");
+            var notifications = new InAppNotificationService(
+                () -> DriverManager.getConnection(localUrl,"root",""), new InAppNotificationDAO(), true);
+            Instant due = NOW.minusSeconds(10).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+            Instant expiry = NOW.plusSeconds(3600).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+            var dao = new InAppNotificationDAO();
+            try (var c = DriverManager.getConnection(localUrl,"root","")) {
+                c.setAutoCommit(false);
+                dao.publish(c,5,new NotificationEvent("meeting:77:1:REMINDER","REMINDER","MEETING",77,1,"Reminder","Body",due));
+                dao.expireReminders(c,77,1,expiry);
+                c.commit();
+            }
+            var n = notifications.list(5,false,1,20).items().getFirst();
+            assertEquals(due,n.availableAt());
+            assertEquals(1,notifications.list(5,false,1,20).unreadCount());
+            try (var c=open(); var s=c.createStatement(); var r=s.executeQuery("SELECT available_at,expires_at FROM inapp_notifications WHERE source_id=77")) {
+                assertTrue(r.next());
+                Calendar utc=Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                assertEquals(due,r.getTimestamp(1,utc).toInstant());
+                assertEquals(expiry,r.getTimestamp(2,utc).toInstant());
+            }
+            notifications.markRead(5,n.id());
+            Instant read = notifications.list(5,false,1,20).items().getFirst().readAt();
+            assertNotNull(read);
+            assertTrue(Duration.between(Instant.now(),read).abs().toSeconds()<30);
+            notifications.markRead(5,n.id());
+            assertEquals(read,notifications.list(5,false,1,20).items().getFirst().readAt());
+        } finally { TimeZone.setDefault(previous); }
+    }
     @Test void inboxFailureRollsBackBusinessWrite()throws Exception {
         sql("DROP TABLE inapp_notifications");assertThrows(SQLException.class,()->meetings().create(3,request(List.of(1))));
         assertEquals(0,count("SELECT COUNT(*) FROM meetings"));assertEquals(0,count("SELECT COUNT(*) FROM meeting_participants"));
