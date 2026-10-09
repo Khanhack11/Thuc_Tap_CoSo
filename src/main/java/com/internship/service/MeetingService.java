@@ -1,6 +1,7 @@
 package com.internship.service;
 
 import com.internship.dao.MeetingDAO;
+import com.internship.dao.MeetingInboxDAO;
 import com.internship.dao.MeetingNotificationDAO;
 import com.internship.service.meeting.*;
 import com.internship.model.Meeting;
@@ -16,7 +17,9 @@ public class MeetingService {
     private final MeetingDAO dao;
     private final Clock clock;
     private final MeetingNotifications notifications;
-    public MeetingService() { this(DBConnection::getConnection, new MeetingDAO(), Clock.systemUTC(), configuredNotifications()); }
+    private final MeetingNotifications inbox;
+    public MeetingService() { this(DBConnection::getConnection, new MeetingDAO(), Clock.systemUTC(), configuredNotifications(),
+        InAppNotificationService.configured()?new MeetingInboxDAO():MeetingNotifications.disabled()); }
     private static MeetingNotifications configuredNotifications() {
         var settings=MeetingNotificationSettings.system();
         return settings.enqueue()?new MeetingNotificationDAO(Clock.systemUTC(),settings.reminderMinutes()):MeetingNotifications.disabled();
@@ -25,6 +28,10 @@ public class MeetingService {
         this(connections,dao,clock,MeetingNotifications.disabled());
     }
     public MeetingService(ConnectionFactory connections,MeetingDAO dao,Clock clock,MeetingNotifications notifications) {
+        this(connections,dao,clock,notifications,MeetingNotifications.disabled());
+    }
+    public MeetingService(ConnectionFactory connections,MeetingDAO dao,Clock clock,MeetingNotifications notifications,MeetingNotifications inbox) {
+        this.inbox=Objects.requireNonNull(inbox);
         this.notifications=Objects.requireNonNull(notifications);
         this.connections = Objects.requireNonNull(connections);
         this.dao = Objects.requireNonNull(dao); this.clock = Objects.requireNonNull(clock);
@@ -81,7 +88,9 @@ public class MeetingService {
             String role = writer(c, actor);
             validateParticipants(c, actor, role, q.programId(), q.enrollmentIds());
             long id=dao.create(c, actor, q);
-            notifications.record(c,null,Map.of(),dao.lockMeeting(c,id));
+            Meeting created=dao.lockMeeting(c,id);
+            notifications.record(c,null,Map.of(),created);
+            inbox.record(c,null,Map.of(),created);
             return id;
         });
     }
@@ -98,8 +107,11 @@ public class MeetingService {
             future(q);
             validateParticipants(c, actor, role, q.programId(), q.enrollmentIds());
             Map<Long,String> previous=notifications.beforeChange(c,old);
+            Map<Long,String> previousInbox=inbox.beforeChange(c,old);
             dao.update(c, meetingId, q);
-            notifications.record(c,old,previous,dao.lockMeeting(c,meetingId));
+            Meeting changed=dao.lockMeeting(c,meetingId);
+            notifications.record(c,old,previous,changed);
+            inbox.record(c,old,previousInbox,changed);
             return null;
         });
     }
@@ -113,8 +125,11 @@ public class MeetingService {
             checkRevision(old, expectedRevision);
             if ("SCHEDULED".equals(old.status())) {
                 Map<Long,String> previous=notifications.beforeChange(c,old);
+                Map<Long,String> previousInbox=inbox.beforeChange(c,old);
                 dao.cancel(c, meetingId);
-                notifications.record(c,old,previous,dao.lockMeeting(c,meetingId));
+                Meeting changed=dao.lockMeeting(c,meetingId);
+                notifications.record(c,old,previous,changed);
+                inbox.record(c,old,previousInbox,changed);
             }
             return null;
         });
@@ -169,4 +184,5 @@ public class MeetingService {
         }
     }
 }
+
 
