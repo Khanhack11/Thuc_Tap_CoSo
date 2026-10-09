@@ -2,6 +2,7 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<fmt:setLocale value="vi_VN" scope="page" />
 <c:set var="pageTitle" value="Phân công mentor" />
 <c:set var="activePage" value="hr-mentor-assignments" />
 <c:set var="pageStylesheet" value="fe3-mentor.css" />
