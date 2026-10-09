@@ -75,7 +75,7 @@ class Be4Sprint2MySqlTest {
         }
         try {
             for (String file : List.of("database/schema.sql", "sql/schema_be2.sql",
-                    "sql/schema_be3.sql", "sql/schema_be4.sql")) {
+                    "sql/schema_be3.sql", "sql/schema_be4.sql", "sql/schema_be4_sprint3.sql")) {
                 loadSchema(file);
             }
             seed();
@@ -209,9 +209,8 @@ class Be4Sprint2MySqlTest {
         assertThrows(SecurityException.class, () -> reports.review(OLD, report.getReportId(), "Không còn quyền", 3));
         assertEquals(NEW, reports.review(NEW, report.getReportId(), "Đã tiếp nhận báo cáo", 5).getReviewerUserId());
         assertEquals(WeeklyReportStatus.REVIEWED, reports.findForIntern(INTERN, enrollmentId).getFirst().getStatus());
-        assertThrows(IllegalStateException.class,
-                () -> reports.review(NEW, report.getReportId(), "Không được phản hồi hai lần", 5));
-        assertEquals(1, reports.findFeedback(INTERN, report.getReportId()).size());
+        reports.review(NEW, report.getReportId(), "Bổ sung nhận xét lần hai", 5);
+        assertEquals(2, reports.findFeedback(INTERN, report.getReportId()).size());
     }
 
     @Test
@@ -481,6 +480,85 @@ class Be4Sprint2MySqlTest {
     private WeeklyReport submittedReport(short week) throws SQLException {
         WeeklyReport draft = reports.createDraft(INTERN, enrollmentId, week, "Nội dung báo cáo tuần " + week);
         return reports.submit(INTERN, draft.getReportId());
+    }
+
+    private Sprint3WorkflowService sprint3() { return new Sprint3WorkflowService(this::open,new TaskAccessDAO(),new Sprint3WorkflowDAO()); }
+
+    @Test void sprint3AtomicTaskValidatesDeadlineAndProgressRecordsActualActor() throws Exception {
+        assertThrows(IllegalArgumentException.class,()->sprint3().createAssignedTask(OLD,enrollmentId,"Task","Mô tả",java.time.LocalDate.of(2027,1,1)));
+        assertEquals("0",scalarString("SELECT COUNT(*) FROM tasks"));
+        var created=sprint3().createAssignedTask(OLD,enrollmentId,"Task","Mô tả",java.time.LocalDate.of(2026,11,1));
+        var entry=sprint3().updateProgress(INTERN,created.assignment().getAssignmentId(),60,"Đã làm xong phần chính");
+        assertEquals(String.valueOf(INTERN),scalarString("SELECT actor_user_id FROM task_progress_actors WHERE progress_id=?",entry.getProgressId()));
+        assertEquals("IN_PROGRESS",scalarString("SELECT status FROM task_assignments WHERE assignment_id=?",created.assignment().getAssignmentId()));
+        assertThrows(SecurityException.class,()->sprint3().updateProgress(OTHER_INTERN,created.assignment().getAssignmentId(),100,"Other"));
+    }
+
+    @Test void sprint3DraftIsPrivateAndRequiresAllSectionsBeforeSubmit() throws Exception {
+        var r=sprint3().createDraft(INTERN,enrollmentId,(short)1,"", "", "");
+        assertTrue(reports.findForMentor(OLD,enrollmentId).isEmpty());
+        assertThrows(IllegalArgumentException.class,()->sprint3().submit(INTERN,r.getReportId()));
+        sprint3().updateDraft(INTERN,r.getReportId(),"Hoàn thành task","Không có khó khăn","Kiểm tra tuần tới");
+        sprint3().submit(INTERN,r.getReportId());
+        assertEquals(1,reports.findForMentor(OLD,enrollmentId).size());
+        assertThrows(IllegalStateException.class,()->sprint3().updateDraft(INTERN,r.getReportId(),"Sửa","Không","Sửa"));
+        assertThrows(IllegalArgumentException.class,()->sprint3().createDraft(INTERN,enrollmentId,(short)100,"a","b","c"));
+        assertEquals("Kiểm tra tuần tới",scalarString("SELECT next_plan FROM weekly_report_sections WHERE report_id=?",r.getReportId()));
+    }
+
+    @Test void sprint3MultipleAssessmentsKeepAuthorsAcrossHandover() throws Exception {
+        var first=sprint3().assess(OLD,enrollmentId,4,5,"Nhận xét mentor cũ");changeTo(2);
+        assertThrows(SecurityException.class,()->sprint3().assess(OLD,enrollmentId,5,5,"Không còn quyền"));
+        var second=sprint3().assess(NEW,enrollmentId,5,4,"Nhận xét mentor mới");
+        var history=sprint3().assessments(INTERN,enrollmentId);assertEquals(2,history.size());assertEquals(second.assessmentId(),history.getFirst().assessmentId());assertEquals(first.mentorId(),history.get(1).mentorId());
+        assertEquals(2,sprint3().assessments(HR,enrollmentId).size());assertThrows(SecurityException.class,()->sprint3().assessments(OTHER_INTERN,enrollmentId));
+    }
+
+    @Test void sprint3TerminalEnrollmentHasReadableHistoryButRejectsWrites() throws Exception {
+        sprint3().assess(OLD,enrollmentId,4,5,"Đã đánh giá");
+        execute("UPDATE program_enrollments SET status='COMPLETED',completed_at=CURRENT_TIMESTAMP WHERE enrollment_id=?",enrollmentId);
+        execute("UPDATE mentor_assignments SET ended_at=CURRENT_TIMESTAMP WHERE enrollment_id=?",enrollmentId);
+        assertEquals(1,sprint3().assessments(OLD,enrollmentId).size());assertEquals("COMPLETED",queries.findForMentor(OLD).getFirst().status());
+        assertThrows(SecurityException.class,()->sprint3().assess(OLD,enrollmentId,5,5,"Again"));
+        assertThrows(SecurityException.class,()->sprint3().createDraft(INTERN,enrollmentId,(short)2,"a","b","c"));
+    }
+
+    @Test void sprint3EndTermDoesNotMultiplyDetailRowsAndExportsAreAuthorized() throws Exception {
+        evaluations.create(OLD,enrollmentId,new BigDecimal("82.50"),"Điểm cũ được giữ");
+        var t=sprint3().createAssignedTask(OLD,enrollmentId,"Task","Mô tả",java.time.LocalDate.of(2026,11,1));sprint3().updateProgress(INTERN,t.assignment().getAssignmentId(),100,"Done");
+        var r=sprint3().createDraft(INTERN,enrollmentId,(short)1,"Kết quả","Không","Kế hoạch");sprint3().submit(INTERN,r.getReportId());reports.review(OLD,r.getReportId(),"Lần 1",4);reports.review(OLD,r.getReportId(),"Lần 2",5);
+        sprint3().assess(OLD,enrollmentId,4,5,"Lần 1");sprint3().assess(OLD,enrollmentId,5,5,"Lần 2");
+        var service=new EndTermReportService(this::open);var page=service.list(HR,new EndTermReportService.Filter(1,null,null),1,20);assertEquals(1,page.items().size());var row=page.items().getFirst();assertEquals(1,row.taskCount());assertEquals(1,row.tasksDone());assertEquals(1,row.submittedReports());assertEquals(1,row.reviewedReports());assertEquals(2,row.assessments().size());assertEquals(new BigDecimal("82.50"),row.legacyScore());
+        assertThrows(SecurityException.class,()->service.exportSnapshot(INTERN,new EndTermReportService.Filter(null,null,null)));
+        var snapshot=service.exportSnapshot(HR,new EndTermReportService.Filter(1,null,null));service.recordExport(HR,snapshot,"xlsx");assertEquals("1",scalarString("SELECT COUNT(*) FROM report_export_events WHERE actor_user_id=?",HR));
+    }
+
+    @Test void sprint3ProgressEvidenceFailureRollsBackPercentageAndAssignment() throws Exception {
+        var t=sprint3().createAssignedTask(OLD,enrollmentId,"Task","Mô tả",java.time.LocalDate.of(2026,11,1));
+        execute("CREATE TRIGGER reject_actor BEFORE INSERT ON task_progress_actors FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture failure'");
+        assertThrows(SQLException.class,()->sprint3().updateProgress(INTERN,t.assignment().getAssignmentId(),100,"Done"));
+        assertEquals("0",scalarString("SELECT COUNT(*) FROM task_progress"));assertEquals("TODO",scalarString("SELECT status FROM task_assignments WHERE assignment_id=?",t.assignment().getAssignmentId()));
+    }
+
+    @Test void sprint3EvaluationMigrationCanRunTwiceAndPreservesLegacyContract() throws Exception {
+        evaluations.create(OLD,enrollmentId,new BigDecimal("75.50"),"Nhận xét cũ");
+        var criteria=sprint3().assess(OLD,enrollmentId,4,5,"Hai tiêu chí mới");
+        loadSchema("sql/schema_be4_sprint3.sql");
+        assertEquals(new BigDecimal("75.50"),evaluations.findForActor(INTERN,enrollmentId).getScore());
+        assertEquals(criteria.assessmentId(),sprint3().assessments(INTERN,enrollmentId).getFirst().assessmentId());
+        assertEquals(1,evaluations.findAllForHr(HR).size());
+        assertThrows(Exception.class,()->execute("INSERT INTO evaluations(enrollment_id,mentor_id,score) VALUES(?,?,?)",enrollmentId,1,80));
+        assertThrows(SQLException.class,()->execute("INSERT INTO evaluations(enrollment_id,mentor_id,skill_score,attitude_score,comment) VALUES(?,?,0,5,'Sai')",enrollmentId,1));
+        assertEquals("2",scalarString("SELECT COUNT(*) FROM evaluations WHERE enrollment_id=?",enrollmentId));
+    }
+
+    @Test void statisticsExportUsesBe3AggregatorAndRestrictsScope()throws Exception {
+        var service=new ProgramStatisticsReportService(this::open);
+        var filter=new ProgramStatisticsDAO.Filter(1,"ACTIVE",null,null);
+        var snapshot=service.snapshot(HR,filter);assertEquals(1,snapshot.summary().interns());assertEquals(1,snapshot.summary().enrollments());assertEquals(0,snapshot.summary().completed());
+        try(var c=open()){assertEquals(new ProgramStatisticsDAO().summarize(c,filter),snapshot.summary());}
+        assertThrows(SecurityException.class,()->service.snapshot(INTERN,filter));
+        service.recordExport(HR,snapshot,"xlsx");assertEquals("PROGRAM_STATISTICS",scalarString("SELECT report_kind FROM report_export_events WHERE actor_user_id=?",HR));
     }
 
     private void changeTo(int mentorId) throws SQLException {

@@ -126,9 +126,12 @@ public class TaskAccessDAO {
         String sql = """
                 SELECT 1 FROM mentor_assignments ma
                 JOIN mentors m ON m.mentor_id = ma.mentor_id
+                JOIN program_enrollments pe ON pe.enrollment_id = ma.enrollment_id
                 JOIN users u ON u.user_id = m.user_id
                 JOIN roles r ON r.role_id = u.role_id
-                WHERE m.user_id = ? AND ma.enrollment_id = ? AND ma.ended_at IS NULL
+                WHERE m.user_id = ? AND ma.enrollment_id = ?
+                  AND (ma.ended_at IS NULL OR (pe.status IN ('COMPLETED','CANCELLED')
+                    AND ma.assignment_id = (SELECT MAX(last_ma.assignment_id) FROM mentor_assignments last_ma WHERE last_ma.enrollment_id=pe.enrollment_id)))
                   AND u.status = 'ACTIVE' AND r.role_name = 'MENTOR'
                 """;
         return exists(connection, sql, userId, enrollmentId);
