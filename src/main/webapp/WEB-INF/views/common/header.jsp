@@ -106,6 +106,7 @@
                         Không thêm doGet vào LogoutServlet (file của BE1).
                     --%>
                     <form action="${ctx}/auth/logout" method="post" class="m-0">
+                        <input type="hidden" name="csrfToken" value="<%= com.internship.util.CsrfToken.expose(request) %>">
                         <button type="submit" class="btn btn-outline-brand btn-sm">
                             <i class="bi bi-box-arrow-right"></i>
                             <span class="d-none d-sm-inline ms-1">Đăng xuất</span>

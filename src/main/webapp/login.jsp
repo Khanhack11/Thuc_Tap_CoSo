@@ -61,6 +61,7 @@
             </a>
             <%-- LogoutServlet chỉ có doPost -> phải là form POST, xem ghi chú đầu file --%>
             <form action="${ctx}/auth/logout" method="post" class="m-0">
+                <input type="hidden" name="csrfToken" value="<%= com.internship.util.CsrfToken.expose(request) %>">
                 <button type="submit" class="btn btn-outline-brand w-100">
                     <i class="bi bi-box-arrow-right me-1"></i>Đăng xuất
                 </button>
