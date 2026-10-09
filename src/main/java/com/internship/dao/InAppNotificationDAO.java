@@ -7,6 +7,8 @@ import java.util.*;
 
 /** Never commits: publishing belongs to the business transaction. */
 public class InAppNotificationDAO {
+    // DATETIME columns contain UTC wall time, regardless of JVM/connection timezone.
+    private static Calendar utc() { return Calendar.getInstance(TimeZone.getTimeZone("UTC")); }
     public void publish(Connection c, long recipient, NotificationEvent e) throws SQLException {
         if (recipient <= 0 || c.getAutoCommit()) throw new IllegalArgumentException("Recipient and caller transaction required");
         try (PreparedStatement s = c.prepareStatement("""
@@ -17,7 +19,7 @@ public class InAppNotificationDAO {
                 """)) {
             s.setString(1,e.key()); s.setString(2,e.kind()); s.setString(3,e.sourceType());
             s.setLong(4,e.sourceId()); s.setInt(5,e.sourceRevision()); s.setString(6,e.title());
-            s.setString(7,e.body()); s.setTimestamp(8,Timestamp.from(e.availableAt())); s.setLong(9,recipient);
+            s.setString(7,e.body()); s.setTimestamp(8,Timestamp.from(e.availableAt()),utc()); s.setLong(9,recipient);
             s.executeUpdate();
         }
     }
@@ -33,10 +35,10 @@ public class InAppNotificationDAO {
             s.setLong(1,actor);s.setInt(2,size);s.setInt(3,(page-1)*size);
             List<InAppNotification> rows=new ArrayList<>();
             try(ResultSet r=s.executeQuery()) {while(r.next()) {
-                Timestamp read=r.getTimestamp("read_at");
+                Timestamp read=r.getTimestamp("read_at",utc());
                 rows.add(new InAppNotification(r.getLong("notification_id"),r.getString("kind"),r.getString("source_type"),
                     r.getLong("source_id"),r.getInt("source_revision"),r.getString("title"),r.getString("body"),
-                    r.getTimestamp("available_at").toInstant(),read==null?null:read.toInstant()));
+                    r.getTimestamp("available_at",utc()).toInstant(),read==null?null:read.toInstant()));
             }} return List.copyOf(rows);
         }
     }
@@ -61,7 +63,7 @@ public class InAppNotificationDAO {
     }
     public void expireReminders(Connection c,long meeting,int revision,java.time.Instant start) throws SQLException {
         try(PreparedStatement s=c.prepareStatement("UPDATE inapp_notifications SET expires_at=? WHERE source_type='MEETING' AND source_id=? AND kind='REMINDER' AND source_revision=?")) {
-            s.setTimestamp(1,Timestamp.from(start));s.setLong(2,meeting);s.setInt(3,revision);s.executeUpdate();
+            s.setTimestamp(1,Timestamp.from(start),utc());s.setLong(2,meeting);s.setInt(3,revision);s.executeUpdate();
         }
     }
 }
