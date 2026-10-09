@@ -98,7 +98,13 @@
         body.appendChild(row);
     }
     function date(value) { return value ? String(value).slice(0, 10) : '—'; }
-    function moment(value) { return value ? String(value).replace('T', ' ').slice(0, 16) : '—'; }
+    function moment(value) {
+        if (!value) return '—';
+        if (/Z$|[+-]\d\d:\d\d$/.test(String(value))) {
+            return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date(value));
+        }
+        return String(value).replace('T', ' ').slice(0, 16); // Legacy local timestamps retain their original meaning.
+    }
     function status(value) {
         return ({ ACTIVE: 'Đang tham gia', COMPLETED: 'Hoàn thành', CANCELLED: 'Đã hủy',
             TODO: 'Chưa bắt đầu', IN_PROGRESS: 'Đang thực hiện', DONE: 'Hoàn thành',
@@ -184,6 +190,7 @@
             if (!history.length) panel.appendChild(node('p', 'Chưa có cập nhật.'));
             history.forEach(function (entry) {
                 panel.appendChild(node('p', entry.completionPercentage + '% · ' + moment(entry.createdAt)
+                    + ' · ' + (entry.updatedBy == null ? 'Chưa ghi tác giả (dữ liệu cũ)' : 'Tài khoản #' + entry.updatedBy)
                     + (entry.note ? ' · ' + entry.note : '')));
             });
         }
@@ -230,14 +237,11 @@
             submitting(event.currentTarget, async function () {
                 var entry = requireEnrollment();
                 if (entry.status !== 'ACTIVE') throw new Error('Chỉ giao task cho đợt đang tham gia.');
-                var task = await api('/tasks', null, formValues(byId('taskCreateForm')));
+                var values = formValues(byId('taskCreateForm'));
+                if (!values.description.trim() || !values.dueDate) throw new Error('Cần mô tả và hạn hoàn thành nằm trong thời gian chương trình.');
+                var created = await api('/tasks/create-assign', null, Object.assign(values, {enrollmentId: entry.enrollmentId}));
+                var task = created.task;
                 byId('taskId').value = task.taskId;
-                try {
-                    await api('/assignments', null, { taskId: task.taskId, enrollmentId: entry.enrollmentId });
-                } catch (error) {
-                    throw new Error('Task #' + task.taskId + ' đã tạo nhưng chưa giao được: ' + error.message
-                        + '. Có thể thử lại ở ô “Giao lại task”.');
-                }
                 byId('taskCreateForm').reset();
                 notice('Đã tạo và giao task #' + task.taskId + '.', 'success');
                 await reload();
@@ -263,15 +267,16 @@
             var list = byId('feedbackList');
             list.replaceChildren();
             var feedback = await api('/feedback', { reportId: report.reportId });
+            if (!feedback.length) list.appendChild(node('p', 'Chưa có phản hồi.'));
             feedback.forEach(function (item) {
                 var panel = node('div', null, 'fe3-feedback');
-                panel.appendChild(node('strong', 'Phản hồi · ' + moment(item.createdAt)
+                panel.appendChild(node('strong', 'Người phản hồi #' + item.reviewerUserId + ' · ' + moment(item.createdAt)
                     + (item.rating ? ' · ' + item.rating + '/5' : '')));
                 panel.appendChild(node('p', item.comment || 'Không có nhận xét.'));
                 list.appendChild(panel);
             });
             byId('feedbackForm').classList.toggle('d-none',
-                report.status !== 'SUBMITTED' || requireEnrollment().status !== 'ACTIVE');
+                !['SUBMITTED', 'REVIEWED'].includes(report.status) || requireEnrollment().status !== 'ACTIVE');
         }
         async function reload() {
             var entry = currentEnrollment();
@@ -298,7 +303,7 @@
             submitting(event.currentTarget, async function () {
                 if (!selectedReport) throw new Error('Hãy chọn báo cáo.');
                 var values = formValues(byId('feedbackForm'));
-                if (!values.comment.trim() && !values.rating) throw new Error('Cần nhận xét hoặc điểm phản hồi.');
+                if (!values.comment.trim()) throw new Error('Cần nhập nhận xét có nội dung.');
                 await api('/feedback', null, {
                     reportId: selectedReport.reportId, comment: values.comment, rating: values.rating
                 });
@@ -324,9 +329,17 @@
             if (form) form.classList.add('d-none');
             var target = byId('evaluationResult');
             if (!entry) { target.textContent = 'Chưa có đợt thực tập.'; return; }
-            var result = await api('/evaluation', { enrollmentId: entry.enrollmentId });
-            showEvaluation(result, target);
-            if (form && !result && entry.status === 'ACTIVE') form.classList.remove('d-none');
+            var results = await Promise.all([api('/assessments', { enrollmentId: entry.enrollmentId }), api('/evaluation', { enrollmentId: entry.enrollmentId })]);
+            target.replaceChildren(node('h2', 'Lịch sử đánh giá', 'h5'));
+            if (!results[0].length) target.appendChild(node('p', 'Chưa có đánh giá hai tiêu chí.'));
+            results[0].forEach(function (result, index) {
+                var panel = node('article', null, 'fe3-feedback');
+                panel.appendChild(node('strong', (index === 0 ? 'Mới nhất · ' : '') + result.mentorName + ' · ' + moment(result.createdAt)));
+                panel.appendChild(node('p', 'Kỹ năng: ' + result.skillsScore + '/5 · Thái độ: ' + result.attitudeScore + '/5'));
+                panel.appendChild(node('p', result.comment, 'fe3-report-content')); target.appendChild(panel);
+            });
+            if (results[1]) { var legacy=node('section', null, 'fe3-feedback'); legacy.appendChild(node('h3', 'Đánh giá cũ (thang 100, không quy đổi)', 'h6'));var body=node('div');showEvaluation(results[1], body);legacy.appendChild(body);target.appendChild(legacy); }
+            if (form && entry.status === 'ACTIVE') form.classList.remove('d-none');
         }
         await loadEnrollments(reload);
         if (mentor) {
@@ -336,8 +349,9 @@
                     var entry = requireEnrollment();
                     if (entry.status !== 'ACTIVE') throw new Error('Chỉ đánh giá đợt đang tham gia.');
                     var values = formValues(byId('evaluationForm'));
-                    await api('/evaluation', null, {
-                        enrollmentId: entry.enrollmentId, score: values.score, comment: values.comment
+                    if (!values.comment.trim()) throw new Error('Cần nhập nhận xét.');
+                    await api('/assessments', null, {
+                        enrollmentId: entry.enrollmentId, skillsScore: values.skillsScore, attitudeScore: values.attitudeScore, comment: values.comment
                     });
                     notice('Đã lưu đánh giá cuối kỳ.', 'success');
                     await reload();
@@ -406,6 +420,7 @@
             results[3].forEach(function (item) {
                 var panel = node('div', null, 'fe3-feedback');
                 panel.appendChild(node('strong', item.completionPercentage + '% · ' + moment(item.createdAt)));
+                panel.appendChild(node('small', item.updatedBy == null ? 'Chưa ghi tác giả (dữ liệu cũ)' : 'Tài khoản #' + item.updatedBy));
                 panel.appendChild(node('p', item.note || 'Không có ghi chú.'));
                 history.appendChild(panel);
             });
@@ -444,13 +459,19 @@
                 + '\nNgày nộp: ' + moment(report.submittedAt) + '\n\n' + (report.content || 'Bản nháp chưa có nội dung.');
             var editable = report.status === 'DRAFT' && requireEnrollment().status === 'ACTIVE';
             byId('reportEditForm').classList.toggle('d-none', !editable);
-            if (editable) byId('editReportContent').value = report.content || '';
+            if (editable) {
+                byId('editReportResults').value = report.results === null ? (report.content || '') : (report.results || '');
+                byId('editReportDifficulties').value = report.difficulties || '';
+                byId('editReportNextPlan').value = report.nextPlan || '';
+                byId('legacyReportNote').classList.toggle('d-none', !report.legacyContent);
+            }
             var feedbackList = byId('feedbackList');
             feedbackList.replaceChildren();
             var feedback = await api('/feedback', { reportId: report.reportId });
+            if (!feedback.length) feedbackList.appendChild(node('p', 'Chưa có phản hồi.'));
             feedback.forEach(function (item) {
                 var panel = node('div', null, 'fe3-feedback');
-                panel.appendChild(node('strong', 'Mentor phản hồi · ' + moment(item.createdAt)
+                panel.appendChild(node('strong', 'Người phản hồi #' + item.reviewerUserId + ' · ' + moment(item.createdAt)
                     + (item.rating ? ' · ' + item.rating + '/5' : '')));
                 panel.appendChild(node('p', item.comment || 'Không có nhận xét.'));
                 feedbackList.appendChild(panel);
@@ -485,7 +506,7 @@
                 if (entry.status !== 'ACTIVE') throw new Error('Đợt thực tập không còn hoạt động.');
                 var values = formValues(byId('reportCreateForm'));
                 var created = await api('/reports', null, {
-                    enrollmentId: entry.enrollmentId, weekNumber: values.weekNumber, content: values.content
+                    enrollmentId: entry.enrollmentId, weekNumber: values.weekNumber, results: values.results, difficulties: values.difficulties, nextPlan: values.nextPlan
                 });
                 byId('reportCreateForm').reset();
                 notice('Đã lưu báo cáo nháp tuần ' + created.weekNumber + '.', 'success');
@@ -497,7 +518,7 @@
             submitting(event.currentTarget, async function () {
                 if (!selectedReport) throw new Error('Hãy chọn báo cáo.');
                 var reportId = selectedReport.reportId;
-                await api('/reports/update', null, { reportId: reportId, content: byId('editReportContent').value });
+                await api('/reports/update', null, Object.assign(formValues(byId('reportEditForm')), {reportId: reportId}));
                 notice('Đã lưu chỉnh sửa.', 'success');
                 await reload(reportId);
             });
@@ -507,8 +528,9 @@
             button.disabled = true;
             try {
                 if (!selectedReport) throw new Error('Hãy chọn báo cáo.');
-                if (!byId('editReportContent').value.trim()) throw new Error('Báo cáo cần có nội dung trước khi nộp.');
-                if (byId('editReportContent').value !== (selectedReport.content || '')) {
+                var values = formValues(byId('reportEditForm'));
+                if (!values.results.trim() || !values.difficulties.trim() || !values.nextPlan.trim()) throw new Error('Điền đủ kết quả, khó khăn và kế hoạch trước khi nộp.');
+                if (values.results !== (selectedReport.results || '') || values.difficulties !== (selectedReport.difficulties || '') || values.nextPlan !== (selectedReport.nextPlan || '')) {
                     throw new Error('Nội dung đã thay đổi. Hãy lưu chỉnh sửa trước khi nộp.');
                 }
                 if (!window.confirm('Nộp báo cáo tuần ' + selectedReport.weekNumber + '? Sau khi nộp sẽ không sửa được.')) return;
