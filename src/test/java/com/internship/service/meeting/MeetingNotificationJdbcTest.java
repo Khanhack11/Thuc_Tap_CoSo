@@ -29,7 +29,7 @@ class MeetingNotificationJdbcTest {
         assertEquals("jdbc:mysql://127.0.0.1:13318/be1_notification_test?connectionTimeZone=UTC",url,"Only the disposable fixture DB is accepted");
         try(var c=open();var s=c.createStatement()) {
             s.execute("SET FOREIGN_KEY_CHECKS=0");
-            for(String t:List.of("meeting_notification_outbox","meeting_recipient_snapshots","meeting_participants","meetings","mentor_assignments","mentors","program_enrollments","intern_profiles","users","roles","internship_programs"))s.execute("DROP TABLE IF EXISTS "+t);
+            for(String t:List.of("audit_logs","meeting_notification_outbox","meeting_recipient_snapshots","meeting_participants","meetings","mentor_assignments","mentors","program_enrollments","intern_profiles","users","roles","internship_programs"))s.execute("DROP TABLE IF EXISTS "+t);
             s.execute("SET FOREIGN_KEY_CHECKS=1");
             s.execute("CREATE TABLE roles(role_id BIGINT PRIMARY KEY,role_name VARCHAR(20)) ENGINE=InnoDB");
             s.execute("CREATE TABLE users(user_id BIGINT PRIMARY KEY,email VARCHAR(255),role_id BIGINT,status VARCHAR(20)) ENGINE=InnoDB");
@@ -38,7 +38,7 @@ class MeetingNotificationJdbcTest {
             s.execute("CREATE TABLE program_enrollments(enrollment_id INT PRIMARY KEY,program_id INT,intern_profile_id INT,status VARCHAR(20)) ENGINE=InnoDB");
             s.execute("CREATE TABLE mentors(mentor_id INT PRIMARY KEY,user_id BIGINT,status VARCHAR(20)) ENGINE=InnoDB");
             s.execute("CREATE TABLE mentor_assignments(assignment_id INT PRIMARY KEY,enrollment_id INT,mentor_id INT,ended_at DATETIME) ENGINE=InnoDB");
-            for(String file:List.of("sql/schema_be1_meetings.sql","sql/schema_be1_meeting_notifications.sql")) {
+            for(String file:List.of("sql/schema_be1_audit.sql","sql/schema_be1_meetings.sql","sql/schema_be1_meeting_notifications.sql")) {
                 String raw=Files.readString(Path.of(file)).replaceAll("(?m)^--.*$","");
                 for(String command:raw.split(";"))if(!command.isBlank())s.execute(command);
             }
@@ -50,6 +50,12 @@ class MeetingNotificationJdbcTest {
             s.execute("INSERT INTO mentors VALUES(1,4,'ACTIVE')");
             s.execute("INSERT INTO mentor_assignments VALUES(1,1,1,NULL),(2,2,1,NULL)");
         }
+    }
+    @Test void auditFailureRollsBackEmailOutboxAndRecipients() throws Exception {
+        sql("CREATE TRIGGER fail_audit BEFORE INSERT ON audit_logs FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='fixture audit failure'");
+        assertThrows(SQLException.class,()->service(new MeetingNotificationDAO(Clock.fixed(NOW,ZoneOffset.UTC),30)).create(3,request(List.of(1))));
+        for(String table:List.of("meetings","meeting_participants","meeting_notification_outbox","meeting_recipient_snapshots","audit_logs"))
+            assertEquals(0,count("SELECT COUNT(*) FROM "+table));
     }
     @Test void createCommitsAndChangeKeepsOldAddressThenCancelDedups()throws Exception {
         var s=service(outbox());long id=s.create(3,request(List.of(1)));

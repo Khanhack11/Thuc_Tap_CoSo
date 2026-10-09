@@ -113,9 +113,36 @@ class MeetingServiceTest {
         Harness h=new Harness();h.meetingStatus="CANCELLED";
         h.service().cancel(9,31,1);assertFalse(h.wrote);assertTrue(h.committed);
     }
+    @Test void businessWritesRecordMatchingAuditBeforeCommit() throws Exception {
+        Harness create=new Harness();create.service().create(9,request(List.of(1)));
+        assertEquals(List.of("MEETING_CREATE"),create.audits);assertTrue(create.committed);
+        Harness update=new Harness();update.service().update(9,31,1,request(List.of(1)));
+        assertEquals(List.of("MEETING_UPDATE"),update.audits);assertTrue(update.committed);
+        Harness cancel=new Harness();cancel.service().cancel(9,31,1);
+        assertEquals(List.of("MEETING_CANCEL"),cancel.audits);assertTrue(cancel.committed);
+    }
+    @Test void auditFailureRollsBackEveryMeetingWrite() {
+        for(String action:List.of("create","update","cancel")) {
+            Harness h=new Harness();h.failAudit=true;
+            assertThrows(SQLException.class,()->{
+                switch(action) {
+                    case "create"->h.service().create(9,request(List.of(1)));
+                    case "update"->h.service().update(9,31,1,request(List.of(1)));
+                    default->h.service().cancel(9,31,1);
+                }
+            });assertTrue(h.rolledBack);assertFalse(h.committed);
+        }
+    }
+    @Test void deniedStaleAndRepeatedCancelDoNotAudit() throws Exception {
+        Harness denied=new Harness();denied.role="INTERN";
+        assertThrows(SecurityException.class,()->denied.service().create(9,request(List.of(1))));assertTrue(denied.audits.isEmpty());
+        Harness stale=new Harness();assertThrows(IllegalStateException.class,()->stale.service().cancel(9,31,99));assertTrue(stale.audits.isEmpty());
+        Harness repeated=new Harness();repeated.meetingStatus="CANCELLED";repeated.service().cancel(9,31,1);assertTrue(repeated.audits.isEmpty());
+    }
     static class Harness {
         long organizer=9; String meetingStatus="SCHEDULED";
-        String role="HR"; boolean allowed=true,failWrite,wrote,committed,rolledBack,closed;
+        String role="HR"; boolean failAudit; List<String> audits=new ArrayList<>();
+        boolean allowed=true,failWrite,wrote,committed,rolledBack,closed;
         Long checkedMentor; List<Integer> checkedIds=new ArrayList<>();
         Connection connection = (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(),new Class[]{Connection.class},(p,m,a)->switch(m.getName()) {
             case "createStatement" -> Proxy.newProxyInstance(Statement.class.getClassLoader(),new Class[]{Statement.class},(sp,sm,sa)-> {
@@ -127,6 +154,10 @@ class MeetingServiceTest {
             default -> null;
         });
         MeetingDAO dao = new MeetingDAO() {
+            @Override public void recordAudit(Connection c,long actor,String action,long id) throws SQLException {
+                assertSame(connection,c);assertEquals(9,actor);assertEquals(31,id);audits.add(action);
+                if(failAudit)throw new SQLException("audit");
+            }
             @Override public List<Long> visibleIds(Connection c,long actor,String role,Integer program,String status,int page,int size) {return List.of(31L);}
             @Override public boolean canRead(Connection c,long actor,String role,Meeting m) {return allowed;}
             @Override public String lockActor(Connection c,long actor) {return role;}

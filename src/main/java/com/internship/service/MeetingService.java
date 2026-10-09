@@ -91,6 +91,7 @@ public class MeetingService {
             Meeting created=dao.lockMeeting(c,id);
             notifications.record(c,null,Map.of(),created);
             inbox.record(c,null,Map.of(),created);
+            dao.recordAudit(c,actor,"MEETING_CREATE",id);
             return id;
         });
     }
@@ -112,6 +113,7 @@ public class MeetingService {
             Meeting changed=dao.lockMeeting(c,meetingId);
             notifications.record(c,old,previous,changed);
             inbox.record(c,old,previousInbox,changed);
+            dao.recordAudit(c,actor,"MEETING_UPDATE",meetingId);
             return null;
         });
     }
@@ -130,6 +132,7 @@ public class MeetingService {
                 Meeting changed=dao.lockMeeting(c,meetingId);
                 notifications.record(c,old,previous,changed);
                 inbox.record(c,old,previousInbox,changed);
+                dao.recordAudit(c,actor,"MEETING_CANCEL",meetingId);
             }
             return null;
         });

@@ -7,6 +7,10 @@ import java.util.*;
 
 /** All methods use the caller's transaction; this DAO never commits or opens connections. */
 public class MeetingDAO {
+    public void recordAudit(Connection c,long actor,String action,long meeting) throws SQLException {
+        new AuditLogDAO().insertInTransaction(c,actor,action,"MEETING",meeting);
+    }
+
     private static Calendar utc() { return Calendar.getInstance(TimeZone.getTimeZone("UTC")); }
 
     /** SQL applies visibility before pagination; caller rechecks ACTIVE actor in transaction. */
