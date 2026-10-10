@@ -126,6 +126,10 @@ class Fe3PageServletTest {
             assertFalse(source.contains("<<<<<<<"),path);
         }
         String report=Files.readString(Path.of("src/main/webapp/WEB-INF/views/intern/weekly-report.jsp"));
+        assertTrue(report.contains("id=\"reportDetail\" class=\"fe3-report-content\""),
+                "Submitted report sections must retain line breaks instead of collapsing into one paragraph");
+        String styles=Files.readString(Path.of("src/main/webapp/assets/css/fe3.css"));
+        assertTrue(styles.contains(".fe3-report-content { white-space: pre-wrap; overflow-wrap: anywhere; }"));
         for(String name:new String[]{"results","difficulties","nextPlan"})assertTrue(report.contains("name=\""+name+"\""));
         String assessment=Files.readString(Path.of("src/main/webapp/WEB-INF/views/mentor/evaluation.jsp"));
         assertTrue(assessment.contains("name=\"skillsScore\""));assertTrue(assessment.contains("name=\"attitudeScore\""));

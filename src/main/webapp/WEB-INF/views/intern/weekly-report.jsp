@@ -39,7 +39,7 @@
         </div>
         <div class="fe3-panel">
             <h2>Chi tiết báo cáo</h2>
-            <div id="reportDetail">Chọn một báo cáo.</div>
+            <div id="reportDetail" class="fe3-report-content">Chọn một báo cáo.</div>
             <form id="reportEditForm" class="d-none mt-3">
                 <p id="legacyReportNote" class="text-muted d-none">Báo cáo cũ chỉ có một trường nội dung. Nội dung được giữ nguyên ở ô kết quả; bổ sung khó khăn và kế hoạch trước khi nộp.</p>
                 <label class="form-label" for="editReportResults">Kết quả công việc</label>
