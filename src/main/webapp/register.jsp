@@ -11,19 +11,39 @@
     HỢP ĐỒNG ĐÃ CHỐT VỚI BE1 (US39/4.1) - đối chiếu RegisterServlet
     ----------------------------------------------------------------------------
     [1] Servlet nhận POST tại  ${ctx}/auth/register   (đã có trên develop)
-    [2] Tham số servlet THỰC SỰ đọc:
-            username, email, fullName, password, confirmPassword
-        => phone / university / major / gpa KHÔNG được đọc và KHÔNG được lưu.
-           Phần hồ sơ này chờ BE2 (bảng intern_profiles). Vì vậy 3 field
-           phone / university / major đã BỎ thuộc tính required: bắt người dùng
-           nhập bắt buộc rồi vứt đi là sai. Họ điền nốt ở trang Hồ sơ cá nhân.
-           Khi BE2 nối xong thì kiểm tra lại, có thể bật required trở lại.
+    [2] Tham số servlet THỰC SỰ đọc (CẬP NHẬT 10/10/2026 - BE1 đã sửa):
+            username, email, fullName, password, confirmPassword,
+            phone, university, major, gpa
+        => phone / university / major / gpa BÂY GIỜ ĐÃ ĐƯỢC LƯU THẬT vào
+           intern_profiles, trong CÙNG transaction với users (BE1:
+           RegisterServlet -> UserService.registerIntern 9 tham số -> UserDAO
+           insert users + intern_profiles, autoCommit=false, một commit).
+           Ghi chú cũ trong file này ("servlet chưa đọc field này", "chờ BE2")
+           đã SAI và đã được xoá.
+
+        Các field đó VẪN KHÔNG required - đúng thiết kế form hiện tại, không
+        phải vì "chưa lưu". Người dùng bổ sung nốt ở trang Hồ sơ cá nhân.
+
+        Giới hạn phải khớp với server (com.internship.model.RegistrationProfile
+        và UserService.registerIntern), nếu không người dùng sẽ bị từ chối sau
+        khi đã bấm Đăng ký:
+            fullName / email : tối đa 100 ký tự sau khi trim
+            phone            : tối đa 20 ký tự; nếu có thì chỉ gồm +, số, space,
+                               ( ) - và phải có 7-15 CHỮ SỐ
+            university       : tối đa 150 ký tự
+            major            : tối đa 100 ký tự
+            gpa              : 0-4, tối đa 2 chữ số thập phân, không làm tròn ngầm
+        Chuỗi optional để trống được lưu thành chuỗi rỗng cho các cột NOT NULL.
     [3] Đăng ký lỗi:   forward về /register.jsp kèm request attribute
                        "errorMessage" (đã xác nhận trong RegisterServlet)
     [4] Đăng ký đúng:  set session flashSuccess rồi redirect về ${ctx}/auth/login
                        => KHÔNG set sessionScope.user ở bước này; người dùng
                           phải đăng nhập lại. Đó là lý do trang này không đọc
                           session.
+    [5] Đăng ký lỗi: mọi ô đều được điền lại từ ${param.*} qua <c:out> nên vừa
+        giữ nguyên giá trị người dùng đã nhập vừa escape HTML. KHÔNG đổi
+        <c:out value='${param.x}' /> thành ${param.x} - đó là lỗ hổng XSS.
+        Riêng 2 ô mật khẩu CỐ Ý không điền lại.
     ----------------------------------------------------------------------------
     BƯỚC "NỘP HỒ SƠ" (Application) KHÔNG nằm ở đây.
     Việc tạo và nộp đơn ứng tuyển đã có endpoint riêng (/intern/applications).
@@ -86,11 +106,14 @@
 
                 <div class="col-md-6">
                     <label class="form-label" for="email">Email <span class="req">*</span></label>
+                    <%-- maxlength 100 cho khớp UserService.registerIntern: quá 100
+                         ký tự thì bị từ chối với thông báo "Họ tên và email tối đa
+                         100 ký tự cho hồ sơ thực tập." --%>
                     <input type="email" id="email" name="email" class="form-control"
                            value="<c:out value='${param.email}' />"
-                           required autocomplete="email" maxlength="120"
+                           required autocomplete="email" maxlength="100"
                            placeholder="nam@student.edu.vn">
-                    <span class="form-text">Dùng để nhận thông báo từ hệ thống.</span>
+                    <span class="form-text">Tối đa 100 ký tự. Dùng để nhận thông báo từ hệ thống.</span>
                 </div>
 
                 <div class="col-md-6">
@@ -125,34 +148,43 @@
                            required maxlength="100" placeholder="Nguyễn Văn Nam">
                 </div>
                 <div class="col-md-4">
-                    <%-- Không required: RegisterServlet chưa đọc field này, xem ghi chú đầu file --%>
+                    <%-- Không required (thiết kế form), nhưng CÓ được lưu - xem ghi chú [2].
+                         pattern ở đây chỉ chặn sớm những trường hợp rõ ràng sai; server
+                         còn đòi 7-15 CHỮ SỐ nên vẫn là nơi quyết định. --%>
                     <label class="form-label" for="phone">Số điện thoại</label>
                     <input type="tel" id="phone" name="phone" class="form-control"
                            value="<c:out value='${param.phone}' />"
-                           pattern="[0-9+ .()\-]{9,15}" placeholder="0912345678">
+                           maxlength="20" pattern="\+?[0-9 ()\-]{7,20}"
+                           title="7 đến 15 chữ số, có thể bắt đầu bằng dấu +"
+                           placeholder="0912345678">
                 </div>
             </div>
 
             <div class="row g-3 mb-4">
                 <div class="col-md-7">
-                    <%-- Không required: RegisterServlet chưa đọc field này --%>
+                    <%-- Không required (thiết kế form), nhưng CÓ được lưu - xem ghi chú [2] --%>
                     <label class="form-label" for="university">Trường đại học / cao đẳng</label>
                     <input type="text" id="university" name="university" class="form-control"
                            value="<c:out value='${param.university}' />"
                            maxlength="150" placeholder="Đại học Bách Khoa Hà Nội">
                 </div>
                 <div class="col-md-5">
-                    <%-- Không required: RegisterServlet chưa đọc field này --%>
+                    <%-- Không required (thiết kế form), nhưng CÓ được lưu - xem ghi chú [2] --%>
                     <label class="form-label" for="major">Chuyên ngành</label>
                     <input type="text" id="major" name="major" class="form-control"
                            value="<c:out value='${param.major}' />"
                            maxlength="100" placeholder="Công nghệ thông tin">
                 </div>
                 <div class="col-md-3">
+                    <%-- step=0.01 khớp luật server "[0-9]+(\.[0-9]{1,2})?": tối đa hai
+                         chữ số thập phân và không làm tròn ngầm. Không đặt maxlength vì
+                         thuộc tính này bị bỏ qua với input type="number". --%>
                     <label class="form-label" for="gpa">GPA (hệ 4)</label>
                     <input type="number" id="gpa" name="gpa" class="form-control"
                            value="<c:out value='${param.gpa}' />"
-                           step="0.01" min="0" max="4" placeholder="3.50">
+                           step="0.01" min="0" max="4" inputmode="decimal"
+                           title="Từ 0 đến 4, tối đa hai chữ số thập phân"
+                           placeholder="3.50">
                 </div>
             </div>
 

@@ -1,0 +1,95 @@
+package com.internship.controller;
+
+import com.internship.model.User;
+import com.internship.service.SupportRequestService;
+import com.internship.util.UserRoleChecks;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.io.IOException;
+import java.sql.SQLException;
+
+@WebServlet({"/intern/support", "/hr/support"})
+public class SupportRequestServlet extends HttpServlet {
+
+    private SupportRequestService supportRequestService;
+
+    @Override
+    public void init() {
+        supportRequestService = new SupportRequestService();
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession();
+        User currentUser = (User) session.getAttribute("currentUser");
+
+        String path = req.getServletPath();
+
+        try {
+            if ("/intern/support".equals(path)) {
+                if (!UserRoleChecks.isIntern(currentUser)) {
+                    resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
+                    return;
+                }
+                req.setAttribute("requests", supportRequestService.getMyRequests(currentUser));
+                req.getRequestDispatcher("/WEB-INF/views/intern/support.jsp").forward(req, resp);
+                
+            } else if ("/hr/support".equals(path)) {
+                if (!UserRoleChecks.canManageHr(currentUser)) {
+                    resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
+                    return;
+                }
+                req.setAttribute("requests", supportRequestService.getAllRequests(currentUser));
+                req.getRequestDispatcher("/WEB-INF/views/hr/support.jsp").forward(req, resp);
+            }
+        } catch (SQLException | IllegalArgumentException e) {
+            req.setAttribute("error", e.getMessage());
+            req.getRequestDispatcher("/error/500.jsp").forward(req, resp);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession();
+        User currentUser = (User) session.getAttribute("currentUser");
+
+        String path = req.getServletPath();
+        
+        try {
+            if ("/intern/support".equals(path)) {
+                if (!UserRoleChecks.isIntern(currentUser)) {
+                    resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
+                    return;
+                }
+                
+                String requestType = req.getParameter("requestType");
+                String title = req.getParameter("title");
+                String content = req.getParameter("content");
+                
+                supportRequestService.createRequest(currentUser, requestType, title, content);
+                resp.sendRedirect(req.getContextPath() + "/intern/support?success=true");
+                
+            } else if ("/hr/support".equals(path)) {
+                if (!UserRoleChecks.canManageHr(currentUser)) {
+                    resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
+                    return;
+                }
+                
+                int requestId = Integer.parseInt(req.getParameter("requestId"));
+                String status = req.getParameter("status");
+                String responseText = req.getParameter("response");
+                
+                supportRequestService.updateResponse(currentUser, requestId, status, responseText);
+                resp.sendRedirect(req.getContextPath() + "/hr/support?success=true");
+            }
+        } catch (SQLException | IllegalArgumentException e) {
+            resp.sendRedirect(req.getContextPath() + path + "?error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+        }
+    }
+}
