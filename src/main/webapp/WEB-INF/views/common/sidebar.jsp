@@ -139,17 +139,17 @@
                 <span class="app-nav__soon">Sắp có</span>
             </span>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'allowances' ? 'is-active' : ''}"
+               href="${ctx}/intern/allowances">
                 <i class="bi bi-cash-coin"></i><span>Phụ cấp</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
             <div class="app-nav__group">Hỗ trợ và trao đổi</div>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'support' ? 'is-active' : ''}"
+               href="${ctx}/intern/support">
                 <i class="bi bi-life-preserver"></i><span>Yêu cầu hỗ trợ</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
             <%-- Trang da dung san khung: WEB-INF/views/intern/meetings.jsp
                  (doc GET ${ctx}/meetings theo hop dong BE1). Con thieu route
@@ -209,15 +209,22 @@
 
             <div class="app-nav__group">Thời gian và quyền lợi</div>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'hr-attendance' ? 'is-active' : ''}"
+               href="${ctx}/hr/attendance">
                 <i class="bi bi-clock-history"></i><span>Chấm công</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'hr-allowances' ? 'is-active' : ''}"
+               href="${ctx}/hr/allowances">
                 <i class="bi bi-cash-coin"></i><span>Phụ cấp</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
+
+            <div class="app-nav__group">Hỗ trợ</div>
+
+            <a class="app-nav__link ${activePage eq 'hr-support' ? 'is-active' : ''}"
+               href="${ctx}/hr/support">
+                <i class="bi bi-life-preserver"></i><span>Yêu cầu hỗ trợ</span>
+            </a>
 
             <div class="app-nav__group">Báo cáo</div>
 
