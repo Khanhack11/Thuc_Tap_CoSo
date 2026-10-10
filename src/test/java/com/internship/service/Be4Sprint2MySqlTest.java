@@ -75,7 +75,8 @@ class Be4Sprint2MySqlTest {
         }
         try {
             for (String file : List.of("database/schema.sql", "sql/schema_be2.sql",
-                    "sql/schema_be3.sql", "sql/schema_be4.sql", "sql/schema_be4_sprint3.sql")) {
+                    "sql/schema_be3.sql", "sql/schema_be4.sql", "sql/schema_be4_sprint3.sql",
+                    "sql/schema_be4_attendance_export.sql")) {
                 loadSchema(file);
             }
             seed();
@@ -104,6 +105,21 @@ class Be4Sprint2MySqlTest {
             statement.executeUpdate("DROP DATABASE `" + database + "`");
             created = false;
         }
+    }
+
+    @Test
+    void attendanceExportEvidenceMigrationIsRerunnableAndRechecksDatabaseRole() throws Exception {
+        loadSchema("sql/schema_be4_attendance_export.sql");
+        var service = new AttendanceReportService(this::open, new AttendanceDAO(), new WorkScheduleDAO());
+        var date = java.time.LocalDate.of(2026, 10, 10);
+        var snapshot = new AttendanceReportService.Snapshot(new AttendanceReportService.Filter(1, enrollmentId, date, date), List.of(), java.time.Instant.now());
+        service.recordExport(HR, snapshot, "xlsx");
+        assertEquals("ATTENDANCE", scalarString("SELECT report_kind FROM report_export_events WHERE actor_user_id=?", HR));
+        assertEquals("2026-10-10", scalarString("SELECT report_from FROM report_export_events WHERE actor_user_id=?", HR));
+        assertNull(scalarString("SELECT cohort_from FROM report_export_events WHERE actor_user_id=?", HR));
+        assertThrows(SecurityException.class, () -> service.recordExport(INTERN, snapshot, "pdf"));
+        execute("UPDATE users SET status='INACTIVE' WHERE user_id=?", HR);
+        assertThrows(SecurityException.class, () -> service.recordExport(HR, snapshot, "pdf"));
     }
 
     @Test

@@ -11,6 +11,8 @@ import com.internship.service.EndTermReportService;
 import com.internship.service.EndTermExport;
 import com.internship.service.ProgramStatisticsReportService;
 import com.internship.service.ProgramStatisticsExport;
+import com.internship.service.AttendanceReportService;
+import com.internship.service.AttendanceExport;
 import com.internship.dao.ProgramStatisticsDAO;
 import com.internship.dao.Sprint3WorkflowDAO;
 import java.util.List;
@@ -41,6 +43,7 @@ public class Be4ApiServlet extends HttpServlet {
     private EnrollmentQueryService enrollments;
     private Sprint3WorkflowService workflows;
     private EndTermReportService endTerm;
+    private AttendanceReportService attendanceExports;
 
     @Override
     public void init() {
@@ -51,6 +54,7 @@ public class Be4ApiServlet extends HttpServlet {
         enrollments = new EnrollmentQueryService();
         workflows = new Sprint3WorkflowService();
         endTerm = new EndTermReportService();
+        attendanceExports = new AttendanceReportService();
     }
 
     @Override
@@ -83,6 +87,21 @@ public class Be4ApiServlet extends HttpServlet {
             }
             String path = request.getPathInfo();
             if (path == null) path = "/";
+            if (!post && "/hr/be4".equals(area) && "/attendance/export".equals(path)) {
+                String format = request.getParameter("format");
+                if (!"xlsx".equals(format) && !"pdf".equals(format)) throw new IllegalArgumentException("format phải là xlsx hoặc pdf");
+                var snapshot = attendanceExports.snapshot(actor.getUserId(), attendanceFilter(request));
+                byte[] file;
+                try { file = "xlsx".equals(format) ? new AttendanceExport().xlsx(snapshot) : new AttendanceExport().pdf(snapshot); }
+                catch (IOException | IllegalArgumentException failure) {
+                    getServletContext().log("BE4 attendance export rendering failed", failure);
+                    send(response, 503, Be4Json.fields("error", "Không thể tạo file chuyên cần. Kiểm tra font PDF và thử lại.")); return;
+                }
+                attendanceExports.recordExport(actor.getUserId(), snapshot, format);
+                response.setContentType("xlsx".equals(format) ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf");
+                response.setHeader("Content-Disposition", "attachment; filename=\"chuyen-can." + format + "\"");
+                response.setContentLength(file.length); response.getOutputStream().write(file); return;
+            }
             if (!post && "/hr/be4".equals(area) && "/program-statistics/export".equals(path)) {
                 String format=request.getParameter("format");
                 if(!"xlsx".equals(format)&&!"pdf".equals(format))throw new IllegalArgumentException("format phải là xlsx hoặc pdf");
@@ -265,6 +284,18 @@ public class Be4ApiServlet extends HttpServlet {
     }
     static Map<String,Object> assessment(Sprint3WorkflowDAO.Assessment a) { return Be4Json.fields("assessmentId",a.assessmentId(),"enrollmentId",a.enrollmentId(),"mentorId",a.mentorId(),"mentorName",a.mentorName(),"skillsScore",a.skillsScore(),"attitudeScore",a.attitudeScore(),"comment",a.comment(),"createdAt",a.createdAt()); }
     private static EndTermReportService.Filter reportFilter(HttpServletRequest r) { return new EndTermReportService.Filter(optionalInteger(r,"programId"),optionalInteger(r,"enrollmentId"),r.getParameter("status")==null||r.getParameter("status").isBlank()?null:r.getParameter("status")); }
+    static AttendanceReportService.Filter attendanceFilter(HttpServletRequest request) {
+        var allowed = java.util.Set.of("format", "programId", "enrollmentId", "from", "to");
+        var names = request.getParameterNames();
+        while (names.hasMoreElements()) {
+            String name = names.nextElement();
+            if (!allowed.contains(name)) throw new IllegalArgumentException("Bộ lọc chuyên cần không hỗ trợ: " + name);
+            String[] values = request.getParameterValues(name);
+            if (values != null && values.length != 1) throw new IllegalArgumentException("Không lặp lại tham số: " + name);
+        }
+        return new AttendanceReportService.Filter(optionalInteger(request, "programId"), optionalInteger(request, "enrollmentId"),
+                optionalDate(request, "from"), optionalDate(request, "to"));
+    }
     private static Map<String,Object> endTermRow(EndTermReportService.Row r) {return Be4Json.fields("enrollmentId",r.enrollmentId(),"programId",r.programId(),"internProfileId",r.internProfileId(),"internName",r.internName(),"university",r.university(),"major",r.major(),"programName",r.programName(),"status",r.status(),"startDate",r.startDate(),"endDate",r.endDate(),"mentorName",r.mentorName(),"taskCount",r.taskCount(),"tasksDone",r.tasksDone(),"submittedReports",r.submittedReports(),"reviewedReports",r.reviewedReports(),"assessments",r.assessments().stream().map(Be4ApiServlet::assessment).toList(),"legacyScore",r.legacyScore());}
 
     private static boolean areaAllowed(String area, String role) {
