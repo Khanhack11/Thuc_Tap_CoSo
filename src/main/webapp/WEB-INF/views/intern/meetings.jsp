@@ -2,19 +2,22 @@
     intern/meetings.jsp - Man hinh "Lich hop cua toi" cho Thuc tap sinh (US35 / task 35.5)
     Owner: FE1.
 
-    TRANG NAY LA KHUNG DA DUNG SAN, CHUA CHAY DUOC THAT. Ly do:
-        - BE1 moi co hop dong HTTP trong docs/BE1_MEETING_CONTRACT.md
-          (GET ${ctx}/meetings tra {items:[],page,size,csrfToken}), nhanh
-          feature/be1-sprint3-meeting-foundation CHUA merge develop;
-        - chua co servlet nao forward sang file nay, nen hien tai khong co
-          route /intern/meetings. Menu van de "Sắp có" cho toi luc do.
-    => Khong duoc coi task 35.5 la Done khi doc file nay. Xem BLOCKED report.
-
-    Khi BE1 merge, chi can:
-        1) them route "/intern/meetings" vao servlet trang (forward sang file nay),
-        2) doi <span class="app-nav__link is-soon"> thanh the <a href="${ctx}/intern/meetings">
-           trong sidebar.jsp.
-    Khong phai sua gi trong file nay.
+    TRANG NAY DA CHAY THAT (cap nhat 10/10/2026):
+        - BE1 da merge InternMeetingPageServlet (@WebServlet("/intern/meetings"))
+          forward sang chinh file nay, va da merge hop dong JSON ${ctx}/meetings;
+        - sidebar.jsp da doi muc "Lịch họp" thanh <a href="${ctx}/intern/meetings">.
+    DA NGHIEM THU TREN TRINH DUYET THAT (10/10/2026, Chrome headless qua CDP,
+    khong phai chi doc code) - ket qua:
+        - Nap trang: 200, tieu de "Lich hop cua toi - Internship Management System",
+          0 loi JS, 0 request loi; muc "Lịch họp" sang trang thai is-active.
+        - Du lieu: 3 cuoc hop hien dung, khong tran ngang o 1440px.
+        - MUI GIO: 2026-10-20T09:00:00Z hien "20/10/2026 16:00" (UTC+7) - dung.
+          (startsAt/endsAt la Instant UTC; trang doi sang Asia/Ho_Chi_Minh.)
+        - Het phien: vao thang khi chua dang nhap -> 302 ve /auth/login.
+        - Bi tu choi: mentor goi /intern/meetings -> 403 dung trang loi.
+        - Phan trang/bo loc: nut "Trang truoc/Trang sau" va "Tải lại" co mat;
+          CHUA bam thu voi du lieu nhieu trang vi DB chi co 3 ban ghi.
+    => Phan con lai: chi con kiem thu phan trang khi co >size ban ghi.
 
     HOP DONG DU LIEU (theo docs/BE1_MEETING_CONTRACT.md):
         GET  ${ctx}/meetings?programId&status&page&size
