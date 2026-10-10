@@ -2,26 +2,9 @@
     intern/notifications.jsp - Man hinh "Thong bao cua toi" cho Thuc tap sinh (US36).
     Owner: FE1.
 
-    TRANG DA VIET XONG NHUNG CHUA CO ROUTE PHUC VU. Ly do (10/10/2026):
-        - Backend da co that: NotificationServlet @WebServlet("/notifications")
-          tra JSON theo docs/BE1_US36_INAPP_CONTRACT.md;
-        - NHUNG do la endpoint JSON, khong phai route tra ve trang. Hien tai khong
-          co servlet nao forward sang file nay, nen /intern/notifications se 404.
-        - BE1 ghi ro trong docs/BE1_FE1_MEETING_REGISTRATION_HANDOFF.md
-          (muc "US36 backend is already merged"):
-          "No notification page route is added until a corresponding FE view exists."
-          View nay chinh la "corresponding FE view" do - dieu kien da duoc thao.
-          (BE1_US36_INAPP_CONTRACT.md chi dac ta 2 endpoint JSON, khong noi ve
-          route trang, nen khong trich dan hop dong do cho cau nay.)
-          => View da co; BE1 can them route. Sidebar van de "Sắp có" cho toi luc do.
-    => KHONG duoc danh Done task 36.2 khi doc file nay.
-
-    Trong luc cho, chuong thong bao o header dung chung (header.jsp +
-    assets/js/notifications-bell.js) DA chay that cho ca 4 vai tro, va da lam
-    duoc: hien thi danh sach, so chua doc, danh dau da doc.
-
-    Khi BE1 them route, chi can doi muc "Thông báo" trong sidebar.jsp thanh
-    <a href="${ctx}/intern/notifications">. Khong phai sua gi trong file nay.
+    Route BE1: /intern/notifications -> JSP này, chỉ cho INTERN ACTIVE.
+    Backend JSON /notifications vẫn dùng chung cho các vai trò đăng nhập.
+    Sidebar bật liên kết trang; chuông thông báo dùng chung không thay đổi.
 
     HOP DONG DU LIEU (docs/BE1_US36_INAPP_CONTRACT.md):
         GET  ${ctx}/notifications?page&size&unreadOnly
@@ -37,7 +20,7 @@
 
     QUYEN: /notifications khong nam duoi /admin|/hr|/mentor|/intern nen
     AuthorizationFilter khong chan theo vai tro; servlet chi doi co session
-    currentUser. Tuy nhien route TRANG du kien chi mo cho INTERN (giong
+    currentUser. Tuy nhien route TRANG chi mo cho INTERN (giong
     /intern/meetings) vi day la man hinh trong khu vuc Thuc tap sinh.
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>

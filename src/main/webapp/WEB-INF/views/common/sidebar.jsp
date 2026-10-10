@@ -136,18 +136,9 @@
                      - 35.5 Lịch họp         -> /intern/meetings       (BE1)
                           DA BAT. Route InternMeetingPageServlet + view
                           intern/meetings.jsp + intern-meetings.js deu da merge.
-                     - 36.2 Thông báo        -> /intern/notifications  (BE1)
-                          Backend JSON /notifications da co. View FE1 da viet
-                          (intern/notifications.jsp + intern-notifications.js)
-                          nhung CHUA co route phuc vu trang. Cau goc nam trong
-                          docs/BE1_FE1_MEETING_REGISTRATION_HANDOFF.md (muc "US36
-                          backend is already merged"): "No notification page route
-                          is added until a corresponding FE view exists".
-                          (Khong phai trong BE1_US36_INAPP_CONTRACT.md - hop dong do
-                          chi dac ta 2 endpoint JSON, khong noi gi ve route trang.)
-                          => GIU "Sắp có" va da gui BE1 yeu cau them route.
-                          Trong luc cho, chuong thong bao o header (header.jsp,
-                          dung chung ca 4 vai tro) DA chay duoc that.
+                     - 36.2 Thông báo -> /intern/notifications (BE1)
+                          Route InternNotificationPageServlet mở view FE1 cho
+                          INTERN ACTIVE; dữ liệu đọc từ JSON /notifications.
                  ==================================================================== --%>
 
             <span class="app-nav__link is-soon" aria-disabled="true">
@@ -196,12 +187,10 @@
                 <i class="bi bi-camera-video"></i><span>Lịch họp</span>
             </a>
 
-            <%-- Xem khoi ghi chu 'Sprint 3 - trang thai tung muc' o tren: view FE1 da
-                 viet xong, con thieu route trang cua BE1 nen chua doi duoc thanh <a>. --%>
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'intern-notifications' ? 'is-active' : ''}"
+               href="${ctx}/intern/notifications">
                 <i class="bi bi-bell"></i><span>Thông báo</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
         </c:if>
 
