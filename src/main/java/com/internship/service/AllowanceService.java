@@ -26,7 +26,7 @@ public class AllowanceService {
     }
 
     public void createAllowance(User hrUser, Allowance allowance) throws SQLException {
-        if (hrUser == null || (!UserRoleChecks.canManageHr(hrUser) && !UserRoleChecks.isAdmin(hrUser))) {
+        if (hrUser == null || !UserRoleChecks.canManageHr(hrUser)) {
             throw new IllegalArgumentException("Kh?ng c? quy?n t?o ph? c?p.");
         }
         if (allowance.getAmount().signum() < 0) {
@@ -40,7 +40,7 @@ public class AllowanceService {
     }
 
     public void updateStatus(User hrUser, int allowanceId, String status) throws SQLException {
-        if (hrUser == null || (!UserRoleChecks.canManageHr(hrUser) && !UserRoleChecks.isAdmin(hrUser))) {
+        if (hrUser == null || !UserRoleChecks.canManageHr(hrUser)) {
             throw new IllegalArgumentException("Kh?ng c? quy?n c?p nh?t ph? c?p.");
         }
         try (Connection c = connections.getConnection()) {
