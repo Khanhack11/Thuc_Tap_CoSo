@@ -48,7 +48,7 @@ public class AttendanceDAO {
             "SELECT a.*, ip.full_name as intern_name, p.program_name " +
             "FROM attendances a " +
             "JOIN program_enrollments pe ON a.enrollment_id = pe.enrollment_id " +
-            "JOIN intern_profiles ip ON pe.intern_id = ip.profile_id " +
+            "JOIN intern_profiles ip ON pe.intern_profile_id = ip.profile_id " +
             "JOIN internship_programs p ON pe.program_id = p.program_id " +
             "WHERE 1=1 "
         );

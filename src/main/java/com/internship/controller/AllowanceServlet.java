@@ -35,7 +35,10 @@ public class AllowanceServlet extends HttpServlet {
         
         try {
             String enrollParam = req.getParameter("enrollmentId");
-            Integer enrollmentId = (enrollParam != null && !enrollParam.isEmpty()) ? Integer.parseInt(enrollParam) : null;
+            Integer enrollmentId = null;
+            try {
+                enrollmentId = (enrollParam != null && !enrollParam.trim().isEmpty()) ? Integer.parseInt(enrollParam) : null;
+            } catch (NumberFormatException e) { }
             
             List<Allowance> list = allowanceService.getAllowances(currentUser, enrollmentId);
             req.setAttribute("allowances", list);
@@ -53,6 +56,11 @@ public class AllowanceServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        if (!com.internship.util.CsrfToken.valid(req)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid CSRF Token");
+            return;
+        }
+
         HttpSession session = req.getSession();
         User currentUser = (User) session.getAttribute("currentUser");
 
@@ -63,23 +71,37 @@ public class AllowanceServlet extends HttpServlet {
             if ("/hr/allowances".equals(path)) {
                 if ("create".equals(action)) {
                     Allowance a = new Allowance();
-                    a.setEnrollmentId(Integer.parseInt(req.getParameter("enrollmentId")));
+                    try {
+                        a.setEnrollmentId(Integer.parseInt(req.getParameter("enrollmentId")));
+                        a.setAmount(new BigDecimal(req.getParameter("amount")));
+                    } catch (Exception e) {
+                        resp.sendRedirect(req.getContextPath() + "/hr/allowances?error=" + java.net.URLEncoder.encode("Dữ liệu nhập không hợp lệ", "UTF-8"));
+                        return;
+                    }
                     a.setAllowanceType(req.getParameter("allowanceType"));
                     a.setPeriod(req.getParameter("period"));
-                    a.setAmount(new BigDecimal(req.getParameter("amount")));
                     
                     allowanceService.createAllowance(currentUser, a);
+                    resp.sendRedirect(req.getContextPath() + "/hr/allowances?success=true");
                 } else if ("update_status".equals(action)) {
-                    int id = Integer.parseInt(req.getParameter("allowanceId"));
+                    int id = 0;
+                    try {
+                        id = Integer.parseInt(req.getParameter("allowanceId"));
+                    } catch (NumberFormatException e) {
+                        resp.sendRedirect(req.getContextPath() + "/hr/allowances?error=" + java.net.URLEncoder.encode("Mã phụ cấp không hợp lệ", "UTF-8"));
+                        return;
+                    }
                     String status = req.getParameter("status");
                     allowanceService.updateStatus(currentUser, id, status);
+                    resp.sendRedirect(req.getContextPath() + "/hr/allowances?success=true");
+                } else {
+                    resp.sendRedirect(req.getContextPath() + "/hr/allowances?error=" + java.net.URLEncoder.encode("Hành động không hợp lệ", "UTF-8"));
                 }
-                resp.sendRedirect(req.getContextPath() + "/hr/allowances?success=true");
             } else {
                 resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Not allowed.");
             }
         } catch (Exception e) {
-            resp.sendRedirect(req.getContextPath() + "/hr/allowances?error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+            resp.sendRedirect(req.getContextPath() + "/hr/allowances?error=" + java.net.URLEncoder.encode(e.getMessage() != null ? e.getMessage() : "Error", "UTF-8"));
         }
     }
 }

@@ -42,11 +42,25 @@ public class AttendanceServlet extends HttpServlet {
                 }
                 
                 String enrollParam = req.getParameter("enrollmentId");
-                int enrollmentId = enrollParam != null ? Integer.parseInt(enrollParam) : 0;
+                int enrollmentId = 0;
+                try {
+                    enrollmentId = (enrollParam != null && !enrollParam.trim().isEmpty()) ? Integer.parseInt(enrollParam) : 0;
+                } catch (NumberFormatException e) {
+                    // ignore, keep 0
+                }
                 
-                // For intern, show report
-                LocalDate from = req.getParameter("from") != null ? LocalDate.parse(req.getParameter("from")) : LocalDate.now().minusDays(30);
-                LocalDate to = req.getParameter("to") != null ? LocalDate.parse(req.getParameter("to")) : LocalDate.now();
+                LocalDate from = LocalDate.now().minusDays(30);
+                LocalDate to = LocalDate.now();
+                try {
+                    if (req.getParameter("from") != null && !req.getParameter("from").isEmpty()) {
+                        from = LocalDate.parse(req.getParameter("from"));
+                    }
+                    if (req.getParameter("to") != null && !req.getParameter("to").isEmpty()) {
+                        to = LocalDate.parse(req.getParameter("to"));
+                    }
+                } catch (Exception e) {
+                    // use defaults
+                }
                 
                 List<AttendanceReportRow> report = attendanceService.getReport(currentUser, enrollmentId > 0 ? enrollmentId : null, null, from, to);
                 req.setAttribute("report", report);
@@ -59,13 +73,27 @@ public class AttendanceServlet extends HttpServlet {
                 }
                 
                 String enrollParam = req.getParameter("enrollmentId");
-                Integer enrollmentId = (enrollParam != null && !enrollParam.isEmpty()) ? Integer.parseInt(enrollParam) : null;
+                Integer enrollmentId = null;
+                try {
+                    enrollmentId = (enrollParam != null && !enrollParam.trim().isEmpty()) ? Integer.parseInt(enrollParam) : null;
+                } catch (NumberFormatException e) { }
                 
                 String progParam = req.getParameter("programId");
-                Integer programId = (progParam != null && !progParam.isEmpty()) ? Integer.parseInt(progParam) : null;
+                Integer programId = null;
+                try {
+                    programId = (progParam != null && !progParam.trim().isEmpty()) ? Integer.parseInt(progParam) : null;
+                } catch (NumberFormatException e) { }
                 
-                LocalDate from = req.getParameter("from") != null && !req.getParameter("from").isEmpty() ? LocalDate.parse(req.getParameter("from")) : LocalDate.now().minusDays(30);
-                LocalDate to = req.getParameter("to") != null && !req.getParameter("to").isEmpty() ? LocalDate.parse(req.getParameter("to")) : LocalDate.now();
+                LocalDate from = LocalDate.now().minusDays(30);
+                LocalDate to = LocalDate.now();
+                try {
+                    if (req.getParameter("from") != null && !req.getParameter("from").isEmpty()) {
+                        from = LocalDate.parse(req.getParameter("from"));
+                    }
+                    if (req.getParameter("to") != null && !req.getParameter("to").isEmpty()) {
+                        to = LocalDate.parse(req.getParameter("to"));
+                    }
+                } catch (Exception e) { }
                 
                 List<AttendanceReportRow> report = attendanceService.getReport(currentUser, enrollmentId, programId, from, to);
                 req.setAttribute("report", report);
@@ -79,6 +107,11 @@ public class AttendanceServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        if (!com.internship.util.CsrfToken.valid(req)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid CSRF Token");
+            return;
+        }
+
         HttpSession session = req.getSession();
         User currentUser = (User) session.getAttribute("currentUser");
 
@@ -86,15 +119,27 @@ public class AttendanceServlet extends HttpServlet {
         
         if ("/intern/attendance".equals(path)) {
             String action = req.getParameter("action");
-            int enrollmentId = Integer.parseInt(req.getParameter("enrollmentId"));
+            int enrollmentId = 0;
+            try {
+                String enrollParam = req.getParameter("enrollmentId");
+                if (enrollParam != null && !enrollParam.trim().isEmpty()) {
+                    enrollmentId = Integer.parseInt(enrollParam);
+                }
+            } catch (NumberFormatException e) {
+                resp.sendRedirect(req.getContextPath() + "/intern/attendance?error=" + java.net.URLEncoder.encode("Mã ghi danh không hợp lệ", "UTF-8"));
+                return;
+            }
             
             try {
                 if ("checkin".equals(action)) {
                     attendanceService.checkIn(currentUser, enrollmentId);
+                    resp.sendRedirect(req.getContextPath() + "/intern/attendance?enrollmentId=" + enrollmentId + "&success=true");
                 } else if ("checkout".equals(action)) {
                     attendanceService.checkOut(currentUser, enrollmentId);
+                    resp.sendRedirect(req.getContextPath() + "/intern/attendance?enrollmentId=" + enrollmentId + "&success=true");
+                } else {
+                    resp.sendRedirect(req.getContextPath() + "/intern/attendance?enrollmentId=" + enrollmentId + "&error=" + java.net.URLEncoder.encode("Hành động không hợp lệ", "UTF-8"));
                 }
-                resp.sendRedirect(req.getContextPath() + "/intern/attendance?enrollmentId=" + enrollmentId + "&success=true");
             } catch (SQLException | IllegalArgumentException e) {
                 resp.sendRedirect(req.getContextPath() + "/intern/attendance?enrollmentId=" + enrollmentId + "&error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
             }

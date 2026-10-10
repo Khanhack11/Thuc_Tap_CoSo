@@ -38,7 +38,7 @@ public class AllowanceDAO {
         StringBuilder sql = new StringBuilder(
             "SELECT a.*, ip.full_name as intern_name FROM allowances a " +
             "JOIN program_enrollments pe ON a.enrollment_id = pe.enrollment_id " +
-            "JOIN intern_profiles ip ON pe.intern_id = ip.profile_id WHERE 1=1"
+            "JOIN intern_profiles ip ON pe.intern_profile_id = ip.profile_id WHERE 1=1"
         );
         List<Object> params = new ArrayList<>();
         if (enrollmentId != null) {
