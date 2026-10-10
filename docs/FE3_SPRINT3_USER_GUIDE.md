@@ -4,6 +4,8 @@
 
 Backend BE4 phải có nhánh Sprint 3 và đã chạy `sql/schema_be4_sprint3.sql`. Luồng lịch họp cần các migration meeting/notification/audit BE1. Không chạy reset schema, không đưa db.properties/mail.properties lên Git. FE3 không tự chèn dữ liệu giả để làm màn hình hết lỗi.
 
+Thứ tự tích hợp: review BE1 cho dependency dùng chung, merge BE4 PR#69 vào develop, cập nhật database có backup, rồi cập nhật/review FE3 PR#70 và merge. FE3 không mang code BE4 vào branch của mình. Xuất chuyên cần US34 và nút ở màn hình chấm công là contract BE4/BE2/FE2, không phải báo cáo cuối kỳ FE3; migration riêng `schema_be4_attendance_export.sql` chỉ thêm bằng chứng xuất chuyên cần. Sửa SQL nguồn chuyên cần của BE2 phải được nhóm nhập trước khi QA nghiệm thu luồng đó.
+
 Đăng nhập bằng tài khoản đúng role. Nếu trang báo lỗi dữ liệu, kiểm tra server/migration; đó không phải trạng thái “không có dữ liệu”. Nếu hết phiên đăng nhập, đăng nhập lại. Các biểu mẫu và API đều lấy người thao tác từ session, không có ô chọn tác giả.
 
 ## Mentor
@@ -48,3 +50,10 @@ FE3 không sửa menu chung/đăng nhập/đăng ký của FE1, chương trình/
 - Desktop và màn hình nhỏ; tab/label bàn phím; thao tác nhanh giữa nhiều bộ lọc không hiện phản hồi cũ đè phản hồi mới.
 
 Trạng thái: code/build/test sẽ được ghi trong PR. Các tình huống QA chưa chạy phải để chưa kiểm thử; tài liệu này là hướng dẫn, không phải chứng nhận toàn bộ42 US đã pass.
+
+## Rà tích hợp 10/10/2026
+
+- Đã merge develop2038801 vào branch FE3, không conflict; build trên máy FE3 đạt354 test,68 test opt-in bỏ qua, không failure/error. Hai bộ frontend test Node chạy từ bản source đã archive:10/10 đạt. Máy FE3 chưa có Node trong PATH của SSH; không ghi nhầm đây là kết quả Node chạy trực tiếp trên máy FE3.
+- Bản preview riêng kết hợp FE3 mới với BE4 mới và database dữ liệu tổng hợp: HR đăng nhập vào `/hr/dashboard`, dữ liệu và tiếng Việt đúng; mở kết quả cũ, báo cáo cuối kỳ, lịch sử hai tiêu chí có đúng tên mentor/time/comment. Tải thật Excel/PDF từ nút giao diện thành công. Dữ liệu giả chỉ phục vụ kiểm tra, không chèn vào database ứng dụng.
+- Menu chung từ develop còn đánh dấu Chấm công/Phụ cấp “Sắp có” dù BE2 đã có route. Bàn giao FE1 bật liên kết sau khi BE2/FE2 xác nhận, không sửa header/sidebar chung trong PR FE3.
+- SMTP thật, US38 thiết bị QR/thẻ, test chéo Mentor A/B/TTS X/Y trên môi trường nhóm và QA/UAT đầy đủ vẫn cần xác nhận riêng. Không coi kết quả build/preview là chứng nhận100% Sprint3.
