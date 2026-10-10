@@ -102,26 +102,52 @@
 
             <div class="app-nav__group">Thời gian và quyền lợi</div>
 
-            <%-- ================= Sprint 3 - cac muc chua co backend =================
-                 Bay man hinh duoi day nam trong pham vi Sprint 3 cua FE1 nhung
-                 CHUA co servlet, chua co bang CSDL va chua co hop dong API nao
-                 trong docs/ (xem bao cao BLOCKED gui kem). Vi vay chung van la
-                 <span> "Sắp có", KHONG duoc doi thanh <a href> - lam vay se tao
-                 link 404 ngay trong menu chung cua ca ba vai tro.
+            <%-- ============ Sprint 3 - trang thai tung muc (cap nhat 10/10/2026) ====
+                 Quy tac giu nguyen: muc nao CHUA co route THAT thi van la
+                 <span class="app-nav__link is-soon">, KHONG doi thanh <a href>.
+                 Route co that nhung trang loi thi cung KHONG duoc bat - bam vao
+                 se thay mot trang vo nghia, te hon la thay 404.
 
-                 Khi backend tuong ung merge vao develop thi moi doi:
                      - 21.2 Chấm công        -> /intern/attendance      (BE2)
+                          Route CO nhung trang KHONG dung duoc. Da truy den
+                          nguyen nhan goc (10/10/2026):
+                            AttendanceDAO.java:51
+                              "JOIN intern_profiles ip ON pe.intern_id = ip.profile_id"
+                            nhung bang program_enrollments KHONG co cot intern_id
+                            (cot that la intern_profile_id) -> SQLException
+                            "Unknown column 'pe.intern_id'".
+                          AttendanceServlet bat (SQLException|IllegalArgumentException)
+                          roi FORWARD sang /error/500.jsp -> nguoi dung nhan trang
+                          "500 - Lỗi hệ thống" NHUNG ma HTTP van la 200, va servlet
+                          KHONG log lai exception (chi set attribute "error" ma
+                          trang 500 khong in ra) => rat kho chan doan tu ngoai.
+                          Ngoai ra view con: EL rong, dau tieng Viet thanh '?',
+                          include sidebar 2 lan (header da co sidebar roi).
+                          => GIU "Sắp có", da bao BE2 kem nguyen nhan tren.
                      - 23.3 Lịch làm việc    -> /intern/schedule       (BE3)
+                          BE3 moi co JSON /api/intern/work-schedules, KHONG co
+                          route tra ve trang -> chua bat duoc.
                      - 24.2 Nghỉ phép        -> /intern/leave-requests (BE3)
+                          Nhu tren: chi co JSON, khong co route trang.
                      - 26.2 Phụ cấp          -> /intern/allowances     (BE2)
-                     - 27.2 Yêu cầu hỗ trợ   -> /intern/support        (BE2)
-                     - 35.5 Lịch họp         -> xem chu thich rieng ben duoi
+                          Cung loi y het 21.2: AllowanceDAO.java:41 join
+                          "pe.intern_id = ip.profile_id" (cot khong ton tai)
+                          -> 500. GIU "Sắp có".
+                     - 35.5 Lịch họp         -> /intern/meetings       (BE1)
+                          DA BAT. Route InternMeetingPageServlet + view
+                          intern/meetings.jsp + intern-meetings.js deu da merge.
                      - 36.2 Thông báo        -> /intern/notifications  (BE1)
-
-                 Muc "Lịch họp" da co hop dong HTTP cua BE1
-                 (docs/BE1_MEETING_CONTRACT.md, GET/POST ${ctx}/meetings) nhung
-                 nhanh do CHUA merge develop va chua co route nao phuc vu trang
-                 => van de "Sắp có" cho toi khi BE1 merge.
+                          Backend JSON /notifications da co. View FE1 da viet
+                          (intern/notifications.jsp + intern-notifications.js)
+                          nhung CHUA co route phuc vu trang. Cau goc nam trong
+                          docs/BE1_FE1_MEETING_REGISTRATION_HANDOFF.md (muc "US36
+                          backend is already merged"): "No notification page route
+                          is added until a corresponding FE view exists".
+                          (Khong phai trong BE1_US36_INAPP_CONTRACT.md - hop dong do
+                          chi dac ta 2 endpoint JSON, khong noi gi ve route trang.)
+                          => GIU "Sắp có" va da gui BE1 yeu cau them route.
+                          Trong luc cho, chuong thong bao o header (header.jsp,
+                          dung chung ca 4 vai tro) DA chay duoc that.
                  ==================================================================== --%>
 
             <span class="app-nav__link is-soon" aria-disabled="true">
@@ -139,10 +165,19 @@
                 <span class="app-nav__soon">Sắp có</span>
             </span>
 
-            <a class="app-nav__link ${activePage eq 'allowances' ? 'is-active' : ''}"
-               href="${ctx}/intern/allowances">
+            <%-- 26.2 Phu cap: da TAT 10/10/2026. Truoc day la <a href> that, nhung
+                 /intern/allowances tra ve trang 500 (AllowanceDAO:41 join cot
+                 khong ton tai - xem ghi chu dau file). De nguyen link thi bam vao
+                 la gap trang loi. Khi BE2 sua DAO thi doi lai thanh <a> nhu cu:
+                    <a class="app-nav__link ${activePage eq 'allowances' ? 'is-active' : ''}"
+                       href="${ctx}/intern/allowances">
+                        <i class="bi bi-cash-coin"></i><span>Phụ cấp</span>
+                    </a>
+            --%>
+            <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-cash-coin"></i><span>Phụ cấp</span>
-            </a>
+                <span class="app-nav__soon">Sắp có</span>
+            </span>
 
             <div class="app-nav__group">Hỗ trợ và trao đổi</div>
 
@@ -151,16 +186,18 @@
                 <i class="bi bi-life-preserver"></i><span>Yêu cầu hỗ trợ</span>
             </a>
 
-            <%-- Trang da dung san khung: WEB-INF/views/intern/meetings.jsp
-                 (doc GET ${ctx}/meetings theo hop dong BE1). Con thieu route
-                 phuc vu trang - chu so huu servlet trang (BE1 hoac BE3) phai
-                 forward "/intern/meetings" -> view nay, sau do doi span nay
-                 thanh the <a> tro toi ${ctx}/intern/meetings. --%>
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <%-- BE1 da merge InternMeetingPageServlet (@WebServlet("/intern/meetings"))
+                 forward sang WEB-INF/views/intern/meetings.jsp. Servlet tu chan:
+                 khong co session -> /auth/login, khong phai INTERN ACTIVE -> 403.
+                 View doc GET ${ctx}/meetings (JSON) qua intern-meetings.js.
+                 activePage 'intern-meetings' do chinh meetings.jsp set. --%>
+            <a class="app-nav__link ${activePage eq 'intern-meetings' ? 'is-active' : ''}"
+               href="${ctx}/intern/meetings">
                 <i class="bi bi-camera-video"></i><span>Lịch họp</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
+            <%-- Xem khoi ghi chu 'Sprint 3 - trang thai tung muc' o tren: view FE1 da
+                 viet xong, con thieu route trang cua BE1 nen chua doi duoc thanh <a>. --%>
             <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-bell"></i><span>Thông báo</span>
                 <span class="app-nav__soon">Sắp có</span>
@@ -209,15 +246,25 @@
 
             <div class="app-nav__group">Thời gian và quyền lợi</div>
 
-            <a class="app-nav__link ${activePage eq 'hr-attendance' ? 'is-active' : ''}"
-               href="${ctx}/hr/attendance">
+            <%-- 21.2 Cham cong (HR) + 26.2 Phu cap (HR): da TAT 10/10/2026, cung ly do
+                 nhu muc tuong ung cua Thuc tap sinh - /hr/attendance va
+                 /hr/allowances deu tra ve trang 500 (DAO join cot khong ton tai).
+                 Truoc day 2 muc nay la <a href> that trong khi ban INTERN cua cung
+                 tinh nang da de "Sắp có" -> khong nhat quan. Khi BE2 sua DAO, doi lai:
+                    <a class="app-nav__link ${activePage eq 'hr-attendance' ? 'is-active' : ''}"
+                       href="${ctx}/hr/attendance">...<span>Chấm công</span></a>
+                    <a class="app-nav__link ${activePage eq 'hr-allowances' ? 'is-active' : ''}"
+                       href="${ctx}/hr/allowances">...<span>Phụ cấp</span></a>
+            --%>
+            <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-clock-history"></i><span>Chấm công</span>
-            </a>
+                <span class="app-nav__soon">Sắp có</span>
+            </span>
 
-            <a class="app-nav__link ${activePage eq 'hr-allowances' ? 'is-active' : ''}"
-               href="${ctx}/hr/allowances">
+            <span class="app-nav__link is-soon" aria-disabled="true">
                 <i class="bi bi-cash-coin"></i><span>Phụ cấp</span>
-            </a>
+                <span class="app-nav__soon">Sắp có</span>
+            </span>
 
             <div class="app-nav__group">Hỗ trợ</div>
 
