@@ -38,7 +38,7 @@ public class AttendanceService {
 
     public void checkIn(User actor, int enrollmentId) throws SQLException {
         if (actor == null || !UserRoleChecks.isIntern(actor)) {
-            throw new IllegalArgumentException("Ch? th?c t?p sinh m?i ???c ch?m c?ng.");
+            throw new IllegalArgumentException("Chỉ thực tập sinh mới được chấm công.");
         }
         
         LocalDate today = LocalDate.now();
@@ -53,7 +53,7 @@ public class AttendanceService {
                 // For now, WorkScheduleDAO.list with actor's userId can verify if they have a schedule today.
                 List<WorkSchedule> schedules = workScheduleDAO.list(actor.getUserId(), enrollmentId, null, today, today, c);
                 if (schedules.isEmpty()) {
-                    throw new IllegalArgumentException("Kh?ng c? ca l?m vi?c n?o ???c l?n l?ch cho h?m nay.");
+                    throw new IllegalArgumentException("Không có ca làm việc nào được lên lịch cho hôm nay.");
                 }
                 WorkSchedule todaySchedule = null;
                 for (WorkSchedule s : schedules) {
@@ -63,15 +63,15 @@ public class AttendanceService {
                     }
                 }
                 if (todaySchedule == null) {
-                    throw new IllegalArgumentException("Kh?ng c? ca l?m vi?c ACTIVE n?o cho h?m nay.");
+                    throw new IllegalArgumentException("Không có ca làm việc ACTIVE nào cho hôm nay.");
                 }
                 if (todaySchedule.approvedLeave()) {
-                    throw new IllegalArgumentException("B?n ?? ???c duy?t ngh? ph?p cho h?m nay, kh?ng th? ch?m c?ng.");
+                    throw new IllegalArgumentException("Bạn đã được duyệt nghỉ phép cho hôm nay, không thể chấm công.");
                 }
 
                 Attendance existing = attendanceDAO.findByEnrollmentAndDate(enrollmentId, today, c);
                 if (existing != null) {
-                    throw new IllegalArgumentException("B?n ?? check-in cho ng?y h?m nay r?i.");
+                    throw new IllegalArgumentException("Bạn đã check-in cho ngày hôm nay rồi.");
                 }
 
                 attendanceDAO.checkIn(enrollmentId, today, java.sql.Timestamp.valueOf(now), c);
@@ -85,7 +85,7 @@ public class AttendanceService {
 
     public void checkOut(User actor, int enrollmentId) throws SQLException {
         if (actor == null || !UserRoleChecks.isIntern(actor)) {
-            throw new IllegalArgumentException("Ch? th?c t?p sinh m?i ???c ch?m c?ng.");
+            throw new IllegalArgumentException("Chỉ thực tập sinh mới được chấm công.");
         }
         
         LocalDate today = LocalDate.now();
@@ -97,15 +97,15 @@ public class AttendanceService {
             try {
                 List<WorkSchedule> schedules = workScheduleDAO.list(actor.getUserId(), enrollmentId, null, today, today, c);
                 if (schedules.isEmpty()) {
-                    throw new IllegalArgumentException("Kh?ng c? ca l?m vi?c n?o cho h?m nay.");
+                    throw new IllegalArgumentException("Không có ca làm việc nào cho hôm nay.");
                 }
 
                 Attendance existing = attendanceDAO.findByEnrollmentAndDate(enrollmentId, today, c);
                 if (existing == null) {
-                    throw new IllegalArgumentException("B?n ch?a check-in cho ng?y h?m nay.");
+                    throw new IllegalArgumentException("Bạn chưa check-in cho ngày hôm nay.");
                 }
                 if (existing.getCheckOutTime() != null) {
-                    throw new IllegalArgumentException("B?n ?? check-out r?i.");
+                    throw new IllegalArgumentException("Bạn đã check-out rồi.");
                 }
 
                 attendanceDAO.checkOut(existing.getAttendanceId(), java.sql.Timestamp.valueOf(now), c);
@@ -130,23 +130,141 @@ public class AttendanceService {
         public boolean approvedLeave;
         public String status; // 'PRESENT', 'ABSENT', 'LEAVE', 'MISSING_CHECKOUT'
         public double workedHours;
+
+        public AttendanceReportRow() {
+        }
+
+        public AttendanceReportRow(int enrollmentId, String internName, String programName,
+                                   LocalDate workDate, LocalTime startTime, LocalTime endTime,
+                                   LocalDateTime checkInTime, LocalDateTime checkOutTime,
+                                   boolean approvedLeave, String status, double workedHours) {
+            this.enrollmentId = enrollmentId;
+            this.internName = internName;
+            this.programName = programName;
+            this.workDate = workDate;
+            this.startTime = startTime;
+            this.endTime = endTime;
+            this.checkInTime = checkInTime;
+            this.checkOutTime = checkOutTime;
+            this.approvedLeave = approvedLeave;
+            this.status = status;
+            this.workedHours = workedHours;
+        }
+
+        public int getEnrollmentId() { return enrollmentId; }
+        public String getInternName() { return internName; }
+        public String getProgramName() { return programName; }
+        public LocalDate getWorkDate() { return workDate; }
+        public LocalTime getStartTime() { return startTime; }
+        public LocalTime getEndTime() { return endTime; }
+        public LocalDateTime getCheckInTime() { return checkInTime; }
+        public LocalDateTime getCheckOutTime() { return checkOutTime; }
+        public boolean isApprovedLeave() { return approvedLeave; }
+        public String getStatus() { return status; }
+        public double getWorkedHours() { return workedHours; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            AttendanceReportRow that = (AttendanceReportRow) o;
+            return enrollmentId == that.enrollmentId &&
+                    approvedLeave == that.approvedLeave &&
+                    Double.compare(that.workedHours, workedHours) == 0 &&
+                    Objects.equals(internName, that.internName) &&
+                    Objects.equals(programName, that.programName) &&
+                    Objects.equals(workDate, that.workDate) &&
+                    Objects.equals(startTime, that.startTime) &&
+                    Objects.equals(endTime, that.endTime) &&
+                    Objects.equals(checkInTime, that.checkInTime) &&
+                    Objects.equals(checkOutTime, that.checkOutTime) &&
+                    Objects.equals(status, that.status);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(enrollmentId, internName, programName, workDate, startTime, endTime, checkInTime, checkOutTime, approvedLeave, status, workedHours);
+        }
+
+        @Override
+        public String toString() {
+            return "AttendanceReportRow{" +
+                    "enrollmentId=" + enrollmentId +
+                    ", internName='" + internName + '\'' +
+                    ", programName='" + programName + '\'' +
+                    ", workDate=" + workDate +
+                    ", startTime=" + startTime +
+                    ", endTime=" + endTime +
+                    ", checkInTime=" + checkInTime +
+                    ", checkOutTime=" + checkOutTime +
+                    ", approvedLeave=" + approvedLeave +
+                    ", status='" + status + '\'' +
+                    ", workedHours=" + workedHours +
+                    '}';
+        }
+    }
+
+    public record AttendanceSummary(int totalSchedules, int presentCount, int absentCount, int leaveCount, int missingCheckoutCount, double totalWorkedHours) { }
+
+    public AttendanceSummary getSummary(User actor, Integer enrollmentId, Integer programId, LocalDate fromDate, LocalDate toDate) throws SQLException {
+        List<AttendanceReportRow> rows = getReport(actor, enrollmentId, programId, fromDate, toDate);
+        int total = rows.size();
+        int present = 0, absent = 0, leave = 0, missing = 0;
+        double hours = 0.0;
+        for (AttendanceReportRow r : rows) {
+            if ("PRESENT".equalsIgnoreCase(r.status)) present++;
+            else if ("ABSENT".equalsIgnoreCase(r.status)) absent++;
+            else if ("LEAVE".equalsIgnoreCase(r.status)) leave++;
+            else if ("MISSING_CHECKOUT".equalsIgnoreCase(r.status)) missing++;
+            hours += r.workedHours;
+        }
+        hours = Math.round(hours * 100.0) / 100.0;
+        return new AttendanceSummary(total, present, absent, leave, missing, hours);
     }
 
     public List<AttendanceReportRow> getReport(User actor, Integer enrollmentId, Integer programId, LocalDate fromDate, LocalDate toDate) throws SQLException {
-        if (actor == null) throw new IllegalArgumentException("Kh?ng c? quy?n.");
-        Long ownerId = UserRoleChecks.isIntern(actor) ? actor.getUserId() : null;
-        if (UserRoleChecks.isIntern(actor) && enrollmentId == null) {
-            // Must specify enrollment or we just filter by ownerId in dao.
+        return getReport(actor, enrollmentId, programId, fromDate, toDate, null);
+    }
+
+    public List<AttendanceReportRow> getReport(User actor, Integer enrollmentId, Integer programId, LocalDate fromDate, LocalDate toDate, String statusFilter) throws SQLException {
+        if (actor == null) {
+            throw new IllegalArgumentException("Người dùng (actor) không được để trống.");
         }
-        
+        if (!UserRoleChecks.isIntern(actor) && !UserRoleChecks.canManageHr(actor) && !"MENTOR".equalsIgnoreCase(actor.getRole() != null ? actor.getRole().getRoleName() : null)) {
+            throw new IllegalArgumentException("Không có quyền truy cập dữ liệu chấm công.");
+        }
+
+        // Validate and normalize dates
+        LocalDate effectiveFrom = fromDate;
+        LocalDate effectiveTo = toDate;
+        if (effectiveFrom == null && effectiveTo == null) {
+            effectiveFrom = LocalDate.now().minusDays(30);
+            effectiveTo = LocalDate.now();
+        } else if (effectiveFrom == null) {
+            effectiveFrom = effectiveTo.minusDays(30);
+        } else if (effectiveTo == null) {
+            effectiveTo = effectiveFrom.plusDays(30);
+        }
+
+        if (effectiveFrom.isAfter(effectiveTo)) {
+            throw new IllegalArgumentException("Từ ngày (fromDate) không được sau đến ngày (toDate).");
+        }
+        if (java.time.temporal.ChronoUnit.DAYS.between(effectiveFrom, effectiveTo) > 367) {
+            throw new IllegalArgumentException("Khoảng thời gian tra cứu không được vượt quá 367 ngày.");
+        }
+
+        Long ownerId = UserRoleChecks.isIntern(actor) ? actor.getUserId() : null;
+        Integer validEnrollmentId = (enrollmentId != null && enrollmentId > 0) ? enrollmentId : null;
+        Integer validProgramId = (programId != null && programId > 0) ? programId : null;
+
         try (Connection c = connections.getConnection()) {
-            List<WorkSchedule> schedules = workScheduleDAO.list(ownerId, enrollmentId, programId, fromDate, toDate, c);
-            List<Attendance> attendances = attendanceDAO.getAttendanceReport(programId != null ? programId : 0, enrollmentId != null ? enrollmentId : 0, fromDate, toDate, c);
-            
+            List<WorkSchedule> schedules = workScheduleDAO.list(ownerId, validEnrollmentId, validProgramId, effectiveFrom, effectiveTo, c);
+            List<Attendance> attendances = attendanceDAO.getAttendanceReport(ownerId, validProgramId != null ? validProgramId : 0, validEnrollmentId != null ? validEnrollmentId : 0, effectiveFrom, effectiveTo, c);
+
             List<AttendanceReportRow> report = new ArrayList<>();
             for (WorkSchedule s : schedules) {
                 if (!"ACTIVE".equals(s.status())) continue;
-                
+
                 AttendanceReportRow row = new AttendanceReportRow();
                 row.enrollmentId = s.enrollmentId();
                 row.internName = s.internName();
@@ -155,7 +273,7 @@ public class AttendanceService {
                 row.startTime = s.startTime();
                 row.endTime = s.endTime();
                 row.approvedLeave = s.approvedLeave();
-                
+
                 // Find matching attendance
                 Attendance a = attendances.stream().filter(att -> att.getEnrollmentId() == s.enrollmentId() && att.getWorkDate().equals(s.workDate())).findFirst().orElse(null);
                 if (a != null) {
@@ -163,10 +281,12 @@ public class AttendanceService {
                     row.checkOutTime = a.getCheckOutTime();
                     if (row.checkOutTime == null) {
                         row.status = "MISSING_CHECKOUT";
-                        row.workedHours = 0;
+                        row.workedHours = 0.0;
                     } else {
                         row.status = "PRESENT";
-                        row.workedHours = Math.max(0, Duration.between(row.checkInTime, row.checkOutTime).toMinutes() / 60.0);
+                        long minutes = Duration.between(row.checkInTime, row.checkOutTime).toMinutes();
+                        double hours = Math.max(0.0, minutes / 60.0);
+                        row.workedHours = Math.round(hours * 100.0) / 100.0;
                     }
                 } else {
                     if (row.approvedLeave) {
@@ -174,9 +294,12 @@ public class AttendanceService {
                     } else {
                         row.status = "ABSENT";
                     }
-                    row.workedHours = 0;
+                    row.workedHours = 0.0;
                 }
-                report.add(row);
+
+                if (statusFilter == null || statusFilter.isBlank() || statusFilter.equalsIgnoreCase(row.status)) {
+                    report.add(row);
+                }
             }
             return report;
         }
