@@ -259,7 +259,9 @@ public class AttendanceService {
 
         try (Connection c = connections.getConnection()) {
             List<WorkSchedule> schedules = workScheduleDAO.list(ownerId, validEnrollmentId, validProgramId, effectiveFrom, effectiveTo, c);
-            List<Attendance> attendances = attendanceDAO.getAttendanceReport(ownerId, validProgramId != null ? validProgramId : 0, validEnrollmentId != null ? validEnrollmentId : 0, effectiveFrom, effectiveTo, c);
+            List<Attendance> attendances = (ownerId != null)
+                    ? attendanceDAO.getAttendanceReport(ownerId, validProgramId != null ? validProgramId : 0, validEnrollmentId != null ? validEnrollmentId : 0, effectiveFrom, effectiveTo, c)
+                    : attendanceDAO.getAttendanceReport(validProgramId != null ? validProgramId : 0, validEnrollmentId != null ? validEnrollmentId : 0, effectiveFrom, effectiveTo, c);
 
             List<AttendanceReportRow> report = new ArrayList<>();
             for (WorkSchedule s : schedules) {
