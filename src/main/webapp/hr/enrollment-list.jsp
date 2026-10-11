@@ -1,11 +1,15 @@
+
 <%@ page contentType="text/html; charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<fmt:setLocale value="vi_VN" />
 <c:set var="pageTitle" value="Quản lý Ghi danh Thực tập sinh" />
 <c:set var="activePage" value="enrollments" />
 
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <div class="alert alert-warning" role="status">API ghi danh/phân công Mentor chưa được tích hợp. Không thể gửi hoặc lưu biểu mẫu này.</div>
 
 <div class="container-fluid mt-4 mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -38,6 +42,7 @@
                                 <td class="fw-bold">${enrollment.internName}</td>
                                 <td>${enrollment.programName}</td>
                                 <td>
+                                <td><fmt:formatDate value="${enrollment.enrollmentDate}" pattern="dd/MM/yyyy HH:mm" /></td>
                                     <c:choose>
                                         <c:when test="${not empty enrollment.mentorName}">
                                             <span class="text-primary fw-medium"><i class="fas fa-chalkboard-teacher me-1"></i>${enrollment.mentorName}</span>
@@ -94,7 +99,9 @@
                                     <option value="${app.applicationId}" data-program="${app.programName}">
                                         ${app.candidateName} - (Chương trình: ${app.programName})
                                     </option>
+                                <c:if test="${empty approvedApplications}"><option value="" disabled>Chưa có đơn ứng tuyển đã duyệt.</option></c:if>
                                 </c:forEach>
+
                                 <!-- Mock data hiển thị UI mẫu (nếu list rỗng) -->
                                 <option value="APP-001" data-program="Thực tập sinh Java 2024">Nguyễn Văn A - (Chương trình: Thực tập sinh Java 2024)</option>
                                 <option value="APP-002" data-program="Thực tập sinh Frontend 2024">Trần Thị B - (Chương trình: Thực tập sinh Frontend 2024)</option>
@@ -122,11 +129,15 @@
                                      3. Còn chỗ trống (currentMentees < maxMentees) 
                                 -->
                                 <c:forEach var="mentor" items="${availableMentors}">
+                                <c:if test="${empty availableMentors}"><option value="" disabled>Chưa có Mentor phù hợp.</option></c:if>
                                     <option value="${mentor.mentorId}">
                                         ${mentor.fullName} (Đang HD: ${mentor.currentMentees}/${mentor.maxMentees})
+
                                     </option>
                                 </c:forEach>
                                 <!-- Mock data UI mẫu cho Mentor hợp lệ -->
+<!-- Dữ liệu chỉ lấy từ danh sách backend; không thêm dữ liệu mẫu. -->
+
                                 <option value="M1">Lê Văn C (Đang HD: 1/3)</option>
                                 <option value="M2">Phạm Thị D (Đang HD: 0/2)</option>
                             </select>
@@ -187,6 +198,17 @@
     }
     
     function handleEnrollmentSubmit(event) {
+        const errorBox=document.getElementById('enrollmentError');
+        event.preventDefault();
+        const errorBox=document.getElementById('enrollmentError');
+        if(errorBox) errorBox.textContent='Thao tác ghi danh chưa được backend tích hợp; dữ liệu không được gửi.';
+        return;
+
+        if(errorBox) errorBox.textContent='';
+        const errorBox=document.getElementById('enrollmentError');
+        if(errorBox) errorBox.textContent='Thao tác ghi danh chưa được backend tích hợp; dữ liệu không được gửi.';
+        return;
+
         event.preventDefault();
         
         const applicationSelect = document.getElementById('applicationSelect');

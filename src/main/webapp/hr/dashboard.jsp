@@ -1,52 +1,7 @@
-<%@ page contentType="text/html; charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<c:set var="pageTitle" value="Tổng Quan Hệ Thống HR" />
-<c:set var="activePage" value="dashboard" />
-
-<%@ include file="/WEB-INF/views/common/header.jsp" %>
-
-<div class="container-fluid mt-4">
-    <h2 class="h4 mb-4">Tổng Quan (HR Dashboard)</h2>
-    
-    <!-- Hàng chứa các thẻ thống kê -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card shadow-sm text-white bg-primary">
-                <div class="card-body">
-                    <h5 class="card-title">Hồ Sơ Chờ Duyệt</h5>
-                    <p class="card-text fs-2 fw-bold">15</p>
-                    <a href="${pageContext.request.contextPath}/hr/applications" class="text-white text-decoration-none small">Xem chi tiết ➔</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm text-white bg-success">
-                <div class="card-body">
-                    <h5 class="card-title">TTS Đang Thực Tập</h5>
-                    <p class="card-text fs-2 fw-bold">42</p>
-                    <a href="${pageContext.request.contextPath}/hr/interns" class="text-white text-decoration-none small">Xem chi tiết ➔</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm text-white bg-warning text-dark">
-                <div class="card-body">
-                    <h5 class="card-title">Chương Trình Active</h5>
-                    <p class="card-text fs-2 fw-bold">3</p>
-                    <a href="${pageContext.request.contextPath}/hr/programs" class="text-dark text-decoration-none small">Xem chi tiết ➔</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm text-white bg-info">
-                <div class="card-body">
-                    <h5 class="card-title">Mentor Đang Hướng Dẫn</h5>
-                    <p class="card-text fs-2 fw-bold">12</p>
-                    <a href="${pageContext.request.contextPath}/hr/mentors" class="text-white text-decoration-none small">Xem chi tiết ➔</a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<%@ include file="/WEB-INF/views/common/footer.jsp" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %><c:set var="pageTitle" value="Dashboard HR"/><c:set var="activePage" value="dashboard"/><%@ include file="/WEB-INF/views/common/header.jsp" %>
+<style>.hrdash .card{border:0;border-radius:1rem;box-shadow:0 .3rem 1rem #172b4d12}.metric{font-size:2rem;font-weight:700}.barrow{display:grid;grid-template-columns:1fr 3fr 2rem;gap:.5rem;margin:.6rem 0}.bar{background:#e9ecef;border-radius:1rem}.bar i{display:block;height:.7rem;background:#0d6efd;border-radius:1rem}@media(max-width:767px){.hrdash .card-body{padding:1rem}}</style>
+<div class="container-fluid py-4 hrdash"><h1 class="h4">Dashboard HR</h1><div id="dashErr" class="alert alert-danger d-none"></div><div class="row g-3 mb-4"><c:forEach var="x" items="${['Tổng TTS','Đang thực tập','Hoàn thành','Tỷ lệ hoàn thành']}" varStatus="s"><div class="col-6 col-xl-3"><div class="card h-100"><div class="card-body"><c:out value="${x}"/><div class="metric" id="m${s.index}">—</div></div></div></div></c:forEach></div>
+<section class="card mb-4"><div class="card-body"><div class="d-flex justify-content-between"><h2 class="h5">Thống kê</h2><span><button type="button" class="btn btn-sm btn-outline-success export" data-format="excel">Excel</button> <button type="button" class="btn btn-sm btn-outline-danger export" data-format="pdf">PDF</button></span></div><form id="filters" class="row g-2"><div class="col-6 col-lg-2"><input class="form-control" name="programId" type="number" min="1" placeholder="Mã CT"></div><div class="col-6 col-lg-2"><select class="form-select" name="status"><option value="">Tất cả</option><option>ACTIVE</option><option>COMPLETED</option><option>CANCELLED</option></select></div><div class="col-6 col-lg-2"><input class="form-control" name="cohortFrom" type="date"></div><div class="col-6 col-lg-2"><input class="form-control" name="cohortTo" type="date"></div><div class="col-12 col-lg-2"><button class="btn btn-primary w-100">Lọc</button></div></form><div id="statErr" class="alert alert-danger d-none mt-3"></div><div class="row mt-2"><div class="col-lg-6"><h3 class="h6">Theo trường</h3><div id="unis"></div></div><div class="col-lg-6"><h3 class="h6">Theo ngành</h3><div id="majors"></div></div></div><div class="table-responsive"><table class="table table-sm"><tbody><tr><th>Ghi danh</th><td id="enrollments">—</td><th>Đang thực tập</th><td id="statActive">—</td></tr><tr><th>Hoàn thành</th><td id="statCompleted">—</td><th>Đã hủy</th><td id="cancelled">—</td></tr><tr><th>Tỷ lệ</th><td colspan="3" id="statRate">—</td></tr></tbody></table></div></div></section>
+<section class="card"><div class="card-body"><h2 class="h5">Kết thúc / hủy chương trình</h2><form id="life" class="row g-2"><div class="col-md-3"><input class="form-control" name="programId" type="number" min="1" placeholder="Mã CT" required></div><div class="col-md-3"><select class="form-select" name="status"><option value="COMPLETED">Kết thúc</option><option value="CANCELLED">Hủy</option></select></div><div class="col-md-4"><input class="form-control" name="reason" maxlength="1000" placeholder="Lý do *" required></div><div class="col-md-2"><button class="btn btn-warning w-100">Xác nhận</button></div></form><div id="lifeMsg" class="small mt-2"></div></div></section></div>
+<script>(()=>{const c='${pageContext.request.contextPath}',e=x=>document.getElementById(x),get=async u=>{const r=await fetch(u),d=await r.json();if(!r.ok)throw Error(d.error||'Không thể tải dữ liệu');return d.data??d};function chart(id,a){const x=e(id);if(!a||!a.length){x.innerHTML='<small class="text-muted">Chưa có dữ liệu.</small>';return}let m=Math.max(1,...a.map(v=>+v.count||0));x.innerHTML=a.map(v=>'<div class="barrow"><span>'+((v.label)||'Chưa khai báo')+'</span><div class="bar"><i style="width:'+100*(v.count||0)/m+'%"></i></div><b>'+v.count+'</b></div>').join('')}async function stats(){try{let d=await get(c+'/api/hr/program-statistics?'+new URLSearchParams(new FormData(e('filters'))));['enrollments','statActive','statCompleted','cancelled'].forEach((x,i)=>e(x).textContent=[d.enrollments,d.active,d.completed,d.cancelled][i]??0);e('statRate').textContent=(d.completionRate??0)+'%';chart('unis',d.universities);chart('majors',d.majors)}catch(x){e('statErr').textContent=x.message;e('statErr').classList.remove('d-none')}}async function dash(){try{let d=await get(c+'/hr/be4/dashboard');[d.totalInterns,d.activeEnrollments,d.completedEnrollments,(d.completionRatePercent??0)+'%'].forEach((v,i)=>e('m'+i).textContent=v??0)}catch(x){e('dashErr').textContent=x.message;e('dashErr').classList.remove('d-none')}}e('filters').onsubmit=x=>{x.preventDefault();stats()};document.querySelectorAll('.export').forEach(b=>b.onclick=()=>location.href=c+'/api/hr/reports/export/'+b.dataset.format+'?'+new URLSearchParams(new FormData(e('filters'))));e('life').onsubmit=async x=>{x.preventDefault();if(!confirm('Xác nhận thao tác cho ghi danh đang hoạt động?'))return;let b=new URLSearchParams(new FormData(x.target));b.set('csrfToken','<%= com.internship.util.CsrfToken.expose(request) %>');try{let r=await fetch(c+'/api/hr/program-lifecycle',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:b}),d=await r.json();if(!r.ok)throw Error(d.error||'Không thể cập nhật');e('lifeMsg').textContent='Đã cập nhật '+(d.data?.closedEnrollments??0)+' ghi danh.';stats()}catch(z){e('lifeMsg').textContent=z.message}};dash();stats()})();</script><%@ include file="/WEB-INF/views/common/footer.jsp" %>

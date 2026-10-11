@@ -6,6 +6,7 @@
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <div class="container-fluid mt-4">
+    <div class="alert alert-warning" role="status">Chức năng phân công Mentor chưa có API backend tương ứng nên hiện chưa khả dụng.</div>
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-sm">

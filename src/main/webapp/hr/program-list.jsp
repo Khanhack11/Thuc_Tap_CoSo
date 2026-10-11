@@ -1,5 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<fmt:setLocale value="vi_VN" />
 <c:set var="pageTitle" value="Danh sách chương trình thực tập" />
 <!-- Cấu hình biến activePage để menu sidebar highlight đúng mục Programs -->
 <c:set var="activePage" value="programs" />
@@ -28,6 +30,7 @@
                             <th>Tên Chương Trình</th>
                             <th>Phòng Ban</th>
                             <th>Thời Gian</th>
+                                        <fmt:formatDate value="${prog.startDate}" pattern="dd/MM/yyyy" /> <i class="fas fa-arrow-right mx-1 text-muted" style="font-size: 0.8em;"></i> <fmt:formatDate value="${prog.endDate}" pattern="dd/MM/yyyy" />
                             <th>Trạng Thái</th>
                             <th class="text-center pe-3">Thao Tác</th>
                         </tr>

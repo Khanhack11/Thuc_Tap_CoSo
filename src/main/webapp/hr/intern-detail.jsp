@@ -79,6 +79,19 @@
                             <c:when test="${profile.status == 'ACTIVE'}">
                                 <span class="badge bg-success">Đang thực tập</span>
                             </c:when>
+                                <c:when test="${profile.status == 'PENDING'}">
+                                    <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                                </c:when>
+                                <c:when test="${profile.status == 'APPROVED'}">
+                                    <span class="badge bg-info text-dark">Đã duyệt</span>
+                                </c:when>
+                                <c:when test="${profile.status == 'REJECTED'}">
+                                    <span class="badge bg-danger">Đã từ chối</span>
+                                </c:when>
+                                <c:when test="${profile.status == 'INACTIVE'}">
+                                    <span class="badge bg-secondary">Tạm dừng</span>
+                                </c:when>
+
                             <c:otherwise>
                                 <span class="badge bg-secondary"><c:out value="${profile.status}" /></span>
                             </c:otherwise>
@@ -164,7 +177,14 @@
                         <div class="col-sm-4 text-muted">Trạng thái hồ sơ:</div>
                         <div class="col-sm-8">
                             <span class="badge ${profile.status == 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">
-                                <c:out value="${profile.status}" />
+                                <c:choose>
+                                    <c:when test="${profile.status == 'PENDING'}">Chờ duyệt</c:when>
+                                    <c:when test="${profile.status == 'APPROVED'}">Đã duyệt</c:when>
+                                    <c:when test="${profile.status == 'REJECTED'}">Đã từ chối</c:when>
+                                    <c:when test="${profile.status == 'ACTIVE'}">Đang thực tập</c:when>
+                                    <c:when test="${profile.status == 'INACTIVE'}">Tạm dừng</c:when>
+                                    <c:otherwise><c:out value="${profile.status}" /></c:otherwise>
+                                </c:choose>
                             </span>
                         </div>
                     </div>
@@ -209,7 +229,14 @@
                                                     <i class="fas fa-file text-primary me-2 fs-5"></i>
                                                     <a href="${pageContext.request.contextPath}/document/download?id=${doc.documentId}" target="_blank" class="text-decoration-none"><strong><c:out value="${doc.fileName}" /></strong></a>
                                                 </td>
-                                                <td><c:out value="${doc.documentType}" /></td>
+                                                <td>
+                                                    <c:choose>
+                                                        <c:when test="${doc.documentType == 'CV'}">CV / sơ yếu lý lịch</c:when>
+                                                        <c:when test="${doc.documentType == 'APPLICATION_LETTER'}">Đơn xin thực tập</c:when>
+                                                        <c:when test="${doc.documentType == 'OTHER'}">Tài liệu khác</c:when>
+                                                        <c:otherwise><c:out value="${doc.documentType}" /></c:otherwise>
+                                                    </c:choose>
+                                                </td>
                                                 <td>
                                                     <c:choose>
                                                         <c:when test="${doc.status == 'PENDING'}">
