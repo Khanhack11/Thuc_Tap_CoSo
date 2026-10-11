@@ -39,7 +39,8 @@ public class EvaluationDAO {
     }
 
     public Evaluation findByEnrollment(Connection connection, int enrollmentId) throws SQLException {
-        String sql = "SELECT * FROM evaluations WHERE enrollment_id = ?";
+        // Compatibility endpoint returns only the legacy score /100, never a /5 criteria row.
+        String sql = "SELECT * FROM evaluations WHERE enrollment_id = ? AND score IS NOT NULL";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, enrollmentId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -60,6 +61,7 @@ public class EvaluationDAO {
                 JOIN internship_programs p ON p.program_id = pe.program_id
                 JOIN mentors m ON m.mentor_id = e.mentor_id
                 JOIN users u ON u.user_id = m.user_id
+                WHERE e.score IS NOT NULL
                 ORDER BY e.created_at DESC, e.evaluation_id DESC
                 """;
         List<EvaluationSummary> summaries = new ArrayList<>();
