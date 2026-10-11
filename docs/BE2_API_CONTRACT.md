@@ -165,3 +165,134 @@ Script này bổ sung an toàn 3 cột vào bảng `documents`:
          ▲                │
          └──(HR Re-upload)┘
 ```
+
+---
+
+## BE2 Sprint 3 – Chấm công, Phụ cấp, Yêu cầu hỗ trợ & Handoff US34
+
+### 1. Schema SQL Sprint 3 (`sql/schema_be2_sprint3.sql`)
+
+Bổ sung 3 bảng:
+1. `attendances`:
+   - `attendance_id` INT AUTO_INCREMENT PRIMARY KEY
+   - `enrollment_id` INT NOT NULL (FK -> `program_enrollments(enrollment_id)`)
+   - `work_date` DATE NOT NULL
+   - `check_in_time` DATETIME NOT NULL
+   - `check_out_time` DATETIME NULL
+   - `notes` TEXT NULL
+   - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+2. `allowances`:
+   - `allowance_id` INT AUTO_INCREMENT PRIMARY KEY
+   - `enrollment_id` INT NOT NULL
+   - `allowance_type` VARCHAR(50) NOT NULL
+   - `period` VARCHAR(20) NOT NULL
+   - `amount` DECIMAL(12,2) NOT NULL
+   - `status` VARCHAR(20) DEFAULT 'PENDING'
+   - `paid_at` DATETIME NULL
+   - `created_by` BIGINT NOT NULL
+3. `support_requests`:
+   - `request_id` INT AUTO_INCREMENT PRIMARY KEY
+   - `user_id` BIGINT NOT NULL
+   - `request_type` VARCHAR(50) NOT NULL
+   - `title` VARCHAR(255) NOT NULL
+   - `content` TEXT NOT NULL
+   - `status` VARCHAR(20) DEFAULT 'PENDING'
+   - `response` TEXT NULL
+   - `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+---
+
+### 2. Dữ liệu chuyên cần & Handoff cho BE4 (US34: Xuất dữ liệu chuyên cần)
+
+BE4 cần nguồn dữ liệu `AttendanceService/schema/filter` để thực hiện US34 (Xuất dữ liệu chuyên cần XLSX/PDF) hoặc tích hợp vào báo cáo cuối kỳ.
+
+#### A. Service Contract (`com.internship.service.AttendanceService`)
+
+```java
+// Khởi tạo
+AttendanceService attendanceService = new AttendanceService();
+
+// 1. Lấy danh sách chi tiết các ca chấm công
+List<AttendanceReportRow> rows = attendanceService.getReport(
+    User actor,             // Bắt buộc (HR, ADMIN, MENTOR, hoặc INTERN)
+    Integer enrollmentId,   // Tùy chọn (null hoặc <= 0 để xem tất cả)
+    Integer programId,      // Tùy chọn (null hoặc <= 0 để xem tất cả)
+    LocalDate fromDate,     // Tùy chọn (null sẽ tự động lùi 30 ngày)
+    LocalDate toDate        // Tùy chọn (null sẽ lấy ngày hiện tại)
+);
+
+// 2. Lấy danh sách kèm lọc theo trạng thái
+List<AttendanceReportRow> filtered = attendanceService.getReport(
+    actor, enrollmentId, programId, fromDate, toDate,
+    String statusFilter     // "PRESENT", "ABSENT", "LEAVE", "MISSING_CHECKOUT", hoặc null
+);
+
+// 3. Lấy tổng kết số liệu chuyên cần (phục vụ thống kê / tổng kết cuối kỳ)
+AttendanceSummary summary = attendanceService.getSummary(
+    actor, enrollmentId, programId, fromDate, toDate
+);
+```
+
+#### B. Cấu trúc đối tượng `AttendanceReportRow`
+
+Mỗi bản ghi đại diện cho một ca làm việc đã được lên lịch (từ `work_schedules`) đối chiếu với dữ liệu quẹt thẻ thực tế (`attendances`) và đơn nghỉ phép (`leave_requests`):
+
+| Trường | Kiểu dữ liệu | Getter | Ý nghĩa |
+|---|---|---|---|
+| `enrollmentId` | `int` | `getEnrollmentId()` | Mã ghi danh của thực tập sinh |
+| `internName` | `String` | `getInternName()` | Họ và tên thực tập sinh |
+| `programName` | `String` | `getProgramName()` | Tên chương trình thực tập |
+| `workDate` | `LocalDate` | `getWorkDate()` | Ngày làm việc |
+| `startTime` | `LocalTime` | `getStartTime()` | Giờ bắt đầu ca |
+| `endTime` | `LocalTime` | `getEndTime()` | Giờ kết thúc ca |
+| `checkInTime` | `LocalDateTime` | `getCheckInTime()` | Thời điểm check-in (null nếu không check-in) |
+| `checkOutTime` | `LocalDateTime` | `getCheckOutTime()` | Thời điểm check-out (null nếu chưa/quên check-out) |
+| `approvedLeave`| `boolean` | `isApprovedLeave()` | `true` nếu ca này có đơn nghỉ phép APPROVED |
+| `status` | `String` | `getStatus()` | Trạng thái: `PRESENT`, `MISSING_CHECKOUT`, `LEAVE`, `ABSENT` |
+| `workedHours` | `double` | `getWorkedHours()` | Số giờ làm thực tế (làm tròn 2 chữ số thập phân, 0.0 nếu chưa hoàn thành ca) |
+
+#### C. Cấu trúc đối tượng `AttendanceSummary`
+
+```java
+public record AttendanceSummary(
+    int totalSchedules,        // Tổng số ca làm việc được phân công
+    int presentCount,          // Số ca có mặt đầy đủ (check-in & check-out)
+    int absentCount,           // Số ca vắng mặt không phép
+    int leaveCount,            // Số ca nghỉ phép có duyệt
+    int missingCheckoutCount,  // Số ca quên check-out
+    double totalWorkedHours    // Tổng số giờ làm việc tích lũy (hours)
+) {}
+```
+
+#### D. Quy tắc xử lý bộ lọc và ngoại lệ (Validation)
+
+1. **Quyền truy cập (`actor`):**
+   - INTERN chỉ xem được ca làm việc của chính mình (hệ thống tự động ép `ownerId = actor.userId`).
+   - HR và ADMIN được xem toàn bộ theo bộ lọc.
+   - MENTOR được phân quyền xem mentees.
+   - Actor null hoặc role không hợp lệ -> ném `IllegalArgumentException`.
+2. **Khoảng thời gian (`fromDate`, `toDate`):**
+   - Cả hai null: Mặc định 30 ngày gần nhất tính đến hôm nay.
+   - Một trong hai null: Tự động suy ra đầu mút còn lại trong phạm vi 30 ngày.
+   - `fromDate > toDate`: Ném `IllegalArgumentException("Từ ngày (fromDate) không được sau đến ngày (toDate).")`.
+   - Khoảng cách > 367 ngày: Ném `IllegalArgumentException("Khoảng thời gian tra cứu không được vượt quá 367 ngày.")`.
+3. **Dữ liệu rỗng:** Trả về `List.of()` rỗng hoặc `AttendanceSummary` với các chỉ số = 0, tuyệt đối không gây lỗi `NullPointerException`.
+4. **Export (US34):** BE4 có thể gọi trực tiếp `attendanceService.getReport(...)` hoặc `attendanceService.getSummary(...)` để ghi ra file Excel (`XSSFWorkbook`) hoặc PDF (`PDDocument`), tương tự như `ProgramStatisticsExport` và `EndTermExport`.
+
+---
+
+### 3. HTTP Endpoints Sprint 3
+
+| Endpoint | Method | Role | Mô tả |
+|---|---|---|---|
+| `/intern/attendance` | `GET` | INTERN | Xem lịch sử và báo cáo chấm công của bản thân |
+| `/intern/attendance` | `POST` | INTERN | Thực hiện `checkin` hoặc `checkout` (yêu cầu CSRF token) |
+| `/hr/attendance` | `GET` | HR/ADMIN | Báo cáo chấm công toàn công ty theo bộ lọc ngày, enrollment, program |
+| `/intern/allowances` | `GET` | INTERN | Xem lịch sử các khoản phụ cấp cá nhân |
+| `/hr/allowances` | `GET` | HR/ADMIN | Danh sách phụ cấp của toàn bộ TTS |
+| `/hr/allowances` | `POST` | HR/ADMIN | Tạo mới phụ cấp (`action=create`) hoặc cập nhật trạng thái chi trả (`action=update_status`) |
+| `/intern/support` | `GET` | INTERN | Danh sách các yêu cầu hỗ trợ của cá nhân |
+| `/intern/support` | `POST` | INTERN | Gửi yêu cầu hỗ trợ mới (`requestType`, `title`, `content`) |
+| `/hr/support` | `GET` | HR/ADMIN | Danh sách toàn bộ ticket hỗ trợ cần xử lý |
+| `/hr/support` | `POST` | HR/ADMIN | Trả lời và cập nhật trạng thái ticket (`requestId`, `status`, `response`) |
+

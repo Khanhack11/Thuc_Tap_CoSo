@@ -56,6 +56,11 @@ public class SupportRequestServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        if (!com.internship.util.CsrfToken.valid(req)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid CSRF Token");
+            return;
+        }
+
         HttpSession session = req.getSession();
         User currentUser = (User) session.getAttribute("currentUser");
 
@@ -81,7 +86,14 @@ public class SupportRequestServlet extends HttpServlet {
                     return;
                 }
                 
-                int requestId = Integer.parseInt(req.getParameter("requestId"));
+                int requestId = 0;
+                try {
+                    requestId = Integer.parseInt(req.getParameter("requestId"));
+                } catch (NumberFormatException e) {
+                    resp.sendRedirect(req.getContextPath() + "/hr/support?error=" + java.net.URLEncoder.encode("Mã yêu cầu không hợp lệ", "UTF-8"));
+                    return;
+                }
+                
                 String status = req.getParameter("status");
                 String responseText = req.getParameter("response");
                 
@@ -89,7 +101,7 @@ public class SupportRequestServlet extends HttpServlet {
                 resp.sendRedirect(req.getContextPath() + "/hr/support?success=true");
             }
         } catch (SQLException | IllegalArgumentException e) {
-            resp.sendRedirect(req.getContextPath() + path + "?error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+            resp.sendRedirect(req.getContextPath() + path + "?error=" + java.net.URLEncoder.encode(e.getMessage() != null ? e.getMessage() : "Error", "UTF-8"));
         }
     }
 }

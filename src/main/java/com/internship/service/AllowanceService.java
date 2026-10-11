@@ -27,10 +27,10 @@ public class AllowanceService {
 
     public void createAllowance(User hrUser, Allowance allowance) throws SQLException {
         if (hrUser == null || !UserRoleChecks.canManageHr(hrUser)) {
-            throw new IllegalArgumentException("Kh?ng c? quy?n t?o ph? c?p.");
+            throw new IllegalArgumentException("Không có quyền tạo phụ cấp.");
         }
-        if (allowance.getAmount().signum() < 0) {
-            throw new IllegalArgumentException("S? ti?n ph? c?p kh?ng ???c ?m.");
+        if (allowance.getAmount() == null || allowance.getAmount().signum() < 0) {
+            throw new IllegalArgumentException("Số tiền phụ cấp không được để trống hoặc âm.");
         }
         allowance.setCreatedBy(hrUser.getUserId());
 
@@ -41,7 +41,7 @@ public class AllowanceService {
 
     public void updateStatus(User hrUser, int allowanceId, String status) throws SQLException {
         if (hrUser == null || !UserRoleChecks.canManageHr(hrUser)) {
-            throw new IllegalArgumentException("Kh?ng c? quy?n c?p nh?t ph? c?p.");
+            throw new IllegalArgumentException("Không có quyền cập nhật phụ cấp.");
         }
         try (Connection c = connections.getConnection()) {
             allowanceDAO.updateStatus(allowanceId, status, c);
@@ -50,7 +50,7 @@ public class AllowanceService {
 
     public List<Allowance> getAllowances(User user, Integer enrollmentId) throws SQLException {
         if (user == null) {
-            throw new IllegalArgumentException("Ch?a ??ng nh?p.");
+            throw new IllegalArgumentException("Chưa đăng nhập.");
         }
         Long ownerId = UserRoleChecks.isIntern(user) ? user.getUserId() : null;
         try (Connection c = connections.getConnection()) {

@@ -44,16 +44,24 @@ public class AttendanceDAO {
     }
 
     public List<Attendance> getAttendanceReport(int programId, int enrollmentId, LocalDate fromDate, LocalDate toDate, Connection conn) throws SQLException {
+        return getAttendanceReport(null, programId, enrollmentId, fromDate, toDate, conn);
+    }
+
+    public List<Attendance> getAttendanceReport(Long ownerUserId, int programId, int enrollmentId, LocalDate fromDate, LocalDate toDate, Connection conn) throws SQLException {
         StringBuilder sql = new StringBuilder(
             "SELECT a.*, ip.full_name as intern_name, p.program_name " +
             "FROM attendances a " +
             "JOIN program_enrollments pe ON a.enrollment_id = pe.enrollment_id " +
-            "JOIN intern_profiles ip ON pe.intern_id = ip.profile_id " +
+            "JOIN intern_profiles ip ON pe.intern_profile_id = ip.profile_id " +
             "JOIN internship_programs p ON pe.program_id = p.program_id " +
             "WHERE 1=1 "
         );
         List<Object> params = new ArrayList<>();
-        
+
+        if (ownerUserId != null && ownerUserId > 0) {
+            sql.append(" AND ip.user_id = ?");
+            params.add(ownerUserId);
+        }
         if (programId > 0) {
             sql.append(" AND pe.program_id = ?");
             params.add(programId);
@@ -93,12 +101,15 @@ public class AttendanceDAO {
         Attendance a = new Attendance();
         a.setAttendanceId(rs.getInt("attendance_id"));
         a.setEnrollmentId(rs.getInt("enrollment_id"));
-        a.setWorkDate(rs.getDate("work_date").toLocalDate());
-        a.setCheckInTime(rs.getTimestamp("check_in_time").toLocalDateTime());
+        Date d = rs.getDate("work_date");
+        if (d != null) a.setWorkDate(d.toLocalDate());
+        Timestamp in = rs.getTimestamp("check_in_time");
+        if (in != null) a.setCheckInTime(in.toLocalDateTime());
         Timestamp out = rs.getTimestamp("check_out_time");
         if (out != null) a.setCheckOutTime(out.toLocalDateTime());
         a.setNotes(rs.getString("notes"));
-        a.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+        Timestamp cr = rs.getTimestamp("created_at");
+        if (cr != null) a.setCreatedAt(cr.toLocalDateTime());
         return a;
     }
 }
