@@ -1,5 +1,13 @@
 <%@ page contentType="text/html; charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+
+<%-- Chốt locale cho fmt:* theo quy ước của intern/contract.jsp. Thiếu dòng này,
+     request không có Accept-Language (curl, bot, một số proxy) làm JSTL không
+     xác định được locale và rơi về value.toString(): ngày ra
+     "2026-09-05 09:00:00.0" thay vì "05/09/2026 09:00". --%>
+<fmt:setLocale value="vi_VN" />
+
 <c:set var="pageTitle" value="Đơn ứng tuyển của tôi" />
 <%-- activePage rieng, KHONG dung 'documents': gia tri do thuoc muc
      "CV và đơn ứng tuyển" -> /intern/profile#documents trong sidebar. --%>
@@ -59,25 +67,53 @@
                                     <tr>
                                         <td class="ps-3 fw-bold text-muted">#<c:out value="${app.applicationId}"/></td>
                                         <td>
+                                            <%-- Nhan hien thi la tieng Viet, gia tri gui cho BE2/BE3 van la
+                                                 PENDING/APPROVED/REJECTED. Truoc day cho nay in thang ma
+                                                 trang thai nen TTS doc ra "REJECTED"; nay dung cung bo tu
+                                                 voi voi hr/application-review.jsp. --%>
                                             <c:choose>
                                                 <c:when test="${app.status == 'PENDING'}">
-                                                    <span class="badge bg-warning text-dark"><c:out value="${app.status}"/></span>
+                                                    <span class="badge bg-warning text-dark">Chờ duyệt</span>
                                                 </c:when>
                                                 <c:when test="${app.status == 'APPROVED'}">
-                                                    <span class="badge bg-success"><c:out value="${app.status}"/></span>
+                                                    <span class="badge bg-success">Đã duyệt</span>
                                                 </c:when>
                                                 <c:when test="${app.status == 'REJECTED'}">
-                                                    <span class="badge bg-danger"><c:out value="${app.status}"/></span>
+                                                    <span class="badge bg-danger">Đã từ chối</span>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="badge bg-secondary"><c:out value="${app.status}"/></span>
                                                 </c:otherwise>
                                             </c:choose>
                                         </td>
-                                        <td><c:out value="${app.submittedAt}"/></td>
-                                        <td><c:out value="${app.reviewerName}"/></td>
-                                        <td><c:out value="${app.reviewedAt}"/></td>
-                                        <td class="pe-3"><c:out value="${app.rejectReason}"/></td>
+                                        <td>
+                                            <fmt:formatDate value="${app.submittedAt}" pattern="dd/MM/yyyy HH:mm" var="submittedFmt"/>
+                                            <c:choose>
+                                                <c:when test="${not empty submittedFmt}"><c:out value="${submittedFmt}"/></c:when>
+                                                <c:otherwise><span class="text-muted">—</span></c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${not empty app.reviewerName}"><c:out value="${app.reviewerName}"/></c:when>
+                                                <c:otherwise><span class="text-muted">—</span></c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <%-- reviewedAt NULL khi đơn còn PENDING: khong de trong o
+                                             (de nham la loi tai du lieu), hien gach ngang. --%>
+                                        <td>
+                                            <fmt:formatDate value="${app.reviewedAt}" pattern="dd/MM/yyyy HH:mm" var="reviewedFmt"/>
+                                            <c:choose>
+                                                <c:when test="${not empty reviewedFmt}"><c:out value="${reviewedFmt}"/></c:when>
+                                                <c:otherwise><span class="text-muted">—</span></c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td class="pe-3">
+                                            <c:choose>
+                                                <c:when test="${not empty app.rejectReason}"><c:out value="${app.rejectReason}"/></c:when>
+                                                <c:otherwise><span class="text-muted">—</span></c:otherwise>
+                                            </c:choose>
+                                        </td>
                                     </tr>
                                 </c:forEach>
                             </c:when>

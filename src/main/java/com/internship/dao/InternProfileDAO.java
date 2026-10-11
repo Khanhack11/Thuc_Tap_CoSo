@@ -106,7 +106,10 @@ public class InternProfileDAO {
 
     public List<InternProfile> getAllProfiles() throws SQLException {
         List<InternProfile> list = new ArrayList<>();
-        String sql = "SELECT * FROM intern_profiles ORDER BY profile_id DESC";
+        String sql = "SELECT DISTINCT p.* FROM intern_profiles p " +
+                     "INNER JOIN applications a ON p.profile_id = a.intern_id " +
+                     "WHERE a.status = 'APPROVED' " +
+                     "ORDER BY p.profile_id DESC";
         try (Connection conn = DBContext.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -122,22 +125,27 @@ public class InternProfileDAO {
      */
     public List<InternProfile> searchProfiles(String name, String university, String major) throws SQLException {
         List<InternProfile> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM intern_profiles WHERE 1=1 ");
+        // CHỈ LẤY NHỮNG HỒ SƠ ĐÃ ĐƯỢC DUYỆT (APPROVED)
+        StringBuilder sql = new StringBuilder(
+            "SELECT DISTINCT p.* FROM intern_profiles p " +
+            "INNER JOIN applications a ON p.profile_id = a.intern_id " +
+            "WHERE a.status = 'APPROVED' "
+        );
         List<Object> params = new ArrayList<>();
 
         if (name != null && !name.trim().isEmpty()) {
-            sql.append("AND LOWER(full_name) LIKE ? ");
+            sql.append("AND LOWER(p.full_name) LIKE ? ");
             params.add("%" + name.trim().toLowerCase() + "%");
         }
         if (university != null && !university.trim().isEmpty()) {
-            sql.append("AND LOWER(university) LIKE ? ");
+            sql.append("AND LOWER(p.university) LIKE ? ");
             params.add("%" + university.trim().toLowerCase() + "%");
         }
         if (major != null && !major.trim().isEmpty()) {
-            sql.append("AND LOWER(major) LIKE ? ");
+            sql.append("AND LOWER(p.major) LIKE ? ");
             params.add("%" + major.trim().toLowerCase() + "%");
         }
-        sql.append("ORDER BY profile_id DESC");
+        sql.append("ORDER BY p.profile_id DESC");
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {

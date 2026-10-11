@@ -21,8 +21,15 @@
     <div class="card-header">
         <span>Thông tin cá nhân</span>
         <c:if test="${not empty profile}">
+            <%-- Trang thai ho so hien bang tieng Viet; truoc day in thang ma
+                 ACTIVE/INACTIVE nen TTS doc ra chu tieng Anh. Dung "Đang thực tập"
+                 cho khop voi cach hr/intern-detail.jsp hien cung gia tri nay. --%>
             <span class="badge-status ${profile.status eq 'ACTIVE' ? 'badge-status--ok' : 'badge-status--neutral'}">
-                <c:out value="${profile.status}" />
+                <c:choose>
+                    <c:when test="${profile.status eq 'ACTIVE'}">Đang thực tập</c:when>
+                    <c:when test="${profile.status eq 'INACTIVE'}">Tạm dừng</c:when>
+                    <c:otherwise><c:out value="${profile.status}" /></c:otherwise>
+                </c:choose>
             </span>
         </c:if>
     </div>

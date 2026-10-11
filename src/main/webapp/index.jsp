@@ -54,6 +54,7 @@
             method="post"
             action="<%= request.getContextPath() %>/auth/logout"
         >
+            <input type="hidden" name="csrfToken" value="<%= com.internship.util.CsrfToken.expose(request) %>">
             <button type="submit">
                 Đăng xuất
             </button>
