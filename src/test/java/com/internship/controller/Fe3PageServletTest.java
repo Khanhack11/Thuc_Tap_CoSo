@@ -107,6 +107,37 @@ class Fe3PageServletTest {
         }
     }
 
+    @Test void sprint3PagesKeepAuthenticatedRoleScope() throws Exception {
+        assertEquals("/WEB-INF/views/hr/end-term-report.jsp",run("/hr/end-term-report",user("HR")).view);
+        assertTrue(run("/hr/end-term-report",user("ADMIN")).forwarded);
+        assertEquals(403,run("/hr/end-term-report",user("MENTOR")).error);
+        assertEquals("/WEB-INF/views/mentor/meetings.jsp",run("/mentor/meetings",user("MENTOR")).view);
+        assertEquals(403,run("/mentor/meetings",user("INTERN")).error);
+        assertEquals("/preview/auth/login",run("/mentor/meetings",null).redirect);
+        for(String path:new String[]{"/hr/end-term-report","/mentor/meetings"})
+            assertTrue(Arrays.asList(Fe3PageServlet.class.getAnnotation(WebServlet.class).value()).contains(path));
+    }
+
+    @Test void sprint3FormsAndPagesDeclareUtf8AndExplicitCriteriaScale() throws Exception {
+        for(String path:new String[]{"hr/end-term-report.jsp","mentor/meetings.jsp","mentor/evaluation.jsp","intern/weekly-report.jsp"}) {
+            String source=Files.readString(Path.of("src/main/webapp/WEB-INF/views",path),StandardCharsets.UTF_8);
+            assertTrue(source.contains("pageEncoding=\"UTF-8\""),path);
+            assertTrue(source.contains("/WEB-INF/views/common/header.jsp"),path);
+            assertFalse(source.contains("<<<<<<<"),path);
+        }
+        String report=Files.readString(Path.of("src/main/webapp/WEB-INF/views/intern/weekly-report.jsp"));
+        assertTrue(report.contains("id=\"reportDetail\" class=\"fe3-report-content\""),
+                "Submitted report sections must retain line breaks instead of collapsing into one paragraph");
+        String styles=Files.readString(Path.of("src/main/webapp/assets/css/fe3.css"));
+        assertTrue(styles.contains(".fe3-report-content { white-space: pre-wrap; overflow-wrap: anywhere; }"));
+        for(String name:new String[]{"results","difficulties","nextPlan"})assertTrue(report.contains("name=\""+name+"\""));
+        String assessment=Files.readString(Path.of("src/main/webapp/WEB-INF/views/mentor/evaluation.jsp"));
+        assertTrue(assessment.contains("name=\"skillsScore\""));assertTrue(assessment.contains("name=\"attitudeScore\""));
+        String script=Files.readString(Path.of("src/main/webapp/assets/js/fe3.js"));
+        assertEquals(2,script.split("Người phản hồi #",-1).length-1,"Mentor and Intern both see the actual historical reviewer");
+        assertTrue(script.contains("Tài khoản #"));
+    }
+
     private static User user(String name) {
         Role role = new Role(); role.setRoleName(name);
         User user = new User(); user.setRole(role); user.setUserId(1L);

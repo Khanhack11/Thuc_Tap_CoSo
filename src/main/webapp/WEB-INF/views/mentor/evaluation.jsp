@@ -11,7 +11,7 @@
         <div>
             <span class="fe3-hero__eyebrow"><i class="bi bi-award"></i> Tổng kết hành trình</span>
             <h2>Đánh giá cuối kỳ</h2>
-            <p>Ghi điểm và nhận xét tổng kết cho thực tập sinh bạn đang hướng dẫn. Mỗi đợt chỉ có một đánh giá.</p>
+            <p>Đánh giá kỹ năng và thái độ theo thang 1–5. Mỗi lần lưu được giữ riêng với người đánh giá và thời gian.</p>
         </div>
         <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-clipboard-check"></i></div>
     </div>
@@ -23,10 +23,12 @@
     <div class="fe3-panel">
         <div id="evaluationResult" aria-live="polite">Chọn đợt thực tập.</div>
         <form id="evaluationForm" class="d-none mt-3">
-            <label class="form-label" for="evaluationScore">Điểm tổng kết</label>
-            <input class="form-control mb-3" id="evaluationScore" name="score" type="number" min="0" max="100" step="0.01" required>
+            <label class="form-label" for="evaluationSkills">Kỹ năng (1–5)</label>
+            <input class="form-control mb-3" id="evaluationSkills" name="skillsScore" type="number" min="1" max="5" step="1" required>
+            <label class="form-label" for="evaluationAttitude">Thái độ (1–5)</label>
+            <input class="form-control mb-3" id="evaluationAttitude" name="attitudeScore" type="number" min="1" max="5" step="1" required>
             <label class="form-label" for="evaluationComment">Nhận xét</label>
-            <textarea class="form-control mb-3" id="evaluationComment" name="comment" rows="5"></textarea>
+            <textarea class="form-control mb-3" id="evaluationComment" name="comment" rows="5" maxlength="10000" required></textarea>
             <button class="btn btn-primary" type="submit">Lưu đánh giá cuối kỳ</button>
         </form>
     </div>

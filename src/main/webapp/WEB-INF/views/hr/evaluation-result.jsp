@@ -11,7 +11,8 @@
         <div>
             <span class="fe3-hero__eyebrow"><i class="bi bi-award"></i> Tổng kết thực tập</span>
             <h2>Kết quả đánh giá</h2>
-            <p>Tra cứu điểm cuối kỳ và nhận xét của mentor theo từng đợt thực tập.</p>
+            <p>Tra cứu các đánh giá thang 100 của sprint trước. Đánh giá hai tiêu chí thang 1–5 nằm trong báo cáo cuối kỳ.</p>
+            <a class="btn btn-primary" href="${ctx}/hr/end-term-report">Báo cáo cuối kỳ và xuất file</a>
         </div>
         <div class="fe3-hero__mark" aria-hidden="true"><i class="bi bi-clipboard-data"></i></div>
     </div>
