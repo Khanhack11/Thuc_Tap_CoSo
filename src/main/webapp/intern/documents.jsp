@@ -40,6 +40,7 @@
         <c:otherwise>
             <form action="${ctx}/document/upload" method="post"
                   enctype="multipart/form-data" data-validate-upload>
+    <input type="hidden" name="csrfToken" value="${csrfToken}" />
 
                 <div class="card-body">
 
