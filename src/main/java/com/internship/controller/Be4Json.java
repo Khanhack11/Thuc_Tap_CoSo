@@ -43,33 +43,33 @@ final class Be4Json {
     static Map<String, Object> assignment(TaskAssignment value) {
         return fields("assignmentId", value.getAssignmentId(), "taskId", value.getTaskId(),
                 "enrollmentId", value.getEnrollmentId(), "status", value.getStatus().name(),
-                "assignedAt", value.getAssignedAt(), "updatedAt", value.getUpdatedAt());
+                "assignedAt", utc(value.getAssignedAt()), "updatedAt", utc(value.getUpdatedAt()));
     }
 
     static Map<String, Object> progress(TaskProgress value) {
         return fields("progressId", value.getProgressId(), "assignmentId", value.getAssignmentId(),
                 "completionPercentage", value.getCompletionPercentage(), "note", value.getNote(),
-                "createdAt", value.getCreatedAt());
+                "createdAt", utc(value.getCreatedAt()));
     }
 
     static Map<String, Object> report(WeeklyReport value) {
         return fields("reportId", value.getReportId(), "enrollmentId", value.getEnrollmentId(),
                 "weekNumber", value.getWeekNumber(), "content", value.getContent(),
-                "status", value.getStatus().name(), "submittedAt", value.getSubmittedAt(),
-                "createdAt", value.getCreatedAt(), "updatedAt", value.getUpdatedAt());
+                "status", value.getStatus().name(), "submittedAt", utc(value.getSubmittedAt()),
+                "createdAt", utc(value.getCreatedAt()), "updatedAt", utc(value.getUpdatedAt()));
     }
 
     static Map<String, Object> feedback(ReportFeedback value) {
         return fields("feedbackId", value.getFeedbackId(), "reportId", value.getReportId(),
                 "reviewerUserId", value.getReviewerUserId(), "comment", value.getComment(),
-                "rating", value.getRating(), "createdAt", value.getCreatedAt());
+                "rating", value.getRating(), "createdAt", utc(value.getCreatedAt()));
     }
 
     static Map<String, Object> evaluation(Evaluation value) {
         return fields("evaluationId", value.getEvaluationId(), "enrollmentId", value.getEnrollmentId(),
                 "mentorId", value.getMentorId(), "score", value.getScore(),
-                "comment", value.getComment(), "createdAt", value.getCreatedAt(),
-                "updatedAt", value.getUpdatedAt());
+                "comment", value.getComment(), "createdAt", utc(value.getCreatedAt()),
+                "updatedAt", utc(value.getUpdatedAt()));
     }
 
     static Map<String, Object> evaluationSummary(EvaluationSummary value) {
@@ -81,7 +81,7 @@ final class Be4Json {
                 "mentorName", value.mentorName(),
                 "score", value.score(),
                 "comment", value.comment(),
-                "createdAt", value.createdAt());
+                "createdAt", utc(value.createdAt()));
     }
 
     static Map<String, Object> nullableEvaluation(Evaluation value) {
@@ -107,6 +107,11 @@ final class Be4Json {
                 "tasksInProgress", value.tasksInProgress(), "tasksDone", value.tasksDone(),
                 "reportsSubmitted", value.reportsSubmitted(), "reportsReviewed", value.reportsReviewed(),
                 "evaluationsCompleted", value.evaluationsCompleted());
+    }
+
+    // Legacy LocalDateTime model getters now carry UTC components from SQL epoch projections.
+    private static java.time.Instant utc(java.time.LocalDateTime value) {
+        return value == null ? null : value.toInstant(java.time.ZoneOffset.UTC);
     }
 
     static String stringify(Object value) {

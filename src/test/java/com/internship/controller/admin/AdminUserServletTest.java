@@ -215,6 +215,8 @@ class AdminUserServletTest {
         FakeHttp() {
             User admin = new User();
             admin.setUserId(99L);
+            admin.setStatus(com.internship.model.UserStatus.ACTIVE);
+            var role = new com.internship.model.Role(); role.setRoleName("ADMIN"); admin.setRole(role);
             sessionAttributes.put("currentUser", admin);
         }
         final Map<String, Object> requestAttributes = new HashMap<>();

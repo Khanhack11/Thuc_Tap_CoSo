@@ -7,6 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AllowanceDAO {
+    public void requireEnrollment(int id, Connection conn) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT enrollment_id FROM program_enrollments WHERE enrollment_id=?")) {
+            ps.setInt(1, id);
+            try (ResultSet rs=ps.executeQuery()) { if(!rs.next()) throw new IllegalArgumentException("Không tìm thấy ghi danh."); }
+        }
+    }
     
     public void create(Allowance allowance, Connection conn) throws SQLException {
         String sql = "INSERT INTO allowances (enrollment_id, allowance_type, period, amount, created_by) VALUES (?, ?, ?, ?, ?)";
@@ -21,14 +27,10 @@ public class AllowanceDAO {
     }
 
     public boolean updateStatus(int allowanceId, String status, Connection conn) throws SQLException {
-        String sql = "UPDATE allowances SET status = ?, paid_at = ? WHERE allowance_id = ?";
+        String sql = "UPDATE allowances SET status = ?, paid_at = ? WHERE allowance_id = ? AND status = 'PENDING'";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, status);
-            if ("PAID".equals(status)) {
-                stmt.setTimestamp(2, Timestamp.valueOf(LocalDateTime.now()));
-            } else {
-                stmt.setNull(2, Types.TIMESTAMP);
-            }
+            stmt.setObject(2, java.time.LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
             stmt.setInt(3, allowanceId);
             return stmt.executeUpdate() > 0;
         }
@@ -65,8 +67,7 @@ public class AllowanceDAO {
                     a.setPeriod(rs.getString("period"));
                     a.setAmount(rs.getBigDecimal("amount"));
                     a.setStatus(rs.getString("status"));
-                    Timestamp paid = rs.getTimestamp("paid_at");
-                    if (paid != null) a.setPaidAt(paid.toLocalDateTime());
+                    a.setPaidAt(rs.getObject("paid_at", LocalDateTime.class));
                     a.setCreatedBy(rs.getLong("created_by"));
                     a.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
                     a.setInternName(rs.getString("intern_name"));

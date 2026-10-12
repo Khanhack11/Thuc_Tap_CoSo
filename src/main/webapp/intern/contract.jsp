@@ -139,6 +139,7 @@
                                       data-confirm="Bạn đã đọc kỹ hợp đồng và đồng ý xác nhận? Thao tác này không thể hoàn tác.">
     <input type="hidden" name="csrfToken" value="${csrfToken}" />
                                     <input type="hidden" name="contractId" value="${contract.contractId}">
+                                    <input type="hidden" name="fileVersion" value="${contract.fileVersion}">
                                     <button type="submit" class="btn btn-brand w-100">
                                         <i class="bi bi-check2-circle me-1"></i>Tôi đồng ý và xác nhận hợp đồng
                                     </button>

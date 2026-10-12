@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <c:set var="pageTitle" value="Báo cáo cuối kỳ" />
-<c:set var="activePage" value="hr-evaluations" />
+<c:set var="activePage" value="hr-end-term" />
 <c:set var="pageStylesheet" value="fe3.css" />
 <c:set var="pageScript" value="fe3-sprint3.js" />
 <%@ include file="/WEB-INF/views/common/header.jsp" %>

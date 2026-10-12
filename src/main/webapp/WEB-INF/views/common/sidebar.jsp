@@ -102,73 +102,16 @@
 
             <div class="app-nav__group">Thời gian và quyền lợi</div>
 
-            <%-- ============ Sprint 3 - trang thai tung muc (cap nhat 10/10/2026) ====
-                 Quy tac giu nguyen: muc nao CHUA co route THAT thi van la
-                 <span class="app-nav__link is-soon">, KHONG doi thanh <a href>.
-                 Route co that nhung trang loi thi cung KHONG duoc bat - bam vao
-                 se thay mot trang vo nghia, te hon la thay 404.
+            <%-- Schedule, leave, attendance and allowance pages now have live routes. --%>
 
-                     - 21.2 Chấm công        -> /intern/attendance      (BE2)
-                          Route CO nhung trang KHONG dung duoc. Da truy den
-                          nguyen nhan goc (10/10/2026):
-                            AttendanceDAO.java:51
-                              "JOIN intern_profiles ip ON pe.intern_id = ip.profile_id"
-                            nhung bang program_enrollments KHONG co cot intern_id
-                            (cot that la intern_profile_id) -> SQLException
-                            "Unknown column 'pe.intern_id'".
-                          AttendanceServlet bat (SQLException|IllegalArgumentException)
-                          roi FORWARD sang /error/500.jsp -> nguoi dung nhan trang
-                          "500 - Lỗi hệ thống" NHUNG ma HTTP van la 200, va servlet
-                          KHONG log lai exception (chi set attribute "error" ma
-                          trang 500 khong in ra) => rat kho chan doan tu ngoai.
-                          Ngoai ra view con: EL rong, dau tieng Viet thanh '?',
-                          include sidebar 2 lan (header da co sidebar roi).
-                          => GIU "Sắp có", da bao BE2 kem nguyen nhan tren.
-                     - 23.3 Lịch làm việc    -> /intern/schedule       (BE3)
-                          BE3 moi co JSON /api/intern/work-schedules, KHONG co
-                          route tra ve trang -> chua bat duoc.
-                     - 24.2 Nghỉ phép        -> /intern/leave-requests (BE3)
-                          Nhu tren: chi co JSON, khong co route trang.
-                     - 26.2 Phụ cấp          -> /intern/allowances     (BE2)
-                          Cung loi y het 21.2: AllowanceDAO.java:41 join
-                          "pe.intern_id = ip.profile_id" (cot khong ton tai)
-                          -> 500. GIU "Sắp có".
-                     - 35.5 Lịch họp         -> /intern/meetings       (BE1)
-                          DA BAT. Route InternMeetingPageServlet + view
-                          intern/meetings.jsp + intern-meetings.js deu da merge.
-                     - 36.2 Thông báo -> /intern/notifications (BE1)
-                          Route InternNotificationPageServlet mở view FE1 cho
-                          INTERN ACTIVE; dữ liệu đọc từ JSON /notifications.
-                 ==================================================================== --%>
+            <a class="app-nav__link ${activePage eq 'attendance' ? 'is-active' : ''}" href="${ctx}/intern/attendance"><i class="bi bi-clock-history"></i><span>Chấm công</span></a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
-                <i class="bi bi-clock-history"></i><span>Chấm công</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            <a class="app-nav__link ${activePage eq 'intern-schedule' ? 'is-active' : ''}" href="${ctx}/intern/schedule"><i class="bi bi-calendar-week"></i><span>Lịch làm việc</span></a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
-                <i class="bi bi-calendar-week"></i><span>Lịch làm việc</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            <a class="app-nav__link ${activePage eq 'intern-leaves' ? 'is-active' : ''}" href="${ctx}/intern/leave-requests"><i class="bi bi-calendar-x"></i><span>Nghỉ phép</span></a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
-                <i class="bi bi-calendar-x"></i><span>Nghỉ phép</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
 
-            <%-- 26.2 Phu cap: da TAT 10/10/2026. Truoc day la <a href> that, nhung
-                 /intern/allowances tra ve trang 500 (AllowanceDAO:41 join cot
-                 khong ton tai - xem ghi chu dau file). De nguyen link thi bam vao
-                 la gap trang loi. Khi BE2 sua DAO thi doi lai thanh <a> nhu cu:
-                    <a class="app-nav__link ${activePage eq 'allowances' ? 'is-active' : ''}"
-                       href="${ctx}/intern/allowances">
-                        <i class="bi bi-cash-coin"></i><span>Phụ cấp</span>
-                    </a>
-            --%>
-            <span class="app-nav__link is-soon" aria-disabled="true">
-                <i class="bi bi-cash-coin"></i><span>Phụ cấp</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            <a class="app-nav__link ${activePage eq 'allowances' ? 'is-active' : ''}" href="${ctx}/intern/allowances"><i class="bi bi-cash-coin"></i><span>Phụ cấp</span></a>
 
             <div class="app-nav__group">Hỗ trợ và trao đổi</div>
 
@@ -253,6 +196,12 @@
                href="${ctx}/hr/attendance">
                 <i class="bi bi-clock-history"></i><span>Chấm công</span>
             </a>
+            <a class="app-nav__link ${activePage eq 'schedules' ? 'is-active' : ''}" href="${ctx}/hr/work-schedules.jsp">
+                <i class="bi bi-calendar-week"></i><span>Lịch làm việc</span>
+            </a>
+            <a class="app-nav__link ${activePage eq 'leave-requests' ? 'is-active' : ''}" href="${ctx}/hr/leave-requests.jsp">
+                <i class="bi bi-calendar-x"></i><span>Duyệt nghỉ phép</span>
+            </a>
 
             <a class="app-nav__link ${activePage eq 'hr-allowances' ? 'is-active' : ''}"
                href="${ctx}/hr/allowances">
@@ -297,6 +246,9 @@
             <a class="app-nav__link ${activePage eq 'hr-evaluations' ? 'is-active' : ''}"
                href="${ctx}/hr/evaluations">
                 <i class="bi bi-award"></i><span>Kết quả đánh giá</span>
+            </a>
+            <a class="app-nav__link ${activePage eq 'hr-end-term' ? 'is-active' : ''}" href="${ctx}/hr/end-term-report">
+                <i class="bi bi-file-earmark-bar-graph"></i><span>Báo cáo cuối kỳ</span>
             </a>
 
             <a class="app-nav__link ${activePage eq 'hr-dashboard' ? 'is-active' : ''}"

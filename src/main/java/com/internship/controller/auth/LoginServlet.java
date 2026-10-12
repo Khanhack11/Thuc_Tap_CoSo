@@ -57,6 +57,13 @@ public class LoginServlet extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
 
+        if (!com.internship.util.CsrfToken.valid(request)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            request.setAttribute("error", "Phiên đăng nhập đã hết hạn. Vui lòng thử lại.");
+            request.getRequestDispatcher("/login.jsp").forward(request, response);
+            return;
+        }
+
         String username =
                 request.getParameter("username");
 

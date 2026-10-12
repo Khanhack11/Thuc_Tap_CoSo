@@ -99,6 +99,7 @@
             </c:if>
 
             <form action="${ctx}/auth/login" method="post">
+                <input type="hidden" name="csrfToken" value="<%= com.internship.util.CsrfToken.expose(request) %>">
 
                 <div class="mb-3">
                     <label class="form-label" for="username">Tên đăng nhập <span class="req">*</span></label>

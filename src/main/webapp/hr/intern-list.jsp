@@ -8,6 +8,7 @@
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="h4 mb-0">Quản lý Thực Tập Sinh</h2>
+        <a class="btn btn-primary" href="${ctx}/hr/applications">Duyệt đơn ứng tuyển chờ xử lý</a>
     </div>
 
     <!-- Thêm thư viện FontAwesome -->
@@ -23,7 +24,7 @@
                     <label for="searchInput" class="form-label fw-semibold small text-muted">
                         <i class="fas fa-search me-1"></i>Tìm kiếm cá nhân
                     </label>
-                    <input type="text" class="form-control" id="searchInput" name="keyword" placeholder="Nhập Tên hoặc Email...">
+                    <input type="text" class="form-control" id="searchInput" name="keyword" value="<c:out value='${keyword}'/>" placeholder="Nhập Tên hoặc Email...">
                 </div>
                 
                 <!-- 2. Thẻ Select lọc theo Chương trình thực tập -->
@@ -32,10 +33,10 @@
                         <i class="fas fa-graduation-cap me-1"></i>Chương trình thực tập
                     </label>
                     <select class="form-select" id="programSelect" name="program">
-                        <option value="" selected>-- Tất cả chương trình --</option>
-                        <option value="prog1">Thực tập sinh Java 2024</option>
-                        <option value="prog2">Thực tập sinh ReactJS 2024</option>
-                        <option value="prog3">Data Analyst Intern 2024</option>
+                        <option value="">-- Tất cả chương trình --</option>
+                        <c:forEach var="program" items="${programs}">
+                            <option value="${program.programId}" ${selectedProgram eq program.programId ? 'selected' : ''}><c:out value="${program.programName}"/></option>
+                        </c:forEach>
                     </select>
                 </div>
                 
@@ -45,10 +46,9 @@
                         <i class="fas fa-info-circle me-1"></i>Trạng thái
                     </label>
                     <select class="form-select" id="statusSelect" name="status">
-                        <option value="" selected>-- Tất cả trạng thái --</option>
-                        <option value="ACTIVE">Đang thực tập</option>
-                        <option value="COMPLETED">Đã hoàn thành</option>
-                        <option value="RESIGNED">Đã thôi việc</option>
+                        <option value="">-- Mọi hồ sơ --</option>
+                        <option value="ACTIVE" ${selectedStatus eq 'ACTIVE' ? 'selected' : ''}>Hồ sơ hiệu lực</option>
+                        <option value="INACTIVE" ${selectedStatus eq 'INACTIVE' ? 'selected' : ''}>Hồ sơ tạm dừng</option>
                     </select>
                 </div>
                 
@@ -110,7 +110,7 @@
                                         <td>
                                             <c:choose>
                                               <c:when test="${p.status == 'ACTIVE'}">
-                                                  <span class="badge bg-success">Đang thực tập</span>
+                                                  <span class="badge bg-success">Hồ sơ hiệu lực</span>
                                               </c:when>
                                               <c:otherwise>
                                                   <span class="badge bg-secondary"><c:out value="${p.status}" /></span>

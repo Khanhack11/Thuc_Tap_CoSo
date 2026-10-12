@@ -9,6 +9,15 @@ public class ScheduleEnrollmentDAO {
                           String programStatus, LocalDate startDate, LocalDate endDate) { }
 
     public Context find(int id, boolean lock, Connection connection) throws SQLException {
+        if (lock) {
+            Integer program = null;
+            try (PreparedStatement s = connection.prepareStatement("SELECT program_id FROM program_enrollments WHERE enrollment_id=?")) {
+                s.setInt(1, id);
+                try (ResultSet r = s.executeQuery()) { if (r.next()) program = r.getInt(1); }
+            }
+            if (program == null) return null;
+            new InternshipProgramDAO().lockProgram(program, connection);
+        }
         String sql = """
                 SELECT e.enrollment_id, ip.user_id, e.status AS enrollment_status,
                        p.status AS program_status, p.start_date, p.end_date

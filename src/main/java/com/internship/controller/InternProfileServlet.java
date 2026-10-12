@@ -76,10 +76,11 @@ public class InternProfileServlet extends HttpServlet {
                     response.sendError(HttpServletResponse.SC_NOT_FOUND);
                     break;
             }
+        } catch (IllegalArgumentException e) {
+            response.sendError(400, "Mã hồ sơ hoặc bộ lọc không hợp lệ.");
         } catch (SQLException e) {
             log("Lỗi CSDL trong InternProfileServlet", e);
-            request.setAttribute("errorMessage", "Lỗi cơ sở dữ liệu: " + e.getMessage());
-            request.getRequestDispatcher("/error/500.jsp").forward(request, response);
+            response.sendError(503, "Không thể tải dữ liệu. Vui lòng thử lại.");
         }
     }
 
@@ -120,10 +121,13 @@ public class InternProfileServlet extends HttpServlet {
                 // TTS tạo hoặc cập nhật hồ sơ cá nhân
                 handleSaveProfile(request, response, currentUser);
             }
+        } catch (IllegalArgumentException e) {
+            session.setAttribute("flashError", e.getMessage());
+            response.sendRedirect(request.getContextPath() + (DocumentService.isIntern(currentUser) ? "/intern/profile" : "/hr/interns"));
         } catch (SQLException e) {
             log("Lỗi CSDL khi lưu hồ sơ", e);
-            request.setAttribute("errorMessage", "Lỗi lưu CSDL: " + e.getMessage());
-            doGet(request, response);
+            session.setAttribute("flashError", "Không thể lưu hồ sơ. Vui lòng thử lại.");
+            response.sendRedirect(request.getContextPath() + (DocumentService.isIntern(currentUser) ? "/intern/profile" : "/hr/interns"));
         }
     }
 
@@ -141,6 +145,7 @@ public class InternProfileServlet extends HttpServlet {
 
         request.setAttribute("profile", profile);
         request.setAttribute("documents", documents);
+        request.setAttribute("myApplications", profile == null ? List.of() : new com.internship.dao.ApplicationDAO().getApplicationsByInternId(profile.getProfileId()));
         request.getRequestDispatcher("/intern/profile.jsp").forward(request, response);
     }
 
@@ -162,7 +167,14 @@ public class InternProfileServlet extends HttpServlet {
         String university = request.getParameter("university");
         String major = request.getParameter("major");
 
-        List<InternProfile> list = profileService.searchProfiles(name, university, major);
+        String programText = request.getParameter("program");
+        Integer programId = programText == null || programText.isBlank() ? null : Integer.valueOf(programText);
+        if (programId != null && programId <= 0) throw new IllegalArgumentException("Mã chương trình không hợp lệ.");
+        String status = request.getParameter("status");
+        List<InternProfile> list = profileService.searchProfiles(name, university, major, programId, status);
+        request.setAttribute("programs", new com.internship.dao.InternshipProgramDAO().getAllPrograms());
+        request.setAttribute("selectedProgram", programId);
+        request.setAttribute("selectedStatus", status);
 
         request.setAttribute("profiles", list);
         request.setAttribute("searchName", name);
@@ -203,6 +215,9 @@ public class InternProfileServlet extends HttpServlet {
         request.setAttribute("profile", profile);
         request.setAttribute("documents", documents);
         request.setAttribute("contract", contract);
+        request.setAttribute("approvedApplication", new com.internship.dao.ApplicationDAO()
+                .getApplicationsByInternId(profileId).stream()
+                .filter(a -> "APPROVED".equals(a.getStatus())).findFirst().orElse(null));
         request.getRequestDispatcher("/hr/intern-detail.jsp").forward(request, response);
     }
 
@@ -258,15 +273,17 @@ public class InternProfileServlet extends HttpServlet {
 
         if (dobStr != null && !dobStr.trim().isEmpty()) {
             try {
-                input.setDob(Date.valueOf(dobStr.trim()));
-            } catch (IllegalArgumentException ignored) {
+                input.setDob(Date.valueOf(java.time.LocalDate.parse(dobStr.trim())));
+            } catch (IllegalArgumentException | java.time.DateTimeException invalid) {
+                throw new IllegalArgumentException("Ngày sinh không hợp lệ.");
             }
         }
 
         if (gpaStr != null && !gpaStr.trim().isEmpty()) {
             try {
                 input.setGpa(Double.parseDouble(gpaStr.trim()));
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException invalid) {
+                throw new IllegalArgumentException("GPA không hợp lệ.");
             }
         }
 
@@ -274,7 +291,7 @@ public class InternProfileServlet extends HttpServlet {
             profileService.updateProfileByHr(input, currentUser);
             request.getSession().setAttribute("flashSuccess", "Cập nhật hồ sơ thực tập sinh thành công!");
             String redirectUrl = request.getParameter("redirectUrl");
-            if (redirectUrl != null && !redirectUrl.trim().isEmpty()) {
+            if (redirectUrl != null && redirectUrl.startsWith(request.getContextPath() + "/hr/") && !redirectUrl.contains("\r") && !redirectUrl.contains("\n")) {
                 response.sendRedirect(redirectUrl);
             } else {
                 response.sendRedirect(request.getContextPath() + "/hr/intern-detail?id=" + profileId);
@@ -290,6 +307,10 @@ public class InternProfileServlet extends HttpServlet {
      */
     private void handleSaveProfile(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws SQLException, ServletException, IOException {
+        if (!DocumentService.isIntern(currentUser)) {
+            response.sendError(403);
+            return;
+        }
         String profileIdStr = request.getParameter("profileId");
         String fullName = request.getParameter("fullName");
         String dobStr = request.getParameter("dob");
@@ -314,15 +335,17 @@ public class InternProfileServlet extends HttpServlet {
 
         if (dobStr != null && !dobStr.trim().isEmpty()) {
             try {
-                profile.setDob(Date.valueOf(dobStr.trim()));
-            } catch (IllegalArgumentException ignored) {
+                profile.setDob(Date.valueOf(java.time.LocalDate.parse(dobStr.trim())));
+            } catch (IllegalArgumentException | java.time.DateTimeException invalid) {
+                throw new IllegalArgumentException("Ngày sinh không hợp lệ.");
             }
         }
 
         if (gpaStr != null && !gpaStr.trim().isEmpty()) {
             try {
                 profile.setGpa(Double.parseDouble(gpaStr.trim()));
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException invalid) {
+                throw new IllegalArgumentException("GPA không hợp lệ.");
             }
         }
 
@@ -330,7 +353,7 @@ public class InternProfileServlet extends HttpServlet {
             if (profileIdStr != null && !profileIdStr.trim().isEmpty()) {
                 // Cập nhật
                 profile.setProfileId(Integer.parseInt(profileIdStr));
-                profileService.updateProfile(profile);
+                if (!profileService.updateProfile(profile)) throw new IllegalArgumentException("Hồ sơ đã thay đổi. Vui lòng tải lại.");
                 request.getSession().setAttribute("flashSuccess", "Cập nhật hồ sơ thành công!");
             } else {
                 // Tạo mới
