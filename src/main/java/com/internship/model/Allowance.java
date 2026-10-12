@@ -14,6 +14,7 @@ public class Allowance {
     private long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String internName;
 
     public Allowance() {
     }
@@ -30,6 +31,9 @@ public class Allowance {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
+
+    public String getInternName() { return internName; }
+    public void setInternName(String internName) { this.internName = internName; }
 
     public int getAllowanceId() { return allowanceId; }
     public void setAllowanceId(int allowanceId) { this.allowanceId = allowanceId; }
