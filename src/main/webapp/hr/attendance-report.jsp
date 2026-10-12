@@ -18,7 +18,10 @@
        - Them dong trang thai rong va thong bao loi that su. --%>
 
 <c:set var="pageTitle" value="Báo cáo chuyên cần" />
-<c:set var="activePage" value="attendance-report" />
+<%-- Dung chung key voi trang bang /hr/attendance: sidebar khong co muc rieng cho
+     bao cao chuyen can, va hai trang nay la hai cach xem cua cung mot so lieu.
+     Dat key rieng 'attendance-report' thi khong muc nao sang. --%>
+<c:set var="activePage" value="hr-attendance" />
 <%@ include file="/WEB-INF/views/common/header.jsp" %>
 
 <div class="container-fluid py-4">
