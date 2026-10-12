@@ -59,6 +59,22 @@
         </a>
     </div>
 
+    <!-- FE2: hien thi phan hoi tu Backend (flash trong session, PRG pattern) -->
+    <c:if test="${not empty sessionScope.flashSuccess}">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <c:out value="${sessionScope.flashSuccess}" />
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <c:remove var="flashSuccess" scope="session" />
+    </c:if>
+    <c:if test="${not empty sessionScope.flashError}">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <c:out value="${sessionScope.flashError}" />
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <c:remove var="flashError" scope="session" />
+    </c:if>
+
     <div class="row">
         <!-- Thông tin tóm tắt bên trái (FE2 Layout + BE2 Action) -->
         <div class="col-lg-4 col-md-5 mb-4">
@@ -403,6 +419,9 @@
                  /hr/intern-detail khong co action nen roi vao handleSaveProfile
                  (luong TTS) va bao thieu email. --%>
             <form action="${pageContext.request.contextPath}/hr/interns/edit" method="POST">
+                <!-- FE2: action=hr_edit de Backend dinh tuyen dung handleHrEditProfile,
+                     khong phu thuoc ServletPath -->
+                <input type="hidden" name="action" value="hr_edit">
                 <div class="modal-header bg-light">
                     <h5 class="modal-title fw-bold" id="editProfileModalLabel">
                         <i class="fas fa-user-edit me-2 text-primary"></i>Cập nhật thông tin Thực tập sinh
@@ -526,18 +545,51 @@
 </div>
 
 <script>
-    // QA-03: nap documentId va ten file vao modal Tu choi theo nut vua bam.
+    // FE2: nap documentId + ten file vao modal Tu choi theo nut vua bam.
+    // Fix: relatedTarget co the null (mo bang keyboard/JS) -> fallback nut PENDING cuoi;
+    // lay data-doc-id chinh xac, trim, gan vao hidden; chan submit khi thieu id.
     (function () {
         var rejectModal = document.getElementById('rejectDocModal');
         if (!rejectModal) {
             return;
         }
+        var docIdInput = rejectModal.querySelector('[name="documentId"]');
+        var rejectForm = rejectModal.querySelector('form');
+        function resolveDocId(button) {
+            if (button && button.getAttribute) {
+                var v = button.getAttribute('data-doc-id');
+                if (v && v.trim() !== '') return v.trim();
+            }
+            return '';
+        }
         rejectModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            rejectModal.querySelector('[name="documentId"]').value = button.getAttribute('data-doc-id') || '';
-            document.getElementById('rejectDocName').textContent = button.getAttribute('data-doc-name') || '-';
+            var button = event ? event.relatedTarget : null;
+            // Neu mo modal khong qua nut (relatedTarget null), lay nut Tu choi gan nhat con PENDING.
+            if (!button || !button.getAttribute || !button.getAttribute('data-doc-id')) {
+                button = document.querySelector('#docs button[data-bs-target="#rejectDocModal"][data-doc-id]');
+            }
+            var docId = resolveDocId(button);
+            if (docIdInput) docIdInput.value = docId;
+            var docName = (button && button.getAttribute && button.getAttribute('data-doc-name')) || '-';
+            document.getElementById('rejectDocName').textContent = docName;
             document.getElementById('rejectReason').value = '';
         });
+        if (rejectForm) {
+            rejectForm.addEventListener('submit', function (e) {
+                var docId = docIdInput ? (docIdInput.value || '').trim() : '';
+                if (docId === '') {
+                    e.preventDefault();
+                    alert('Không xác định được tài liệu cần từ chối. Vui lòng đóng modal và bấm lại nút "Từ chối" trên dòng tài liệu.');
+                    return false;
+                }
+                var reason = document.getElementById('rejectReason');
+                if (reason && reason.value.trim() === '') {
+                    e.preventDefault();
+                    reason.focus();
+                    return false;
+                }
+            });
+        }
     })();
 </script>
 
