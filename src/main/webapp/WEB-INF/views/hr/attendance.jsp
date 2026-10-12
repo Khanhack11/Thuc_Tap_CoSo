@@ -24,8 +24,13 @@
 
 <div class="container-fluid py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-clock-history me-2"></i> Báo cáo chấm công (US22)</h2>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <h2 class="mb-0"><i class="bi bi-clock-history me-2"></i> Báo cáo chấm công (US22)</h2>
+        <%-- Loi vao trang bao cao chuyen can. Truoc day trang do chi vao duoc bang
+             cach go tay URL: khong sidebar, khong trang nao link toi. --%>
+        <a class="btn btn-outline-secondary" href="${ctx}/hr/attendance-report.jsp">
+            <i class="bi bi-table me-1"></i>Xem báo cáo chuyên cần
+        </a>
     </div>
 
     <c:if test="${not empty param.error}">
@@ -145,6 +150,13 @@
     </div>
 
 </div>
+
+<%-- Duong lay du lieu thu 3 trong handoff FE2: doc thang tu the nay khi tai trang HTML.
+     Noi dung do AttendanceServlet dung san (cung chuoi no tra khi xin ?format=json nen
+     hai duong luon khop nhau). Servlet da escape moi '<' thanh < nen chuoi JSON
+     khong the dong the script som - vi vay o day in tho, KHONG escape lai.
+     EL khong tu escape, va dieu do la co y o day. --%>
+<script id="attendance-data" type="application/json" data-attendance-json>${empty attendanceJson ? '[]' : attendanceJson}</script>
 
 <script>
     (() => {
