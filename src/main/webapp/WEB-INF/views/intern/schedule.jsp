@@ -11,5 +11,5 @@
 <button class="btn btn-primary align-self-end">Xem lịch</button><a class="btn btn-outline-brand align-self-end" href="${ctx}/intern/leave-requests">Đăng ký nghỉ</a>
 </form>
 <div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Ngày</th><th>Ca làm</th><th>Chương trình</th><th>Ghi chú</th><th>Trạng thái</th></tr></thead><tbody id="pageRows"><tr><td colspan="5">Đang tải…</td></tr></tbody></table></div>
-</section><script src="${ctx}/assets/js/intern-schedule-leave.js" defer></script>
+</section><script src="${ctx}/assets/js/intern-schedule-leave.js?v=20261013-integration" defer></script>
 <%@ include file="/WEB-INF/views/common/footer.jsp" %>

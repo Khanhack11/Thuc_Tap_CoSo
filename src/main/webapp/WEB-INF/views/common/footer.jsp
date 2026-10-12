@@ -38,15 +38,15 @@
 </div>
 <%-- /.app-shell --%>
 
-<script src="${ctx}/assets/js/app.js"></script>
+<script src="${ctx}/assets/js/app.js?v=20261013-integration"></script>
 
 <%-- Chuong thong bao nam trong header.jsp nen phai nap o MOI trang co khung chung,
      khong the de trong pageScript (chi co mot so trang set). Script tu thoat ngay
      neu khong tim thay #appBell, nen an toan voi ca trang khong co chuong. --%>
-<script src="${ctx}/assets/js/notifications-bell.js"></script>
+<script src="${ctx}/assets/js/notifications-bell.js?v=20261013-integration"></script>
 
 <c:if test="${not empty pageScript}">
-    <script src="${ctx}/assets/js/${pageScript}"></script>
+    <script src="${ctx}/assets/js/${pageScript}?v=20261013-integration"></script>
 </c:if>
 </body>
 </html>
