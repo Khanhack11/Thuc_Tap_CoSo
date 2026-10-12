@@ -19,9 +19,17 @@ public class SupportRequestServlet extends HttpServlet {
 
     private SupportRequestService supportRequestService;
 
+    public SupportRequestServlet() {}
+
+    SupportRequestServlet(SupportRequestService supportRequestService) {
+        this.supportRequestService = supportRequestService;
+    }
+
     @Override
     public void init() {
-        supportRequestService = new SupportRequestService();
+        if (supportRequestService == null) {
+            supportRequestService = new SupportRequestService();
+        }
     }
 
     @Override
