@@ -15,5 +15,5 @@
 <form id="dateFilter" class="card card-body mb-4 d-flex flex-row gap-3 flex-wrap">
 <label>Từ ngày<input id="from" type="date" class="form-control" required></label><label>Đến ngày<input id="to" type="date" class="form-control" required></label><button class="btn btn-outline-brand align-self-end">Tra cứu</button></form>
 <div class="card table-responsive"><table class="table mb-0"><thead><tr><th>Khoảng nghỉ</th><th>Chương trình</th><th>Lý do</th><th>Trạng thái</th><th>Phản hồi HR</th></tr></thead><tbody id="pageRows"><tr><td colspan="5">Đang tải…</td></tr></tbody></table></div>
-</section><script src="${ctx}/assets/js/intern-schedule-leave.js" defer></script>
+</section><script src="${ctx}/assets/js/intern-schedule-leave.js?v=20261013-integration" defer></script>
 <%@ include file="/WEB-INF/views/common/footer.jsp" %>

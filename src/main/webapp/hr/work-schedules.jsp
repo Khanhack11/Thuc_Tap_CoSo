@@ -28,5 +28,5 @@
   </div></section></div>
  </div>
 </div>
-<script src="${pageContext.request.contextPath}/assets/js/work-schedules.js" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/work-schedules.js?v=20261013-integration" defer></script>
 <%@ include file="/WEB-INF/views/common/footer.jsp" %>
