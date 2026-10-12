@@ -255,11 +255,37 @@
                 <span class="app-nav__soon">Sắp có</span>
             </span>
 
-            <div class="app-nav__group">Hỗ trợ</div>
+            <div class="app-nav__group">Hỗ trợ và trao đổi</div>
 
             <a class="app-nav__link ${activePage eq 'hr-support' ? 'is-active' : ''}"
                href="${ctx}/hr/support">
                 <i class="bi bi-life-preserver"></i><span>Yêu cầu hỗ trợ</span>
+            </a>
+
+            <%-- 35.5 Lịch họp (HR) - noi 12/10/2026, FE2 phu trach trang.
+                 FE2 (commit 73216ad) da tach JavaScript sang
+                 assets/js/hr-meetings.js nen loi 500 do JSP doc nham ${...}
+                 trong the <script> da het. Da kiem thuc te: dang nhap HR roi
+                 GET /hr/meetings.jsp -> 200, tieu de "Lịch họp".
+
+                 LUU Y VE URL: trang nam o src/main/webapp/hr/meetings.jsp
+                 (ngoai WEB-INF) nen Tomcat phuc vu o /hr/meetings.jsp.
+                 Duong dan sach /hr/meetings hien tra 404 vi CHUA co servlet
+                 nao map no - khac voi /hr/dashboard, /hr/evaluations do
+                 Fe3PageServlet phuc vu. Vi vay menu phai tro toi .jsp.
+                 Day la link .jsp DUY NHAT trong sidebar; khi nao co route
+                 sach thi doi href nay lai va bo ghi chu.
+                 Bao mat: AuthorizationFilter @WebFilter("/*") ap dung ca cho
+                 *.jsp, da kiem chung - chua dang nhap vao /hr/meetings.jsp
+                 bi 302 ve /auth/login, nen trang khong lo ra ngoai du nam
+                 ngoai WEB-INF.
+
+                 activePage 'hr-meetings' do chinh hr/meetings.jsp set (da doi
+                 tu 'meetings' cho dung quy uoc tien to hr-*, song song voi
+                 'intern-meetings' cua trang Lich hop ben Intern). --%>
+            <a class="app-nav__link ${activePage eq 'hr-meetings' ? 'is-active' : ''}"
+               href="${ctx}/hr/meetings.jsp">
+                <i class="bi bi-camera-video"></i><span>Lịch họp</span>
             </a>
 
             <div class="app-nav__group">Báo cáo</div>
