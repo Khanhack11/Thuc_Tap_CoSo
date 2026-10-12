@@ -35,20 +35,38 @@
     return new Date(v).toISOString();
   };
 
+  // UTC ISO instant -> "YYYY-MM-DDTHH:mm" in local time for <input type="datetime-local">.
+  const localInput = (v) => {
+    if (!v) return '';
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return '';
+    const p = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+      + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  };
+
   async function load() {
     let r = await fetch(c + '/meetings?size=100');
     let d = await r.json();
     token = d.csrfToken || token;
-    rows.innerHTML = (d.items || []).map((m) => `<tr><td>${esc(m.title)}</td><td>${new Date(m.startsAt).toLocaleString('vi-VN')} \u2013 ${new Date(m.endsAt).toLocaleTimeString('vi-VN')}</td><td>#${m.programId}</td><td><span class="badge ${m.status === 'CANCELLED' ? 'text-bg-secondary' : 'text-bg-success'}">${m.status}</span></td><td><span class="badge text-bg-info">${m.status === 'CANCELLED' ? 'Kh\u00f4ng g\u1eedi' : 'Theo c\u1ea5u h\u00ecnh server'}</span></td><td><button class="btn btn-sm btn-outline-primary" data-id="${m.id}">S\u1eeda</button></td></tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted">Ch\u01b0a c\u00f3 l\u1ecbch h\u1ecdp.</td></tr>';
+    rows.innerHTML = (d.items || []).map((m) => `<tr><td>${esc(m.title)}</td><td>${new Date(m.startsAt).toLocaleString('vi-VN')} \u2013 ${new Date(m.endsAt).toLocaleTimeString('vi-VN')}</td><td>#${m.programId}</td><td><span class="badge ${m.status === 'CANCELLED' ? 'text-bg-secondary' : 'text-bg-success'}">${m.status}</span></td><td><span class="badge text-bg-info">${m.status === 'CANCELLED' ? 'Kh\u00f4ng g\u1eedi' : 'Theo c\u1ea5u h\u00ecnh server'}</span></td><td>${m.status === 'CANCELLED' ? '' : `<button class="btn btn-sm btn-outline-primary" data-id="${m.id}">S\u1eeda</button>`}</td></tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted">Ch\u01b0a c\u00f3 l\u1ecbch h\u1ecdp.</td></tr>';
   }
 
   async function detail(id) {
     let d = await (await fetch(c + '/meetings?id=' + id)).json();
     let m = d.item;
     token = d.csrfToken || token;
-    Object.keys(m).forEach((k) => { if (field(k)) field(k).value = Array.isArray(m[k]) ? m[k].join(',') : m[k]; });
-    field('startsAt').value = m.startsAt.slice(0, 16);
-    field('endsAt').value = m.endsAt.slice(0, 16);
+    if (m.status === 'CANCELLED') {
+      say('Cu\u1ed9c h\u1ecdp \u0111\u00e3 b\u1ecb h\u1ee7y, kh\u00f4ng th\u1ec3 ch\u1ec9nh s\u1eeda.', true);
+      return;
+    }
+    Object.keys(m).forEach((k) => {
+      if (k === 'startsAt' || k === 'endsAt') return;
+      if (field(k)) field(k).value = Array.isArray(m[k]) ? m[k].join(',') : m[k];
+    });
+    field('startsAt').value = localInput(m.startsAt);
+    field('endsAt').value = localInput(m.endsAt);
+    field('programId').readOnly = true;
     document.getElementById('cancel').classList.toggle('d-none', m.status === 'CANCELLED');
   }
 
@@ -60,22 +78,31 @@
 
   f.onsubmit = async (e) => {
     e.preventDefault();
+    const saveBtn = document.getElementById('save');
     try {
       let x = Object.fromEntries(new FormData(f));
       x.action = x.id ? 'update' : 'create';
+      if (!x.startsAt || !x.endsAt) throw Error('Vui l\u00f2ng nh\u1eadp \u0111\u1ea7y \u0111\u1ee7 th\u1eddi gian b\u1eaft \u0111\u1ea7u v\u00e0 k\u1ebft th\u00fac.');
+      const start = new Date(x.startsAt), end = new Date(x.endsAt);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) throw Error('Ng\u00e0y gi\u1edd kh\u00f4ng h\u1ee3p l\u1ec7. Vui l\u00f2ng ki\u1ec3m tra l\u1ea1i.');
+      if (end <= start) throw Error('Th\u1eddi gian k\u1ebft th\u00fac ph\u1ea3i sau th\u1eddi gian b\u1eaft \u0111\u1ea7u.');
       x.startsAt = iso(x.startsAt);
       x.endsAt = iso(x.endsAt);
+      if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '\u0110ang l\u01b0u\u2026'; }
       await post(x);
       say('\u0110\u00e3 l\u01b0u l\u1ecbch h\u1ecdp. Email \u0111\u01b0\u1ee3c x\u1eed l\u00fd b\u1edfi worker server, kh\u00f4ng l\u1ed9 SMTP client.', false);
       f.reset();
       field('id').value = '';
+      field('revision').value = '';
+      field('programId').readOnly = false;
       document.getElementById('cancel').classList.add('d-none');
       load();
     } catch (e) { say(e.message, true); }
+    finally { if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'L\u01b0u'; } }
   };
 
   rows.onclick = (e) => { let b = e.target.closest('[data-id]'); if (b) detail(b.dataset.id); };
-  document.getElementById('new').onclick = () => { f.reset(); field('id').value = ''; document.getElementById('cancel').classList.add('d-none'); };
+  document.getElementById('new').onclick = () => { f.reset(); field('id').value = ''; field('revision').value = ''; field('programId').readOnly = false; document.getElementById('cancel').classList.add('d-none'); };
   document.getElementById('cancel').onclick = async () => {
     if (!confirm('H\u1ee7y cu\u1ed9c h\u1ecdp n\u00e0y?')) return;
     try { await post({ action: 'cancel', id: field('id').value, revision: field('revision').value }); say('\u0110\u00e3 h\u1ee7y cu\u1ed9c h\u1ecdp.', false); load(); }
