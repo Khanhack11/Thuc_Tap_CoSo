@@ -22,9 +22,17 @@ public class AttendanceServlet extends HttpServlet {
 
     private AttendanceService attendanceService;
 
+    public AttendanceServlet() {}
+
+    AttendanceServlet(AttendanceService attendanceService) {
+        this.attendanceService = attendanceService;
+    }
+
     @Override
     public void init() {
-        attendanceService = new AttendanceService();
+        if (attendanceService == null) {
+            attendanceService = new AttendanceService();
+        }
     }
 
     @Override
@@ -64,6 +72,9 @@ public class AttendanceServlet extends HttpServlet {
                 
                 List<AttendanceReportRow> report = attendanceService.getReport(currentUser, enrollmentId > 0 ? enrollmentId : null, null, from, to);
                 req.setAttribute("report", report);
+                req.setAttribute("from", from);
+                req.setAttribute("to", to);
+                req.setAttribute("enrollmentId", enrollmentId > 0 ? enrollmentId : null);
                 req.getRequestDispatcher("/WEB-INF/views/intern/attendance.jsp").forward(req, resp);
                 
             } else if ("/hr/attendance".equals(path)) {
@@ -95,7 +106,8 @@ public class AttendanceServlet extends HttpServlet {
                     }
                 } catch (Exception e) { }
                 
-                List<AttendanceReportRow> report = attendanceService.getReport(currentUser, enrollmentId, programId, from, to);
+                String status = req.getParameter("status");
+                List<AttendanceReportRow> report = attendanceService.getReport(currentUser, enrollmentId, programId, from, to, (status != null && !status.trim().isEmpty()) ? status.trim() : null);
 
                 // Cung MOT payload phuc vu ca hai duong lay du lieu ma FE2 duoc giao:
                 // tra thang JSON, hoac nhung vao the <script> cua trang HTML.
@@ -106,6 +118,11 @@ public class AttendanceServlet extends HttpServlet {
                 }
                 req.setAttribute("attendanceJson", json);
                 req.setAttribute("report", report);
+                req.setAttribute("from", from);
+                req.setAttribute("to", to);
+                req.setAttribute("enrollmentId", enrollmentId);
+                req.setAttribute("programId", programId);
+                req.setAttribute("status", status);
                 req.getRequestDispatcher("/WEB-INF/views/hr/attendance.jsp").forward(req, resp);
             }
         } catch (SQLException | IllegalArgumentException e) {

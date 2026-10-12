@@ -10,20 +10,20 @@
     <h2><i class="bi bi-clock-history me-2"></i> Chấm công (US21)</h2>
 </div>
 
-<c:if test="">
-    <div class="alert alert-danger"><c:out value=""/></div>
+<c:if test="${not empty param.error}">
+    <div class="alert alert-danger"><c:out value="${param.error}"/></div>
 </c:if>
-<c:if test="">
+<c:if test="${not empty param.success}">
     <div class="alert alert-success">Thao tác thành công.</div>
 </c:if>
 
 <div class="card mb-4">
     <div class="card-body">
-        <form action="/intern/attendance" method="post" class="d-flex align-items-end gap-3">
+        <form action="${pageContext.request.contextPath}/intern/attendance" method="post" class="d-flex align-items-end gap-3">
             <input type="hidden" name="csrfToken" value="<%= com.internship.util.CsrfToken.expose(request) %>">
             <div>
                 <label class="form-label">Mã Ghi Danh (Enrollment ID)</label>
-                <input type="number" name="enrollmentId" class="form-control" value="<c:out value=''/>" required>
+                <input type="number" name="enrollmentId" class="form-control" value="<c:out value='${enrollmentId}'/>" required>
             </div>
             <button type="submit" name="action" value="checkin" class="btn btn-primary"><i class="bi bi-box-arrow-in-right"></i> Check-in</button>
             <button type="submit" name="action" value="checkout" class="btn btn-warning"><i class="bi bi-box-arrow-right"></i> Check-out</button>
@@ -36,15 +36,15 @@
         <h5 class="mb-0">Báo cáo chấm công (US22)</h5>
     </div>
     <div class="card-body">
-        <form action="/intern/attendance" method="get" class="row g-3 mb-4">
-            <input type="hidden" name="enrollmentId" value="<c:out value=''/>">
+        <form action="${pageContext.request.contextPath}/intern/attendance" method="get" class="row g-3 mb-4">
+            <input type="hidden" name="enrollmentId" value="<c:out value='${enrollmentId}'/>">
             <div class="col-md-4">
                 <label class="form-label">Từ ngày</label>
-                <input type="date" name="from" class="form-control" value="<c:out value=''/>">
+                <input type="date" name="from" class="form-control" value="<c:out value='${from}'/>">
             </div>
             <div class="col-md-4">
                 <label class="form-label">Đến ngày</label>
-                <input type="date" name="to" class="form-control" value="<c:out value=''/>">
+                <input type="date" name="to" class="form-control" value="<c:out value='${to}'/>">
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button type="submit" class="btn btn-secondary w-100">Lọc</button>
@@ -64,18 +64,22 @@
             </thead>
             <tbody>
                 <c:choose>
-                    <c:when test="">
+                    <c:when test="${empty report}">
                         <tr><td colspan="6" class="text-center">Không có dữ liệu chấm công.</td></tr>
                     </c:when>
                     <c:otherwise>
-                        <c:forEach var="row" items="">
+                        <c:forEach var="row" items="${report}">
                             <tr>
-                                <td><c:out value="" /></td>
-                                <td><c:out value=" - " /></td>
-                                <td><c:out value="" /></td>
-                                <td><c:out value="" /></td>
-                                <td><c:out value="" /></td>
-                                <td><fmt:formatNumber value="" maxFractionDigits="2" /></td>
+                                <td><c:out value="${row.workDate}" /></td>
+                                <td><c:out value="${row.startTime} - ${row.endTime}" /></td>
+                                <td><c:out value="${row.checkInTime != null ? row.checkInTime : '-'}" /></td>
+                                <td><c:out value="${row.checkOutTime != null ? row.checkOutTime : '-'}" /></td>
+                                <td>
+                                    <span class="badge ${row.status == 'PRESENT' ? 'bg-success' : row.status == 'LEAVE' ? 'bg-info' : row.status == 'MISSING_CHECKOUT' ? 'bg-warning text-dark' : 'bg-danger'}">
+                                        <c:out value="${row.status}" />
+                                    </span>
+                                </td>
+                                <td><fmt:formatNumber value="${row.workedHours}" maxFractionDigits="2" /></td>
                             </tr>
                         </c:forEach>
                     </c:otherwise>
