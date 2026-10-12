@@ -146,6 +146,13 @@
 
 </div>
 
+<%-- Duong lay du lieu thu 3 trong handoff FE2: doc thang tu the nay khi tai trang HTML.
+     Noi dung do AttendanceServlet dung san (cung chuoi no tra khi xin ?format=json nen
+     hai duong luon khop nhau). Servlet da escape moi '<' thanh < nen chuoi JSON
+     khong the dong the script som - vi vay o day in tho, KHONG escape lai.
+     EL khong tu escape, va dieu do la co y o day. --%>
+<script id="attendance-data" type="application/json" data-attendance-json>${empty attendanceJson ? '[]' : attendanceJson}</script>
+
 <script>
     (() => {
         const form = document.getElementById('attendanceFilter'),

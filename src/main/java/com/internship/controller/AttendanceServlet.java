@@ -96,10 +96,29 @@ public class AttendanceServlet extends HttpServlet {
                 } catch (Exception e) { }
                 
                 List<AttendanceReportRow> report = attendanceService.getReport(currentUser, enrollmentId, programId, from, to);
+
+                // Cung MOT payload phuc vu ca hai duong lay du lieu ma FE2 duoc giao:
+                // tra thang JSON, hoac nhung vao the <script> cua trang HTML.
+                String json = toJson(report);
+                if (wantsJson(req)) {
+                    writeJson(resp, json);
+                    return;
+                }
+                req.setAttribute("attendanceJson", json);
                 req.setAttribute("report", report);
                 req.getRequestDispatcher("/WEB-INF/views/hr/attendance.jsp").forward(req, resp);
             }
         } catch (SQLException | IllegalArgumentException e) {
+            // Client xin JSON thi phai nhan JSON: neu forward sang /error/500.jsp thi
+            // ho nhan ve HTML, va loi nhap lieu (khoang > 367 ngay, from > to) bi bao
+            // nham thanh 500.
+            if (wantsJson(req)) {
+                resp.setStatus(e instanceof IllegalArgumentException
+                        ? HttpServletResponse.SC_BAD_REQUEST
+                        : HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                writeJson(resp, "{\"error\":" + quote(e.getMessage()) + "}");
+                return;
+            }
             req.setAttribute("error", e.getMessage());
             req.getRequestDispatcher("/error/500.jsp").forward(req, resp);
         }
@@ -144,5 +163,86 @@ public class AttendanceServlet extends HttpServlet {
                 resp.sendRedirect(req.getContextPath() + "/intern/attendance?enrollmentId=" + enrollmentId + "&error=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
             }
         }
+    }
+
+    /** Client xin JSON qua ?format=json, hoac qua header Accept chua application/json. */
+    private static boolean wantsJson(HttpServletRequest req) {
+        if ("json".equalsIgnoreCase(req.getParameter("format"))) {
+            return true;
+        }
+        String accept = req.getHeader("Accept");
+        return accept != null && accept.contains("application/json");
+    }
+
+    private static void writeJson(HttpServletResponse resp, String json) throws IOException {
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setCharacterEncoding("UTF-8");
+        resp.setHeader("Cache-Control", "no-store");
+        resp.getWriter().write(json);
+    }
+
+    /**
+     * Chuoi JSON nay dung cho CA HAI duong: lam body cua response JSON, va nhung vao
+     * the &lt;script id="attendance-data"&gt; cua trang HTML. Vi vay moi '&lt;' duoc escape
+     * thanh < de chuoi khong the dong the script som; van la JSON hop le.
+     */
+    // Package-private (khong phai private) de AttendanceReportJsonTest goi truc tiep,
+    // theo dung loi Be4Json + EvaluationSummaryJsonTest da co trong repo.
+    static String toJson(List<AttendanceReportRow> rows) {
+        StringBuilder out = new StringBuilder(rows.size() * 220 + 2).append('[');
+        for (int i = 0; i < rows.size(); i++) {
+            AttendanceReportRow r = rows.get(i);
+            if (i > 0) {
+                out.append(',');
+            }
+            out.append("{\"enrollmentId\":").append(r.getEnrollmentId())
+               .append(",\"internName\":").append(quote(r.getInternName()))
+               .append(",\"programName\":").append(quote(r.getProgramName()))
+               .append(",\"workDate\":").append(quote(text(r.getWorkDate())))
+               .append(",\"startTime\":").append(quote(text(r.getStartTime())))
+               .append(",\"endTime\":").append(quote(text(r.getEndTime())))
+               .append(",\"checkInTime\":").append(quote(text(r.getCheckInTime())))
+               .append(",\"checkOutTime\":").append(quote(text(r.getCheckOutTime())))
+               .append(",\"approvedLeave\":").append(r.isApprovedLeave())
+               .append(",\"status\":").append(quote(r.getStatus()))
+               .append(",\"workedHours\":").append(workedHours(r.getWorkedHours()))
+               .append('}');
+        }
+        return out.append(']').toString();
+    }
+
+    private static String text(Object value) {
+        return value == null ? null : value.toString();
+    }
+
+    /** NaN/vo cuc khong phai JSON hop le, nen quy ve 0.0. */
+    private static String workedHours(double value) {
+        return (Double.isFinite(value) && value >= 0) ? String.valueOf(value) : "0.0";
+    }
+
+    private static String quote(String value) {
+        if (value == null) {
+            return "null";
+        }
+        StringBuilder out = new StringBuilder(value.length() + 2).append('"');
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '"' -> out.append("\\\"");
+                case '\\' -> out.append("\\\\");
+                case '\n' -> out.append("\\n");
+                case '\r' -> out.append("\\r");
+                case '\t' -> out.append("\\t");
+                case '<' -> out.append("\\u003c");
+                default -> {
+                    if (c < 0x20) {
+                        out.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        out.append(c);
+                    }
+                }
+            }
+        }
+        return out.append('"').toString();
     }
 }
