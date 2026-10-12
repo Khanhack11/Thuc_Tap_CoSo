@@ -1,6 +1,7 @@
 package com.internship.model;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -10,6 +11,7 @@ import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ResourceLock("java.util.TimeZone.default")
 class ApplicationTimeContractTest {
     @ParameterizedTest
     @ValueSource(strings = {"UTC", "Asia/Ho_Chi_Minh", "America/New_York"})

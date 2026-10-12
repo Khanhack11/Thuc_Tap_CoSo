@@ -2,6 +2,7 @@ package com.internship.dao;
 
 import com.internship.model.Application;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -19,6 +20,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ResourceLock("java.util.TimeZone.default")
 class ApplicationDAOTimeZoneTest {
     private static final Instant SUBMITTED = Instant.parse("2026-10-12T02:00:00.123456Z");
     private static final Instant REVIEWED = Instant.parse("2026-10-12T03:30:00.654321Z");
