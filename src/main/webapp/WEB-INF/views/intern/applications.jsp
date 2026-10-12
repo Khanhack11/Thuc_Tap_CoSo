@@ -8,6 +8,17 @@
      "2026-09-05 09:00:00.0" thay vì "05/09/2026 09:00". --%>
 <fmt:setLocale value="vi_VN" />
 
+<%-- Chốt múi giờ, cùng lý do với locale ở trên. Thiếu dòng này thì fmt:formatDate
+     rơi về TimeZone.getDefault() của JVM: máy dev Windows UTC+7 nên tình cờ đúng và
+     che mất lỗi, còn host chạy UTC (container, CI, prod mặc định) hiện ngày nộp/ngày
+     duyệt lùi đúng 7 tiếng. Đã tái hiện trên Tomcat: cùng dữ liệu, chỉ đổi
+     -Duser.timezone=UTC là "01/09/2026 08:30" thành "01/09/2026 01:30".
+
+     Không đụng tới dữ liệu: cột vẫn là TIMESTAMP và db.url đã ghim
+     serverTimezone=Asia/Ho_Chi_Minh, nên instant đọc lên đúng ở mọi múi giờ JVM —
+     chỉ khâu hiển thị cần ghim. Không cộng trừ giờ vào giá trị. --%>
+<fmt:setTimeZone value="Asia/Ho_Chi_Minh" />
+
 <c:set var="pageTitle" value="Đơn ứng tuyển của tôi" />
 <%-- activePage rieng, KHONG dung 'documents': gia tri do thuoc muc
      "CV và đơn ứng tuyển" -> /intern/profile#documents trong sidebar. --%>
