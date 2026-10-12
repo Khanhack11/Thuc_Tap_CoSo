@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Duyệt hồ sơ" />
 <c:set var="activePage" value="hr-applications" />
 <c:set var="pageStylesheet" value="fe3.css" />
@@ -24,11 +25,18 @@
     <h2>Chi tiết đơn #<c:out value="${application.applicationId}"/></h2>
     <p>Thực tập sinh: <c:out value="${application.internName}"/> (<c:out value="${application.internEmail}"/>)</p>
     <p>Trạng thái: <c:out value="${application.status}"/></p>
-    <p>Ngày nộp: <c:out value="${application.submittedAt}"/></p>
+    <p>Ngày nộp: <fmt:formatDate value="${application.submittedAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh"/></p>
     <c:if test="${not empty application.reviewerName}">
         <p>Người duyệt: <c:out value="${application.reviewerName}"/></p>
-        <p>Ngày duyệt: <c:out value="${application.reviewedAt}"/></p>
     </c:if>
+    <p>Ngày duyệt:
+        <c:choose>
+            <c:when test="${not empty application.reviewedAt}">
+                <fmt:formatDate value="${application.reviewedAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh"/>
+            </c:when>
+            <c:otherwise>Chưa duyệt</c:otherwise>
+        </c:choose>
+    </p>
     <c:if test="${not empty application.rejectReason}">
         <p>Lý do từ chối: <c:out value="${application.rejectReason}"/></p>
     </c:if>
@@ -68,7 +76,7 @@
                 <td><c:out value="${app.applicationId}"/></td>
                 <td><c:out value="${app.internName}"/></td>
                 <td><c:out value="${app.status}"/></td>
-                <td><c:out value="${app.submittedAt}"/></td>
+                <td><fmt:formatDate value="${app.submittedAt}" pattern="dd/MM/yyyy HH:mm" timeZone="Asia/Ho_Chi_Minh"/></td>
                 <td>
                     <a href="${pageContext.request.contextPath}/hr/applications?action=detail&id=${app.applicationId}">Xem</a>
                 </td>
