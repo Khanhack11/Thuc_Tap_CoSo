@@ -77,7 +77,7 @@ public class DocumentReviewServlet extends HttpServlet {
 
         try {
             if ("approve".equalsIgnoreCase(action)) {
-                documentService.approveDocument(documentId, currentUser);
+                if (!documentService.approveDocument(documentId, currentUser)) throw new IllegalStateException("Tài liệu đã được xử lý. Vui lòng tải lại trang.");
                 String msg = "Đã phê duyệt tài liệu #" + documentId + " thành công!";
                 if (isAjax) {
                     writeJsonResponse(response, HttpServletResponse.SC_OK, true, msg, "APPROVED");
@@ -86,7 +86,7 @@ public class DocumentReviewServlet extends HttpServlet {
                     doRedirect(request, response, redirectUrl);
                 }
             } else if ("reject".equalsIgnoreCase(action)) {
-                documentService.rejectDocument(documentId, currentUser, rejectReason);
+                if (!documentService.rejectDocument(documentId, currentUser, rejectReason)) throw new IllegalStateException("Tài liệu đã được xử lý. Vui lòng tải lại trang.");
                 String msg = "Đã từ chối tài liệu #" + documentId + " thành công.";
                 if (isAjax) {
                     writeJsonResponse(response, HttpServletResponse.SC_OK, true, msg, "REJECTED");
@@ -97,11 +97,15 @@ public class DocumentReviewServlet extends HttpServlet {
             } else {
                 handleError(request, response, "Hành động duyệt tài liệu không hợp lệ (chỉ chấp nhận 'approve' hoặc 'reject').", redirectUrl, isAjax);
             }
+        } catch (IllegalStateException e) {
+            if (isAjax) writeJsonResponse(response, 409, false, e.getMessage(), null);
+            else { session.setAttribute("flashError", e.getMessage()); doRedirect(request, response, redirectUrl); }
         } catch (IllegalArgumentException | IllegalAccessException e) {
             handleError(request, response, e.getMessage(), redirectUrl, isAjax);
         } catch (SQLException e) {
             log("Lỗi CSDL khi duyệt tài liệu", e);
-            handleError(request, response, "Lỗi cơ sở dữ liệu: " + e.getMessage(), redirectUrl, isAjax);
+            if (isAjax) writeJsonResponse(response, 503, false, "Không thể lưu quyết định. Vui lòng thử lại.", null);
+            else handleError(request, response, "Không thể lưu quyết định. Vui lòng thử lại.", redirectUrl, false);
         }
     }
 
@@ -116,7 +120,7 @@ public class DocumentReviewServlet extends HttpServlet {
     }
 
     private void doRedirect(HttpServletRequest request, HttpServletResponse response, String redirectUrl) throws IOException {
-        if (redirectUrl != null && !redirectUrl.trim().isEmpty()) {
+        if (redirectUrl != null && redirectUrl.startsWith(request.getContextPath() + "/hr/") && !redirectUrl.contains("\r") && !redirectUrl.contains("\n")) {
             response.sendRedirect(redirectUrl);
         } else {
             String referer = request.getHeader("Referer");

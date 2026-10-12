@@ -51,7 +51,7 @@ public class InternProfileDAO {
 
     public boolean updateProfile(InternProfile profile) throws SQLException {
         String sql = "UPDATE intern_profiles SET full_name = ?, dob = ?, gender = ?, phone = ?, email = ?, "
-                   + "university = ?, major = ?, gpa = ?, skills = ?, status = ? WHERE profile_id = ?";
+                   + "university = ?, major = ?, gpa = ?, skills = ? WHERE profile_id = ? AND user_id = ?";
         
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -69,8 +69,8 @@ public class InternProfileDAO {
                 ps.setNull(8, Types.DECIMAL);
             }
             ps.setString(9, profile.getSkills());
-            ps.setString(10, profile.getStatus());
-            ps.setInt(11, profile.getProfileId());
+            ps.setInt(10, profile.getProfileId());
+            ps.setLong(11, profile.getUserId());
 
             return ps.executeUpdate() > 0;
         }
@@ -124,6 +124,10 @@ public class InternProfileDAO {
      * Tìm kiếm theo tên, trường, ngành (Yêu cầu BE2 - Ảnh 1).
      */
     public List<InternProfile> searchProfiles(String name, String university, String major) throws SQLException {
+        return searchProfiles(name, university, major, null, null);
+    }
+
+    public List<InternProfile> searchProfiles(String name, String university, String major, Integer programId, String status) throws SQLException {
         List<InternProfile> list = new ArrayList<>();
         // CHỈ LẤY NHỮNG HỒ SƠ ĐÃ ĐƯỢC DUYỆT (APPROVED)
         StringBuilder sql = new StringBuilder(
@@ -134,7 +138,8 @@ public class InternProfileDAO {
         List<Object> params = new ArrayList<>();
 
         if (name != null && !name.trim().isEmpty()) {
-            sql.append("AND LOWER(p.full_name) LIKE ? ");
+            sql.append("AND (LOWER(p.full_name) LIKE ? OR LOWER(p.email) LIKE ?) ");
+            params.add("%" + name.trim().toLowerCase(java.util.Locale.ROOT) + "%");
             params.add("%" + name.trim().toLowerCase() + "%");
         }
         if (university != null && !university.trim().isEmpty()) {
@@ -144,6 +149,14 @@ public class InternProfileDAO {
         if (major != null && !major.trim().isEmpty()) {
             sql.append("AND LOWER(p.major) LIKE ? ");
             params.add("%" + major.trim().toLowerCase() + "%");
+        }
+        if (programId != null) {
+            sql.append("AND EXISTS (SELECT 1 FROM program_enrollments pe WHERE pe.intern_profile_id=p.profile_id AND pe.program_id=?) ");
+            params.add(programId);
+        }
+        if (status != null && !status.isBlank()) {
+            if (!List.of("ACTIVE", "INACTIVE").contains(status)) throw new IllegalArgumentException("Trạng thái hồ sơ không hợp lệ.");
+            sql.append("AND p.status=? "); params.add(status);
         }
         sql.append("ORDER BY p.profile_id DESC");
 

@@ -28,6 +28,12 @@
     </div>
 </div>
 
+<div class="alert alert-info">
+    <strong>Lưu hồ sơ chưa phải là duyệt thực tập.</strong>
+    Sau khi hoàn thiện hồ sơ/tài liệu, <a href="${ctx}/intern/applications">nộp đơn ứng tuyển</a>.
+    Đơn mới chờ HR xét duyệt; chỉ sau đó HR mới ghi danh bạn vào chương trình.
+    <c:if test="${not empty myApplications}">Đơn gần nhất: <strong><c:out value="${myApplications[0].status}"/></strong>.</c:if>
+</div>
 <div class="row g-4">
 
     <div class="col-lg-7">

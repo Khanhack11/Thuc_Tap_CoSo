@@ -251,6 +251,7 @@
             }
 
             function check() {
+                showFieldError(pass, new TextEncoder().encode(pass.value).length > 72 ? 'Mật khẩu tối đa 72 byte UTF-8.' : null);
                 if (!confirm.value) {
                     showFieldError(confirm, null);
                     return;
@@ -264,6 +265,9 @@
             confirm.addEventListener('input', check);
 
             form.addEventListener('submit', function (event) {
+                if (new TextEncoder().encode(pass.value).length > 72) {
+                    event.preventDefault(); showFieldError(pass, 'Mật khẩu tối đa 72 byte UTF-8.'); pass.focus(); return;
+                }
                 if (pass.value !== confirm.value) {
                     event.preventDefault();
                     showFieldError(confirm, 'Mật khẩu nhập lại không khớp.');

@@ -76,6 +76,7 @@ class AttendanceServiceTest {
     // ================== Stubs ==================
 
     static class StubAttendanceDAO extends AttendanceDAO {
+        @Override public void lockOwnedEnrollment(int id, long owner, Connection c) { }
         final List<Attendance> list = new ArrayList<>();
         Attendance singleRecord;
 

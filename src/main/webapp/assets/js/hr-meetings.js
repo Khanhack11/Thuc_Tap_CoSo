@@ -22,34 +22,21 @@
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-  // Accurate local datetime-local -> UTC ISO: parse components as local time explicitly.
-  // Input "YYYY-MM-DDTHH:mm" (from <input type="datetime-local">) is local wall time.
-  const iso = (v) => {
-    if (!v) return '';
-    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(v);
-    if (m) {
-      const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
-      return d.toISOString();
-    }
-    // Fallback: let Date parse, then shift if needed.
-    return new Date(v).toISOString();
-  };
-
-  // UTC ISO instant -> "YYYY-MM-DDTHH:mm" in local time for <input type="datetime-local">.
-  const localInput = (v) => {
-    if (!v) return '';
-    const d = new Date(v);
-    if (isNaN(d.getTime())) return '';
-    const p = (n) => String(n).padStart(2, '0');
-    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
-      + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  // Form wall-clock time and display are always Vietnam, independent of browser timezone.
+  const iso = v => v ? new Date(v + '+07:00').toISOString() : '';
+  const localInput = v => {
+    if (!v || Number.isNaN(new Date(v).getTime())) return '';
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA',{
+      timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+    }).formatToParts(new Date(v)).map(p=>[p.type,p.value]));
+    return parts.year+'-'+parts.month+'-'+parts.day+'T'+parts.hour+':'+parts.minute;
   };
 
   async function load() {
     let r = await fetch(c + '/meetings?size=100');
     let d = await r.json();
     token = d.csrfToken || token;
-    rows.innerHTML = (d.items || []).map((m) => `<tr><td>${esc(m.title)}</td><td>${new Date(m.startsAt).toLocaleString('vi-VN')} \u2013 ${new Date(m.endsAt).toLocaleTimeString('vi-VN')}</td><td>#${m.programId}</td><td><span class="badge ${m.status === 'CANCELLED' ? 'text-bg-secondary' : 'text-bg-success'}">${m.status}</span></td><td><span class="badge text-bg-info">${m.status === 'CANCELLED' ? 'Kh\u00f4ng g\u1eedi' : 'Theo c\u1ea5u h\u00ecnh server'}</span></td><td>${m.status === 'CANCELLED' ? '' : `<button class="btn btn-sm btn-outline-primary" data-id="${m.id}">S\u1eeda</button>`}</td></tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted">Ch\u01b0a c\u00f3 l\u1ecbch h\u1ecdp.</td></tr>';
+    rows.innerHTML = (d.items || []).map((m) => `<tr><td>${esc(m.title)}</td><td>${new Date(m.startsAt).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})} \u2013 ${new Date(m.endsAt).toLocaleTimeString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}</td><td>#${m.programId}</td><td><span class="badge ${m.status === 'CANCELLED' ? 'text-bg-secondary' : 'text-bg-success'}">${m.status}</span></td><td><span class="badge text-bg-info">${m.status === 'CANCELLED' ? 'Kh\u00f4ng g\u1eedi' : 'Theo c\u1ea5u h\u00ecnh server'}</span></td><td>${m.status === 'CANCELLED' ? '' : `<button class="btn btn-sm btn-outline-primary" data-id="${m.id}">S\u1eeda</button>`}</td></tr>`).join('') || '<tr><td colspan="6" class="text-center text-muted">Ch\u01b0a c\u00f3 l\u1ecbch h\u1ecdp.</td></tr>';
   }
 
   async function detail(id) {
@@ -83,7 +70,7 @@
       let x = Object.fromEntries(new FormData(f));
       x.action = x.id ? 'update' : 'create';
       if (!x.startsAt || !x.endsAt) throw Error('Vui l\u00f2ng nh\u1eadp \u0111\u1ea7y \u0111\u1ee7 th\u1eddi gian b\u1eaft \u0111\u1ea7u v\u00e0 k\u1ebft th\u00fac.');
-      const start = new Date(x.startsAt), end = new Date(x.endsAt);
+      const start = new Date(iso(x.startsAt)), end = new Date(iso(x.endsAt));
       if (isNaN(start.getTime()) || isNaN(end.getTime())) throw Error('Ng\u00e0y gi\u1edd kh\u00f4ng h\u1ee3p l\u1ec7. Vui l\u00f2ng ki\u1ec3m tra l\u1ea1i.');
       if (end <= start) throw Error('Th\u1eddi gian k\u1ebft th\u00fac ph\u1ea3i sau th\u1eddi gian b\u1eaft \u0111\u1ea7u.');
       x.startsAt = iso(x.startsAt);

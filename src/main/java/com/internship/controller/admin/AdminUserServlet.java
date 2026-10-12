@@ -80,6 +80,16 @@ public class AdminUserServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json;charset=UTF-8");
 
+        var actorSession = request.getSession(false);
+        if (actorSession == null
+                || !(actorSession.getAttribute("currentUser") instanceof com.internship.model.User adminActor)
+                || adminActor.getStatus() != com.internship.model.UserStatus.ACTIVE
+                || adminActor.getRole() == null || !"ADMIN".equals(adminActor.getRole().getRoleName())) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            writeError(response, "Admin access required.");
+            return;
+        }
+
         if (!CsrfToken.valid(request)) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             writeError(

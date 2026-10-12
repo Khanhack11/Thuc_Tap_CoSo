@@ -45,11 +45,12 @@ public class AuthenticationFilter implements Filter {
                 (HttpServletResponse) servletResponse;
 
         String contextPath = request.getContextPath();
-        String requestURI = request.getRequestURI();
+        String path = com.internship.util.RequestPath.mapped(request);
 
-        String path = requestURI.substring(
-                contextPath.length()
-        );
+        if (path.equals("/uploads") || path.startsWith("/uploads/")) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
 
         boolean publicRequest =
                 path.equals("/auth/login")

@@ -14,10 +14,7 @@
              DocumentUploadServlet#handleUploadContract cần applicationId.
              Nay gửi contract.applicationId, bỏ trường signDate (backend không
              dùng) và ẩn form khi chưa có hợp đồng.
-             CÒN PHỤ THUỘC BE2: view chưa được cấp Application đã duyệt nên
-             applicationId chỉ suy ra được từ hợp đồng đã có. Lần upload ĐẦU
-             TIÊN cho hồ sơ chưa từng có hợp đồng vẫn cần BE2 truyền thêm
-             attribute (xem ghi chú ở tab Hợp đồng).
+             Upload đầu tiên sử dụng approvedApplication do controller cấp; bản CONFIRMED không bị thay.
       QA-05  Nút chuyển trạng thái POST /intern/profile -> 403 vì
              AuthorizationFilter yêu cầu role INTERN cho /intern/*. Nay POST
              /hr/intern-detail; doPost của InternProfileServlet kiểm tra
@@ -28,9 +25,7 @@
                  - trong attribute: value="<c:out value="${profile.x}"/>"
                  - trong textarea : ><c:out value="${profile.x}"/></textarea>
 
-    CHƯA SỬA - QA-07 (CSRF): các form trong file này chưa có csrfToken vì 4
-    servlet của BE2 chưa gọi CsrfToken.expose()/valid(). Thêm token lúc này sẽ
-    render rỗng, phải thêm cùng nhịp khi BE2 sửa CSRF.
+    QA-07: tất cả form POST đã có csrfToken; BE2 kiểm tra token ở filter cho mọi alias.
 --%>
 <%@ page contentType="text/html; charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
@@ -93,7 +88,7 @@
                     <div class="mb-3">
                         <c:choose>
                             <c:when test="${profile.status == 'ACTIVE'}">
-                                <span class="badge bg-success">Đang thực tập</span>
+                                <span class="badge bg-success">Hồ sơ hiệu lực</span>
                             </c:when>
                                 <c:when test="${profile.status == 'PENDING'}">
                                     <span class="badge bg-warning text-dark">Chờ duyệt</span>
@@ -123,6 +118,7 @@
                          tra HR/Admin. KHONG mo quyen HR cho toan bo /intern/*. -->
                     <div class="border-top pt-3">
                         <form action="${pageContext.request.contextPath}/hr/intern-detail" method="post">
+<input type="hidden" name="csrfToken" value="${csrfToken}">
                             <input type="hidden" name="action" value="update_status">
                             <input type="hidden" name="profileId" value="<c:out value="${profile.profileId}" />">
                             <input type="hidden" name="status" value="${profile.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}">
@@ -197,7 +193,7 @@
                                     <c:when test="${profile.status == 'PENDING'}">Chờ duyệt</c:when>
                                     <c:when test="${profile.status == 'APPROVED'}">Đã duyệt</c:when>
                                     <c:when test="${profile.status == 'REJECTED'}">Đã từ chối</c:when>
-                                    <c:when test="${profile.status == 'ACTIVE'}">Đang thực tập</c:when>
+                                    <c:when test="${profile.status == 'ACTIVE'}">Hồ sơ hiệu lực</c:when>
                                     <c:when test="${profile.status == 'INACTIVE'}">Tạm dừng</c:when>
                                     <c:otherwise><c:out value="${profile.status}" /></c:otherwise>
                                 </c:choose>
@@ -285,6 +281,7 @@
                                                         <c:when test="${doc.status == 'PENDING'}">
                                                             <!-- Form Duyệt tài liệu -->
                                                             <form action="${pageContext.request.contextPath}/document/review" method="POST" style="display: inline-block; margin-bottom: 0;">
+<input type="hidden" name="csrfToken" value="${csrfToken}">
                                                                 <input type="hidden" name="documentId" value="${doc.documentId}">
                                                                 <input type="hidden" name="action" value="approve">
                                                                 <button type="submit" class="btn btn-sm btn-success shadow-sm me-1" title="Duyệt">
@@ -328,19 +325,13 @@
 
                         <!-- Tab Hợp đồng -->
                         <div class="tab-pane fade" id="contract" role="tabpanel" aria-labelledby="contract-tab">
-                            <%-- QA-04: DocumentUploadServlet#handleUploadContract CAN
-                                 applicationId (khong phai profileId) va chi nhan don
-                                 APPROVED. handleViewProfileDetail cua BE2 hien chi tra
-                                 ve `contract`, nen applicationId suy ra tu
-                                 contract.applicationId - tuc chi co khi ho so DA co
-                                 hop dong. Lan upload DAU TIEN van can BE2 truyen them
-                                 Application da duyet sang view. --%>
+                            <%-- Hợp đồng chỉ được tải lên cho đơn APPROVED; giữ bản đã xác nhận. --%>
                             <c:choose>
                                 <c:when test="${not empty contract}">
                                     <h6 class="mb-3 text-secondary"><i class="fas fa-file-signature me-1"></i>Hợp đồng hiện tại</h6>
                                     <ul class="list-unstyled mb-4">
                                         <li class="mb-1"><span class="text-muted">Mã đơn ứng tuyển:</span> <strong>#<c:out value="${contract.applicationId}" /></strong></li>
-                                        <li class="mb-1"><span class="text-muted">Tên file:</span> <strong><c:out value="${contract.fileName}" /></strong></li>
+                                        <li class="mb-1"><span class="text-muted">Tên file:</span> <a href="${ctx}/contract/download?id=${contract.contractId}"><c:out value="${contract.fileName}" /></a></li>
                                         <li class="mb-1">
                                             <span class="text-muted">Trạng thái:</span>
                                             <c:choose>
@@ -375,6 +366,7 @@
                                         <c:otherwise>
                                             <h6 class="mb-3 text-secondary"><i class="fas fa-cloud-upload-alt me-1"></i>Thay hợp đồng</h6>
                                             <form action="${pageContext.request.contextPath}/contract/upload" method="POST" enctype="multipart/form-data">
+<input type="hidden" name="csrfToken" value="${csrfToken}">
                                                 <input type="hidden" name="applicationId" value="<c:out value="${contract.applicationId}" />">
                                                 <input type="hidden" name="redirectUrl" value="${pageContext.request.contextPath}/hr/intern-detail?id=<c:out value="${profile.profileId}" />">
                                                 <div class="row g-3">
@@ -394,12 +386,15 @@
                                     </c:choose>
                                 </c:when>
                                 <c:otherwise>
-                                    <div class="alert alert-warning mb-0">
-                                        <i class="fas fa-triangle-exclamation me-1"></i>
-                                        Hồ sơ này chưa có hợp đồng nên chưa xác định được đơn ứng tuyển đã duyệt.
-                                        Việc tải lên hợp đồng đầu tiên đang chờ BE2 truyền mã đơn APPROVED sang trang
-                                        chi tiết (QA-04). HR tạm thời tải lên từ màn hình có sẵn mã đơn.
-                                    </div>
+                                    <c:choose><c:when test="${not empty approvedApplication}">
+<form action="${ctx}/contract/upload" method="post" enctype="multipart/form-data">
+<input type="hidden" name="csrfToken" value="${csrfToken}">
+<input type="hidden" name="applicationId" value="${approvedApplication.applicationId}">
+<input type="hidden" name="redirectUrl" value="${ctx}/hr/intern-detail?id=${profile.profileId}">
+<label class="form-label" for="firstContract">Hợp đồng đầu tiên (PDF/Word, tối đa 5MB)</label>
+<input id="firstContract" class="form-control mb-3" type="file" name="contractFile" accept=".pdf,.doc,.docx" required>
+<button class="btn btn-primary">Tải lên hợp đồng</button>
+</form></c:when><c:otherwise><div class="alert alert-info">Chưa có đơn ứng tuyển được HR duyệt. Duyệt đơn trước khi tạo hợp đồng.</div></c:otherwise></c:choose>
                                 </c:otherwise>
                             </c:choose>
                         </div>
@@ -419,6 +414,7 @@
                  /hr/intern-detail khong co action nen roi vao handleSaveProfile
                  (luong TTS) va bao thieu email. --%>
             <form action="${pageContext.request.contextPath}/hr/interns/edit" method="POST">
+<input type="hidden" name="csrfToken" value="${csrfToken}">
                 <!-- FE2: action=hr_edit de Backend dinh tuyen dung handleHrEditProfile,
                      khong phu thuoc ServletPath -->
                 <input type="hidden" name="action" value="hr_edit">
@@ -517,6 +513,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <form action="${pageContext.request.contextPath}/document/review" method="POST">
+<input type="hidden" name="csrfToken" value="${csrfToken}">
                 <div class="modal-header bg-light">
                     <h5 class="modal-title fw-bold" id="rejectDocModalLabel">
                         <i class="fas fa-times-circle me-2 text-danger"></i>Từ chối tài liệu

@@ -120,7 +120,7 @@
                     <label class="form-label" for="password">Mật khẩu <span class="req">*</span></label>
                     <input type="password" id="password" name="password" class="form-control"
                            required autocomplete="new-password"
-                           minlength="8" maxlength="100" placeholder="Tối thiểu 8 ký tự">
+                           minlength="8" maxlength="72" placeholder="Tối thiểu 8 ký tự, tối đa 72 byte UTF-8">
                 </div>
 
                 <div class="col-md-6">

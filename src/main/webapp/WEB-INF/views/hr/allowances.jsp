@@ -184,6 +184,7 @@
 
 <script>
     document.getElementById('allowanceForm').addEventListener('submit', function (e) {
+        if (!e.currentTarget.reportValidity()) { e.preventDefault(); return; }
         const a = document.getElementById('amount');
         if (Number(a.value) < 0) {
             e.preventDefault();

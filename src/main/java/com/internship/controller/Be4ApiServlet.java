@@ -255,9 +255,12 @@ public class Be4ApiServlet extends HttpServlet {
                 case "/progress" -> Be4Json.progress(workflows.updateProgress(userId,
                         longParam(request, "assignmentId"), intParam(request, "completionPercentage"),
                         request.getParameter("note")));
-                case "/reports" -> Be4Json.report(structured(request) ? workflows.createDraft(userId,
-                        intParam(request, "enrollmentId"), shortParam(request, "weekNumber"), request.getParameter("results"), request.getParameter("difficulties"), request.getParameter("nextPlan")) : reports.createDraft(userId,
-                        intParam(request, "enrollmentId"), shortParam(request, "weekNumber"), request.getParameter("content")));
+                // New drafts must use the Sprint 3 contract. Existing legacy drafts remain readable/editable.
+                case "/reports" -> {
+                    if (!structured(request)) throw new IllegalArgumentException("Báo cáo mới cần các trường results, difficulties, nextPlan; content chỉ dùng cho nháp cũ.");
+                    yield Be4Json.report(workflows.createDraft(userId,
+                            intParam(request, "enrollmentId"), shortParam(request, "weekNumber"), request.getParameter("results"), request.getParameter("difficulties"), request.getParameter("nextPlan")));
+                }
                 case "/reports/update" -> Be4Json.report(structured(request) ? workflows.updateDraft(userId,
                         longParam(request, "reportId"), request.getParameter("results"), request.getParameter("difficulties"), request.getParameter("nextPlan")) : reports.updateDraft(userId,
                         longParam(request, "reportId"), request.getParameter("content")));
