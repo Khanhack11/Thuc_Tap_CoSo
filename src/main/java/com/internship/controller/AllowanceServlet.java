@@ -21,9 +21,17 @@ public class AllowanceServlet extends HttpServlet {
 
     private AllowanceService allowanceService;
 
+    public AllowanceServlet() {}
+
+    AllowanceServlet(AllowanceService allowanceService) {
+        this.allowanceService = allowanceService;
+    }
+
     @Override
     public void init() {
-        allowanceService = new AllowanceService();
+        if (allowanceService == null) {
+            allowanceService = new AllowanceService();
+        }
     }
 
     @Override
