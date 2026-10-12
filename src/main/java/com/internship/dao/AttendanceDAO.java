@@ -9,6 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AttendanceDAO {
+    public void lockOwnedEnrollment(int enrollmentId, long actorId, Connection conn) throws SQLException {
+        var context = new ScheduleEnrollmentDAO().find(enrollmentId, true, conn);
+        if (context == null || context.userId() != actorId || !"ACTIVE".equals(context.enrollmentStatus()) || !"ACTIVE".equals(context.programStatus()))
+            throw new IllegalArgumentException("Ghi danh không thuộc bạn hoặc không còn hoạt động.");
+    }
     
     public Attendance findByEnrollmentAndDate(int enrollmentId, LocalDate date, Connection conn) throws SQLException {
         String sql = "SELECT * FROM attendances WHERE enrollment_id = ? AND work_date = ?";
@@ -17,7 +22,9 @@ public class AttendanceDAO {
             stmt.setDate(2, Date.valueOf(date));
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return mapRow(rs);
+                    Attendance result = mapRow(rs);
+                    if (rs.next()) throw new IllegalArgumentException("Dữ liệu chấm công bị trùng ngày. Nhờ HR/QA kiểm tra trước khi tiếp tục.");
+                    return result;
                 }
             }
         }
@@ -29,17 +36,18 @@ public class AttendanceDAO {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, enrollmentId);
             stmt.setDate(2, Date.valueOf(date));
-            stmt.setTimestamp(3, time);
+            stmt.setObject(3, time.toLocalDateTime()); // DATETIME is Vietnam wall time, not an instant.
             stmt.executeUpdate();
         }
     }
 
     public void checkOut(int attendanceId, Timestamp time, Connection conn) throws SQLException {
-        String sql = "UPDATE attendances SET check_out_time = ? WHERE attendance_id = ?";
+        String sql = "UPDATE attendances SET check_out_time = ? WHERE attendance_id = ? AND check_out_time IS NULL AND check_in_time <= ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setTimestamp(1, time);
+            stmt.setObject(1, time.toLocalDateTime());
             stmt.setInt(2, attendanceId);
-            stmt.executeUpdate();
+            stmt.setObject(3, time.toLocalDateTime());
+            if (stmt.executeUpdate() != 1) throw new IllegalArgumentException("Chấm công đã thay đổi hoặc thời gian ra trước thời gian vào.");
         }
     }
 
@@ -103,10 +111,8 @@ public class AttendanceDAO {
         a.setEnrollmentId(rs.getInt("enrollment_id"));
         Date d = rs.getDate("work_date");
         if (d != null) a.setWorkDate(d.toLocalDate());
-        Timestamp in = rs.getTimestamp("check_in_time");
-        if (in != null) a.setCheckInTime(in.toLocalDateTime());
-        Timestamp out = rs.getTimestamp("check_out_time");
-        if (out != null) a.setCheckOutTime(out.toLocalDateTime());
+        a.setCheckInTime(rs.getObject("check_in_time", java.time.LocalDateTime.class));
+        a.setCheckOutTime(rs.getObject("check_out_time", java.time.LocalDateTime.class));
         a.setNotes(rs.getString("notes"));
         Timestamp cr = rs.getTimestamp("created_at");
         if (cr != null) a.setCreatedAt(cr.toLocalDateTime());

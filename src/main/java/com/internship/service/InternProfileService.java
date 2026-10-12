@@ -38,6 +38,7 @@ public class InternProfileService {
             errors.add("Dữ liệu hồ sơ không được để trống.");
             return errors;
         }
+        if (profile.getPhone() != null) profile.setPhone(profile.getPhone().replaceAll("[\\s.()-]", ""));
 
         // 1. Kiểm tra Họ và tên
         if (profile.getFullName() == null || profile.getFullName().trim().isEmpty()) {
@@ -70,11 +71,17 @@ public class InternProfileService {
 
         // 5. Kiểm tra GPA (nếu có nhập)
         if (profile.getGpa() != null) {
-            if (profile.getGpa() < 0.0 || profile.getGpa() > 4.0) {
+            if (!Double.isFinite(profile.getGpa()) || profile.getGpa() < 0.0 || profile.getGpa() > 4.0) {
                 errors.add("Điểm GPA hệ 4 phải nằm trong khoảng từ 0.0 đến 4.0.");
             }
         }
 
+        if (profile.getEmail() != null && profile.getEmail().length() > 100) errors.add("Email tối đa 100 ký tự.");
+        if (profile.getUniversity() != null && profile.getUniversity().length() > 150) errors.add("Tên trường tối đa 150 ký tự.");
+        if (profile.getMajor() != null && profile.getMajor().length() > 100) errors.add("Chuyên ngành tối đa 100 ký tự.");
+        if (profile.getSkills() != null && profile.getSkills().length() > 10000) errors.add("Kỹ năng tối đa 10000 ký tự.");
+        if (profile.getGender() != null && !profile.getGender().isBlank() && !List.of("Nam", "Nữ", "Khác").contains(profile.getGender())) errors.add("Giới tính không hợp lệ.");
+        if (profile.getDob() != null && profile.getDob().toLocalDate().isAfter(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")))) errors.add("Ngày sinh không được ở tương lai.");
         return errors;
     }
 
@@ -110,6 +117,10 @@ public class InternProfileService {
             throw new IllegalArgumentException("Không tìm thấy hồ sơ có ID: " + profile.getProfileId());
         }
 
+        if (existing.getUserId() != profile.getUserId()) {
+            throw new IllegalArgumentException("Bạn không có quyền sửa hồ sơ này.");
+        }
+        profile.setStatus(existing.getStatus());
         return profileDAO.updateProfile(profile);
     }
 
@@ -176,7 +187,14 @@ public class InternProfileService {
         return profileDAO.searchProfiles(name, university, major);
     }
 
+    public List<InternProfile> searchProfiles(String name, String university, String major, Integer programId, String status) throws SQLException {
+        return profileDAO.searchProfiles(name, university, major, programId, status);
+    }
+
     public boolean updateStatus(int profileId, String status) throws SQLException {
+        if (profileId <= 0 || !("ACTIVE".equals(status) || "INACTIVE".equals(status))) {
+            throw new IllegalArgumentException("Trạng thái hồ sơ không hợp lệ.");
+        }
         return profileDAO.updateStatus(profileId, status);
     }
 }

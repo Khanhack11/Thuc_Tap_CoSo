@@ -36,7 +36,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="${ctx}/assets/css/app.css" rel="stylesheet">
+    <link href="${ctx}/assets/css/app.css?v=20261013-integration" rel="stylesheet">
 </head>
 <body>
 
@@ -99,6 +99,7 @@
             </c:if>
 
             <form action="${ctx}/auth/login" method="post">
+                <input type="hidden" name="csrfToken" value="<%= com.internship.util.CsrfToken.expose(request) %>">
 
                 <div class="mb-3">
                     <label class="form-label" for="username">Tên đăng nhập <span class="req">*</span></label>

@@ -38,6 +38,7 @@ public class SupportRequestServlet extends HttpServlet {
         User currentUser = (User) session.getAttribute("currentUser");
 
         String path = req.getServletPath();
+        if (req.getParameter("error") != null) req.setAttribute("error", req.getParameter("error"));
 
         try {
             if ("/intern/support".equals(path)) {
@@ -64,6 +65,7 @@ public class SupportRequestServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        req.setCharacterEncoding("UTF-8");
         if (!com.internship.util.CsrfToken.valid(req)) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid CSRF Token");
             return;
@@ -108,7 +110,10 @@ public class SupportRequestServlet extends HttpServlet {
                 supportRequestService.updateResponse(currentUser, requestId, status, responseText);
                 resp.sendRedirect(req.getContextPath() + "/hr/support?success=true");
             }
-        } catch (SQLException | IllegalArgumentException e) {
+        } catch (SQLException e) {
+            log("Support update database error", e);
+            resp.sendRedirect(req.getContextPath() + path + "?error=" + java.net.URLEncoder.encode("Không thể lưu yêu cầu. Vui lòng thử lại.", "UTF-8"));
+        } catch (IllegalArgumentException e) {
             resp.sendRedirect(req.getContextPath() + path + "?error=" + java.net.URLEncoder.encode(e.getMessage() != null ? e.getMessage() : "Error", "UTF-8"));
         }
     }

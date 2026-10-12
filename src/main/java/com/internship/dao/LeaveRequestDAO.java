@@ -7,7 +7,8 @@ import java.util.*;
 
 public class LeaveRequestDAO {
     private static final String SELECT = """
-            SELECT l.*, ip.full_name AS intern_name, p.program_name
+            SELECT l.*, UNIX_TIMESTAMP(l.reviewed_at) AS reviewed_at_epoch,
+                   UNIX_TIMESTAMP(l.created_at) AS created_at_epoch, ip.full_name AS intern_name, p.program_name
             FROM leave_requests l
             JOIN program_enrollments e ON e.enrollment_id=l.enrollment_id
             JOIN intern_profiles ip ON ip.profile_id=e.intern_profile_id
@@ -86,11 +87,11 @@ public class LeaveRequestDAO {
     private LeaveRequest map(ResultSet r) throws SQLException {
         long reviewer = r.getLong("reviewed_by");
         Long reviewerId = r.wasNull() ? null : reviewer;
-        Timestamp reviewed = r.getTimestamp("reviewed_at"), created = r.getTimestamp("created_at");
+        Instant reviewed = com.internship.util.SqlTime.instant(r, "reviewed_at"), created = com.internship.util.SqlTime.instant(r, "created_at");
         return new LeaveRequest(r.getInt("leave_id"), r.getInt("enrollment_id"),
                 r.getDate("from_date").toLocalDate(), r.getDate("to_date").toLocalDate(),
                 r.getString("reason"), r.getString("status"), reviewerId,
-                reviewed == null ? null : reviewed.toInstant(), r.getString("reject_reason"),
-                created.toInstant(), r.getString("intern_name"), r.getString("program_name"));
+                reviewed, r.getString("reject_reason"),
+                created, r.getString("intern_name"), r.getString("program_name"));
     }
 }

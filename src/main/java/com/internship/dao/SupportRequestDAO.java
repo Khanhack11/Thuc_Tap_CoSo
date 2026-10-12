@@ -25,7 +25,7 @@ public class SupportRequestDAO {
     }
 
     public void updateResponse(SupportRequest req, Connection conn) throws SQLException {
-        String sql = "UPDATE support_requests SET status = ?, response = ?, handled_by = ?, handled_at = ? WHERE request_id = ?";
+        String sql = "UPDATE support_requests SET status = ?, response = ?, handled_by = ?, handled_at = ? WHERE request_id = ? AND status IN ('PENDING','IN_PROGRESS')";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, req.getStatus());
             stmt.setString(2, req.getResponse());
@@ -34,13 +34,9 @@ public class SupportRequestDAO {
             } else {
                 stmt.setNull(3, Types.BIGINT);
             }
-            if (req.getHandledAt() != null) {
-                stmt.setTimestamp(4, Timestamp.valueOf(req.getHandledAt()));
-            } else {
-                stmt.setNull(4, Types.TIMESTAMP);
-            }
+            stmt.setObject(4, req.getHandledAt());
             stmt.setInt(5, req.getRequestId());
-            stmt.executeUpdate();
+            if (stmt.executeUpdate() != 1) throw new IllegalArgumentException("Yêu cầu đã được xử lý hoặc không còn tồn tại.");
         }
     }
 
@@ -112,10 +108,7 @@ public class SupportRequestDAO {
             r.setHandledBy(handledBy);
         }
         
-        Timestamp handledAt = rs.getTimestamp("handled_at");
-        if (handledAt != null) {
-            r.setHandledAt(handledAt.toLocalDateTime());
-        }
+        r.setHandledAt(rs.getObject("handled_at", java.time.LocalDateTime.class));
         
         Timestamp createdAt = rs.getTimestamp("created_at");
         if (createdAt != null) {

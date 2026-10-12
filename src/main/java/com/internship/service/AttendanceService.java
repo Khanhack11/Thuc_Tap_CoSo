@@ -25,15 +25,22 @@ public class AttendanceService {
     private final AttendanceDAO attendanceDAO;
     private final WorkScheduleDAO workScheduleDAO;
     private final ConnectionProvider connections;
+    private final java.time.Clock clock;
+    public static final java.time.ZoneId BUSINESS_ZONE = java.time.ZoneId.of("Asia/Ho_Chi_Minh");
 
     public AttendanceService() {
         this(new AttendanceDAO(), new WorkScheduleDAO(), DBConnection::getConnection);
     }
 
     public AttendanceService(AttendanceDAO attendanceDAO, WorkScheduleDAO workScheduleDAO, ConnectionProvider connections) {
+        this(attendanceDAO, workScheduleDAO, connections, java.time.Clock.system(BUSINESS_ZONE));
+    }
+
+    public AttendanceService(AttendanceDAO attendanceDAO, WorkScheduleDAO workScheduleDAO, ConnectionProvider connections, java.time.Clock clock) {
         this.attendanceDAO = Objects.requireNonNull(attendanceDAO);
         this.workScheduleDAO = Objects.requireNonNull(workScheduleDAO);
         this.connections = Objects.requireNonNull(connections);
+        this.clock = Objects.requireNonNull(clock).withZone(BUSINESS_ZONE);
     }
 
     public void checkIn(User actor, int enrollmentId) throws SQLException {
@@ -41,13 +48,14 @@ public class AttendanceService {
             throw new IllegalArgumentException("Chỉ thực tập sinh mới được chấm công.");
         }
         
-        LocalDate today = LocalDate.now();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDate today = now.toLocalDate();
 
         try (Connection c = connections.getConnection()) {
             c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             c.setAutoCommit(false);
             try {
+                attendanceDAO.lockOwnedEnrollment(enrollmentId, actor.getUserId(), c);
                 // Validate enrollment owner
                 // In a real app we might use enrollmentDAO.findById to check owner.
                 // For now, WorkScheduleDAO.list with actor's userId can verify if they have a schedule today.
@@ -88,13 +96,14 @@ public class AttendanceService {
             throw new IllegalArgumentException("Chỉ thực tập sinh mới được chấm công.");
         }
         
-        LocalDate today = LocalDate.now();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDate today = now.toLocalDate();
 
         try (Connection c = connections.getConnection()) {
             c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             c.setAutoCommit(false);
             try {
+                attendanceDAO.lockOwnedEnrollment(enrollmentId, actor.getUserId(), c);
                 List<WorkSchedule> schedules = workScheduleDAO.list(actor.getUserId(), enrollmentId, null, today, today, c);
                 if (schedules.isEmpty()) {
                     throw new IllegalArgumentException("Không có ca làm việc nào cho hôm nay.");
@@ -230,7 +239,7 @@ public class AttendanceService {
         if (actor == null) {
             throw new IllegalArgumentException("Người dùng (actor) không được để trống.");
         }
-        if (!UserRoleChecks.isIntern(actor) && !UserRoleChecks.canManageHr(actor) && !"MENTOR".equalsIgnoreCase(actor.getRole() != null ? actor.getRole().getRoleName() : null)) {
+        if (!UserRoleChecks.isIntern(actor) && !UserRoleChecks.canManageHr(actor)) {
             throw new IllegalArgumentException("Không có quyền truy cập dữ liệu chấm công.");
         }
 
@@ -238,8 +247,8 @@ public class AttendanceService {
         LocalDate effectiveFrom = fromDate;
         LocalDate effectiveTo = toDate;
         if (effectiveFrom == null && effectiveTo == null) {
-            effectiveFrom = LocalDate.now().minusDays(30);
-            effectiveTo = LocalDate.now();
+            effectiveFrom = LocalDate.now(clock).minusDays(30);
+            effectiveTo = LocalDate.now(clock);
         } else if (effectiveFrom == null) {
             effectiveFrom = effectiveTo.minusDays(30);
         } else if (effectiveTo == null) {
@@ -264,6 +273,11 @@ public class AttendanceService {
                     : attendanceDAO.getAttendanceReport(validProgramId != null ? validProgramId : 0, validEnrollmentId != null ? validEnrollmentId : 0, effectiveFrom, effectiveTo, c);
 
             List<AttendanceReportRow> report = new ArrayList<>();
+            java.util.Set<String> seen = new java.util.HashSet<>();
+            for (Attendance attendance : attendances) {
+                if (!seen.add(attendance.getEnrollmentId() + ":" + attendance.getWorkDate()))
+                    throw new IllegalArgumentException("Dữ liệu chấm công trùng ngày. Cần HR/QA đối chiếu; không thể tính giờ công đáng tin cậy.");
+            }
             for (WorkSchedule s : schedules) {
                 if (!"ACTIVE".equals(s.status())) continue;
 
@@ -285,8 +299,13 @@ public class AttendanceService {
                         row.status = "MISSING_CHECKOUT";
                         row.workedHours = 0.0;
                     } else {
-                        row.status = "PRESENT";
-                        long minutes = Duration.between(row.checkInTime, row.checkOutTime).toMinutes();
+                        // One attendance interval per day; count only its intersection with each shift.
+                        LocalDateTime start = s.workDate().atTime(s.startTime());
+                        LocalDateTime end = s.workDate().atTime(s.endTime());
+                        if (row.checkInTime.isAfter(start)) start = row.checkInTime;
+                        if (row.checkOutTime.isBefore(end)) end = row.checkOutTime;
+                        long minutes = Math.max(0, Duration.between(start, end).toMinutes());
+                        row.status = minutes > 0 ? "PRESENT" : (row.approvedLeave ? "LEAVE" : "ABSENT");
                         double hours = Math.max(0.0, minutes / 60.0);
                         row.workedHours = Math.round(hours * 100.0) / 100.0;
                     }

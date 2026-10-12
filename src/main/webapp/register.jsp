@@ -65,7 +65,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="${ctx}/assets/css/app.css" rel="stylesheet">
+    <link href="${ctx}/assets/css/app.css?v=20261013-integration" rel="stylesheet">
 </head>
 <body>
 
@@ -120,7 +120,7 @@
                     <label class="form-label" for="password">Mật khẩu <span class="req">*</span></label>
                     <input type="password" id="password" name="password" class="form-control"
                            required autocomplete="new-password"
-                           minlength="8" maxlength="100" placeholder="Tối thiểu 8 ký tự">
+                           minlength="8" maxlength="72" placeholder="Tối thiểu 8 ký tự, tối đa 72 byte UTF-8">
                 </div>
 
                 <div class="col-md-6">
@@ -214,6 +214,6 @@
     </div>
 </div>
 
-<script src="${ctx}/assets/js/app.js"></script>
+<script src="${ctx}/assets/js/app.js?v=20261013-integration"></script>
 </body>
 </html>

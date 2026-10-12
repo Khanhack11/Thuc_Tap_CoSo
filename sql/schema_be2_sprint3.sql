@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS attendances (
     check_out_time DATETIME NULL,
     notes TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_attendance_day (enrollment_id, work_date),
     FOREIGN KEY (enrollment_id) REFERENCES program_enrollments(enrollment_id) ON DELETE CASCADE,
     INDEX idx_attendance_enrollment (enrollment_id, work_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

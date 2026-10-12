@@ -27,6 +27,12 @@
     --border-strong: #c3ccd8;
     --text: #1b2430;
     --text-muted: #5d6b7a;
+    /* Bridge Bootstrap utilities to the same theme as the shared app shell. */
+    --bs-body-color: var(--text);
+    --bs-body-bg: var(--surface-sunken);
+    --bs-secondary-color: var(--text-muted);
+    --bs-secondary-color-rgb: 93, 107, 122;
+    --bs-border-color: var(--border);
 
     /* Sidebar (nen toi co dinh cho ca 4 role) */
     --sidebar-bg: #101a2b;
@@ -70,6 +76,7 @@
         --border-strong: #3a4a60;
         --text: #e6ebf2;
         --text-muted: #9aa8b8;
+        --bs-secondary-color-rgb: 154, 168, 184;
 
         --sidebar-bg: #0b1220;
         --sidebar-border: #1b2536;
@@ -89,6 +96,11 @@
 }
 
 /* ---------------------------------------------------------------- Base --- */
+@media (prefers-color-scheme: dark) {
+    .app-content .bg-light,
+    .app-content .bg-white { background-color: var(--surface) !important; }
+    .app-content .text-dark:not(.badge):not(.btn) { color: var(--text) !important; }
+}
 
 body {
     background: var(--surface-sunken);
@@ -838,6 +850,13 @@ a:hover {
 }
 
 .table {
+    --bs-table-bg: var(--surface);
+    --bs-table-color: var(--text);
+    --bs-table-border-color: var(--border);
+    --bs-table-striped-bg: var(--surface-sunken);
+    --bs-table-striped-color: var(--text);
+    --bs-table-hover-bg: var(--surface-hover);
+    --bs-table-hover-color: var(--text);
     margin: 0;
     color: var(--text);
     font-size: 14.5px;
@@ -853,6 +872,12 @@ a:hover {
     padding: 11px 16px;
     border-bottom: 1px solid var(--border);
     white-space: nowrap;
+}
+
+.table .table-light {
+    --bs-table-bg: var(--surface-sunken);
+    --bs-table-color: var(--text);
+    --bs-table-border-color: var(--border);
 }
 
 .table > tbody td {

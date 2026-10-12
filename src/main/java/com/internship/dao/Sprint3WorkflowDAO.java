@@ -41,8 +41,8 @@ public class Sprint3WorkflowDAO {
         return history(c,enrollment).stream().filter(a->a.assessmentId()==id).findFirst().orElseThrow(()->new SQLException("Assessment was not persisted"));
     }
     public List<Assessment> history(Connection c, int enrollment) throws SQLException {
-        try(var s=c.prepareStatement("SELECT a.*,u.full_name AS mentor_name FROM evaluations a JOIN mentors m ON m.mentor_id=a.mentor_id JOIN users u ON u.user_id=m.user_id WHERE a.enrollment_id=? AND a.score IS NULL ORDER BY a.evaluation_id DESC")) {
-            s.setInt(1,enrollment);List<Assessment> rows=new ArrayList<>();try(var r=s.executeQuery()) { while(r.next())rows.add(new Assessment(r.getLong("evaluation_id"),r.getInt("enrollment_id"),r.getInt("mentor_id"),r.getString("mentor_name"),r.getInt("skill_score"),r.getInt("attitude_score"),r.getString("comment"),r.getTimestamp("created_at").toInstant())); }return rows;
+        try(var s=c.prepareStatement("SELECT a.*,UNIX_TIMESTAMP(a.created_at) AS created_at_epoch,u.full_name AS mentor_name FROM evaluations a JOIN mentors m ON m.mentor_id=a.mentor_id JOIN users u ON u.user_id=m.user_id WHERE a.enrollment_id=? AND a.score IS NULL ORDER BY a.evaluation_id DESC")) {
+            s.setInt(1,enrollment);List<Assessment> rows=new ArrayList<>();try(var r=s.executeQuery()) { while(r.next())rows.add(new Assessment(r.getLong("evaluation_id"),r.getInt("enrollment_id"),r.getInt("mentor_id"),r.getString("mentor_name"),r.getInt("skill_score"),r.getInt("attitude_score"),r.getString("comment"),com.internship.util.SqlTime.instant(r,"created_at"))); }return rows;
         }
     }
 }

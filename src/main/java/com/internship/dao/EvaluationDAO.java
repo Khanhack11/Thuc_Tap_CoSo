@@ -40,7 +40,7 @@ public class EvaluationDAO {
 
     public Evaluation findByEnrollment(Connection connection, int enrollmentId) throws SQLException {
         // Compatibility endpoint returns only the legacy score /100, never a /5 criteria row.
-        String sql = "SELECT * FROM evaluations WHERE enrollment_id = ? AND score IS NOT NULL";
+        String sql = "SELECT evaluations.*, UNIX_TIMESTAMP(evaluations.created_at) AS created_at_epoch, UNIX_TIMESTAMP(evaluations.updated_at) AS updated_at_epoch FROM evaluations WHERE enrollment_id = ? AND score IS NOT NULL";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, enrollmentId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -54,7 +54,7 @@ public class EvaluationDAO {
                 SELECT e.evaluation_id, e.enrollment_id, ip.profile_id AS intern_profile_id,
                        ip.full_name AS intern_name,
                        p.program_name, u.full_name AS mentor_name, e.score,
-                       e.comment, e.created_at
+                       e.comment, e.created_at, UNIX_TIMESTAMP(e.created_at) AS created_at_epoch
                 FROM evaluations e
                 JOIN program_enrollments pe ON pe.enrollment_id = e.enrollment_id
                 JOIN intern_profiles ip ON ip.profile_id = pe.intern_profile_id
@@ -68,13 +68,13 @@ public class EvaluationDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet rows = statement.executeQuery()) {
             while (rows.next()) {
-                Timestamp createdAt = rows.getTimestamp("created_at");
+                java.time.LocalDateTime createdAt = com.internship.util.SqlTime.utcLocal(rows, "created_at");
                 summaries.add(new EvaluationSummary(
                         rows.getLong("evaluation_id"), rows.getInt("enrollment_id"),
                         rows.getString("intern_name"), rows.getString("program_name"),
                         rows.getString("mentor_name"), rows.getBigDecimal("score"),
                         rows.getString("comment"),
-                        createdAt == null ? null : createdAt.toLocalDateTime(),
+                        createdAt == null ? null : createdAt,
                         rows.getInt("intern_profile_id")));
             }
         }
@@ -82,7 +82,7 @@ public class EvaluationDAO {
     }
 
     private Evaluation findById(Connection connection, long evaluationId) throws SQLException {
-        String sql = "SELECT * FROM evaluations WHERE evaluation_id = ?";
+        String sql = "SELECT evaluations.*, UNIX_TIMESTAMP(evaluations.created_at) AS created_at_epoch, UNIX_TIMESTAMP(evaluations.updated_at) AS updated_at_epoch FROM evaluations WHERE evaluation_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, evaluationId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -98,13 +98,13 @@ public class EvaluationDAO {
         evaluation.setMentorId(resultSet.getInt("mentor_id"));
         evaluation.setScore(resultSet.getBigDecimal("score"));
         evaluation.setComment(resultSet.getString("comment"));
-        Timestamp createdAt = resultSet.getTimestamp("created_at");
+        java.time.LocalDateTime createdAt = com.internship.util.SqlTime.utcLocal(resultSet, "created_at");
         if (createdAt != null) {
-            evaluation.setCreatedAt(createdAt.toLocalDateTime());
+            evaluation.setCreatedAt(createdAt);
         }
-        Timestamp updatedAt = resultSet.getTimestamp("updated_at");
+        java.time.LocalDateTime updatedAt = com.internship.util.SqlTime.utcLocal(resultSet, "updated_at");
         if (updatedAt != null) {
-            evaluation.setUpdatedAt(updatedAt.toLocalDateTime());
+            evaluation.setUpdatedAt(updatedAt);
         }
         return evaluation;
     }
