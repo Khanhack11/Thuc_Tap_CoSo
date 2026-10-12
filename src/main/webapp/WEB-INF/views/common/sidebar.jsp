@@ -235,25 +235,29 @@
 
             <div class="app-nav__group">Thời gian và quyền lợi</div>
 
-            <%-- 21.2 Cham cong (HR) + 26.2 Phu cap (HR): da TAT 10/10/2026, cung ly do
-                 nhu muc tuong ung cua Thuc tap sinh - /hr/attendance va
-                 /hr/allowances deu tra ve trang 500 (DAO join cot khong ton tai).
-                 Truoc day 2 muc nay la <a href> that trong khi ban INTERN cua cung
-                 tinh nang da de "Sắp có" -> khong nhat quan. Khi BE2 sua DAO, doi lai:
-                    <a class="app-nav__link ${activePage eq 'hr-attendance' ? 'is-active' : ''}"
-                       href="${ctx}/hr/attendance">...<span>Chấm công</span></a>
-                    <a class="app-nav__link ${activePage eq 'hr-allowances' ? 'is-active' : ''}"
-                       href="${ctx}/hr/allowances">...<span>Phụ cấp</span></a>
-            --%>
-            <span class="app-nav__link is-soon" aria-disabled="true">
-                <i class="bi bi-clock-history"></i><span>Chấm công</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            <%-- 21.2 Cham cong (HR) + 26.2 Phu cap (HR): DA BAT LAI 12/10/2026.
+                 Truoc day 2 muc nay de "Sắp có" vi /hr/attendance va /hr/allowances
+                 tra ve trang 500 - BE2 join nham cot (pe.intern_id trong khi cot that
+                 la pe.intern_profile_id). BE2 da sua DAO (commit 6fda458).
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+                 Nhung sua DAO van CHUA DU: ca 4 view sprint-3 cua BE2
+                 (WEB-INF/views/{hr,intern}/{attendance,allowances,support}.jsp) rong
+                 EL ngay tu commit 0a39d42 - moi ${...} deu bi bo trong, nen trang chi
+                 ra mot cai bang khong co dong nao. Rieng ban HR da duoc dien lai EL
+                 trong nhanh nay, nen chi 2 muc HR duoi day moi bat duoc.
+
+                 Ban INTERN cua cung tinh nang VAN GIU "Sắp có" (xem ghi chu dau file):
+                 intern/attendance.jsp va intern/allowances.jsp van rong EL, bat len se
+                 la mot trang trong - te hon la thay 404. --%>
+            <a class="app-nav__link ${activePage eq 'hr-attendance' ? 'is-active' : ''}"
+               href="${ctx}/hr/attendance">
+                <i class="bi bi-clock-history"></i><span>Chấm công</span>
+            </a>
+
+            <a class="app-nav__link ${activePage eq 'hr-allowances' ? 'is-active' : ''}"
+               href="${ctx}/hr/allowances">
                 <i class="bi bi-cash-coin"></i><span>Phụ cấp</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
             <div class="app-nav__group">Hỗ trợ và trao đổi</div>
 
