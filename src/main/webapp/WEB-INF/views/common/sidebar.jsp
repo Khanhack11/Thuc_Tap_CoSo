@@ -311,15 +311,14 @@
                 <i class="bi bi-person-gear"></i><span>Tài khoản nội bộ</span>
             </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'admin-roles' ? 'is-active' : ''}" href="${ctx}/admin/roles">
                 <i class="bi bi-shield-lock"></i><span>Phân quyền</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
-            <span class="app-nav__link is-soon" aria-disabled="true">
+            <a class="app-nav__link ${activePage eq 'audit-logs' ? 'is-active' : ''}"
+               href="${ctx}/hr/audit-logs.jsp">
                 <i class="bi bi-clock-history"></i><span>Nhật ký hoạt động</span>
-                <span class="app-nav__soon">Sắp có</span>
-            </span>
+            </a>
 
         </c:if>
 
@@ -333,3 +332,4 @@
 
     </nav>
 </aside>
+
