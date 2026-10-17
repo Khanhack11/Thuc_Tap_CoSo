@@ -25,7 +25,7 @@
 <div class="container-fluid py-4">
 
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-        <h2 class="mb-0"><i class="bi bi-clock-history me-2"></i> Báo cáo chấm công (US22)</h2>
+        <h2 class="mb-0"><i class="bi bi-clock-history me-2"></i> Báo cáo chấm công</h2>
         <%-- Loi vao trang bao cao chuyen can. Truoc day trang do chi vao duoc bang
              cach go tay URL: khong sidebar, khong trang nao link toi. --%>
         <a class="btn btn-outline-secondary" href="${ctx}/hr/attendance-report.jsp">
@@ -36,20 +36,36 @@
     <c:if test="${not empty param.error}">
         <div class="alert alert-danger"><c:out value="${param.error}"/></div>
     </c:if>
+    <c:if test="${not empty warning}">
+        <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i><c:out value="${warning}"/>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </c:if>
 
     <div class="card mb-4">
         <div class="card-body">
             <form action="${ctx}/hr/attendance" method="get" class="row g-3"
                   id="attendanceFilter" novalidate>
                 <div class="col-md-3">
-                    <label class="form-label" for="fEnrollment">Mã Ghi Danh (Enrollment ID)</label>
-                    <input type="number" id="fEnrollment" name="enrollmentId" class="form-control"
-                           value="<c:out value='${param.enrollmentId}'/>">
+                    <label class="form-label" for="fEmail"><i class="bi bi-envelope-at me-1 text-primary"></i>Gmail / Email TTS</label>
+                    <input type="text" id="fEmail" name="email" class="form-control"
+                           placeholder="nam.nv@student.edu.vn"
+                           value="<c:out value='${internEmail != null ? internEmail : param.email}'/>"
+                           list="internEmailList" autocomplete="off">
+                    <datalist id="internEmailList">
+                        <c:forEach var="item" items="${activeInterns}">
+                            <option value="${item.email}">
+                                <c:out value="${item.fullName}"/> <c:choose><c:when test="${item.enrollmentId != null}">- #${item.enrollmentId} (<c:out value="${item.programName}"/>)</c:when><c:otherwise>- (Chưa ghi danh)</c:otherwise></c:choose>
+                            </option>
+                        </c:forEach>
+                    </datalist>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="fProgram">Mã Chương Trình (Program ID)</label>
-                    <input type="number" id="fProgram" name="programId" class="form-control"
-                           value="<c:out value='${param.programId}'/>">
+                    <label class="form-label" for="fEnrollment">Mã Ghi Danh (Tùy chọn)</label>
+                    <input type="number" id="fEnrollment" name="enrollmentId" class="form-control"
+                           placeholder="Tự động nhận diện qua Email"
+                           value="<c:out value='${enrollmentId != null ? enrollmentId : param.enrollmentId}'/>">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label" for="fFrom">Từ ngày</label>
@@ -164,7 +180,59 @@
             from = document.getElementById('fFrom'),
             to = document.getElementById('fTo'),
             warn = document.getElementById('rangeWarning'),
-            warnText = document.getElementById('rangeWarningText');
+            warnText = document.getElementById('rangeWarningText'),
+            fEmail = document.getElementById('fEmail'),
+            fEnrollment = document.getElementById('fEnrollment');
+
+        // Dynamic 2-way sync between Email and Enrollment ID
+        const internMap = {
+            <c:forEach var="item" items="${activeInterns}">
+                "<c:out value='${fn:toLowerCase(item.email)}'/>": "${item.enrollmentId != null ? item.enrollmentId : ''}",
+            </c:forEach>
+        };
+        const enrollmentToEmailMap = {
+            <c:forEach var="item" items="${activeInterns}">
+                <c:if test="${item.enrollmentId != null}">
+                    "${item.enrollmentId}": "<c:out value='${item.email}'/>",
+                </c:if>
+            </c:forEach>
+        };
+
+        function syncEnrollmentFromEmail() {
+            if (!fEmail || !fEnrollment) return;
+            const email = (fEmail.value || '').trim().toLowerCase();
+            if (email && internMap.hasOwnProperty(email)) {
+                const eid = internMap[email];
+                if (eid) {
+                    fEnrollment.value = eid;
+                } else {
+                    fEnrollment.value = '';
+                    fEnrollment.placeholder = 'Chưa có mã ghi danh';
+                }
+            }
+        }
+
+        function syncEmailFromEnrollment() {
+            if (!fEmail || !fEnrollment) return;
+            const eid = (fEnrollment.value || '').trim();
+            if (eid && enrollmentToEmailMap.hasOwnProperty(eid)) {
+                fEmail.value = enrollmentToEmailMap[eid];
+            }
+        }
+
+        if (fEmail) {
+            fEmail.addEventListener('input', syncEnrollmentFromEmail);
+            fEmail.addEventListener('change', syncEnrollmentFromEmail);
+        }
+        if (fEnrollment) {
+            fEnrollment.addEventListener('input', syncEmailFromEnrollment);
+            fEnrollment.addEventListener('change', syncEmailFromEnrollment);
+        }
+
+        // Auto-fill on initial load if email has value but enrollment is empty
+        if (fEmail && fEnrollment && fEmail.value && !fEnrollment.value) {
+            syncEnrollmentFromEmail();
+        }
 
         // Khong dung <input min/max>: tran la KHOANG chu khong phai mot moc ngay,
         // va moc 'to' phu thuoc 'from' nen phai tinh luc submit.

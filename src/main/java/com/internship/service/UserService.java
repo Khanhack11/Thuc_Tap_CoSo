@@ -269,6 +269,33 @@ public class UserService {
         }
     }
 
+    public void changePassword(long userId, String currentPassword, String newPassword, String confirmPassword) throws SQLException {
+        if (userId <= 0) {
+            throw new IllegalArgumentException("Mã tài khoản không hợp lệ.");
+        }
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập mật khẩu hiện tại.");
+        }
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập mật khẩu mới.");
+        }
+        if (newPassword.length() < 6) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có ít nhất 6 ký tự.");
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            throw new IllegalArgumentException("Xác nhận mật khẩu mới không khớp.");
+        }
+        User user = userDAO.findById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("Tài khoản không tồn tại.");
+        }
+        if (!PasswordUtil.verifyPassword(currentPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("Mật khẩu hiện tại không chính xác.");
+        }
+        String newHash = PasswordUtil.hashPassword(newPassword);
+        userDAO.updatePassword(userId, newHash);
+    }
+
     private void validateInput(
             String username,
             String email,

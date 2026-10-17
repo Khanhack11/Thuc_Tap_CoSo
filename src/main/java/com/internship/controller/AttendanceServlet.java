@@ -15,7 +15,15 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import com.internship.util.DBConnection;
 
 @WebServlet({"/intern/attendance", "/hr/attendance"})
 public class AttendanceServlet extends HttpServlet {
@@ -50,11 +58,21 @@ public class AttendanceServlet extends HttpServlet {
                 }
                 
                 String enrollParam = req.getParameter("enrollmentId");
-                int enrollmentId = 0;
-                try {
-                    enrollmentId = (enrollParam != null && !enrollParam.trim().isEmpty()) ? Integer.parseInt(enrollParam) : 0;
-                } catch (NumberFormatException e) {
-                    // ignore, keep 0
+                String emailParam = req.getParameter("email");
+                Integer enrollmentId = null;
+                if (enrollParam != null && !enrollParam.trim().isEmpty()) {
+                    try {
+                        enrollmentId = Integer.parseInt(enrollParam.trim());
+                    } catch (NumberFormatException e) { }
+                    if (enrollmentId == null && enrollParam.contains("@")) {
+                        emailParam = enrollParam.trim();
+                    }
+                }
+                if (enrollmentId == null && emailParam != null && !emailParam.trim().isEmpty()) {
+                    enrollmentId = findActiveEnrollmentIdByEmail(emailParam);
+                }
+                if (enrollmentId == null && currentUser != null) {
+                    enrollmentId = findActiveEnrollmentIdByUserId(currentUser.getUserId());
                 }
                 
                 LocalDate from = LocalDate.now().minusDays(30);
@@ -70,11 +88,14 @@ public class AttendanceServlet extends HttpServlet {
                     // use defaults
                 }
                 
-                List<AttendanceReportRow> report = attendanceService.getReport(currentUser, enrollmentId > 0 ? enrollmentId : null, null, from, to);
+                List<AttendanceReportRow> report = attendanceService.getReport(currentUser, enrollmentId != null && enrollmentId > 0 ? enrollmentId : null, null, from, to);
+                Map<String, Object> details = enrollmentId != null && enrollmentId > 0 ? findEnrollmentDetails(enrollmentId) : null;
+                req.setAttribute("enrollmentDetails", details);
+                req.setAttribute("internEmail", details != null ? details.get("email") : (currentUser != null ? currentUser.getEmail() : null));
                 req.setAttribute("report", report);
                 req.setAttribute("from", from);
                 req.setAttribute("to", to);
-                req.setAttribute("enrollmentId", enrollmentId > 0 ? enrollmentId : null);
+                req.setAttribute("enrollmentId", enrollmentId);
                 req.getRequestDispatcher("/WEB-INF/views/intern/attendance.jsp").forward(req, resp);
                 
             } else if ("/hr/attendance".equals(path)) {
@@ -86,8 +107,28 @@ public class AttendanceServlet extends HttpServlet {
                 String enrollParam = req.getParameter("enrollmentId");
                 Integer enrollmentId = null;
                 try {
-                    enrollmentId = (enrollParam != null && !enrollParam.trim().isEmpty()) ? Integer.parseInt(enrollParam) : null;
+                    enrollmentId = (enrollParam != null && !enrollParam.trim().isEmpty()) ? Integer.parseInt(enrollParam.trim()) : null;
                 } catch (NumberFormatException e) { }
+
+                String emailParam = req.getParameter("email");
+                if (emailParam != null) {
+                    emailParam = emailParam.trim();
+                    if (emailParam.isEmpty()) {
+                        emailParam = null;
+                    }
+                }
+                if (enrollmentId == null && enrollParam != null && enrollParam.contains("@")) {
+                    emailParam = enrollParam.trim();
+                }
+
+                if (enrollmentId == null && emailParam != null) {
+                    enrollmentId = findActiveEnrollmentIdByEmail(emailParam);
+                } else if (enrollmentId != null && emailParam == null) {
+                    Map<String, Object> det = findEnrollmentDetails(enrollmentId);
+                    if (det != null && det.get("email") != null) {
+                        emailParam = (String) det.get("email");
+                    }
+                }
                 
                 String progParam = req.getParameter("programId");
                 Integer programId = null;
@@ -107,7 +148,13 @@ public class AttendanceServlet extends HttpServlet {
                 } catch (Exception e) { }
                 
                 String status = req.getParameter("status");
-                List<AttendanceReportRow> report = attendanceService.getReport(currentUser, enrollmentId, programId, from, to, (status != null && !status.trim().isEmpty()) ? status.trim() : null);
+                List<AttendanceReportRow> report;
+                if (emailParam != null && enrollmentId == null) {
+                    report = Collections.emptyList();
+                    req.setAttribute("warning", "Thực tập sinh với email \"" + emailParam + "\" chưa có mã ghi danh hoặc chưa tham gia chương trình thực tập nào.");
+                } else {
+                    report = attendanceService.getReport(currentUser, enrollmentId, programId, from, to, (status != null && !status.trim().isEmpty()) ? status.trim() : null);
+                }
 
                 // Cung MOT payload phuc vu ca hai duong lay du lieu ma FE2 duoc giao:
                 // tra thang JSON, hoac nhung vao the <script> cua trang HTML.
@@ -121,6 +168,8 @@ public class AttendanceServlet extends HttpServlet {
                 req.setAttribute("from", from);
                 req.setAttribute("to", to);
                 req.setAttribute("enrollmentId", enrollmentId);
+                req.setAttribute("internEmail", emailParam);
+                req.setAttribute("activeInterns", findAllActiveInternsForHr());
                 req.setAttribute("programId", programId);
                 req.setAttribute("status", status);
                 req.getRequestDispatcher("/WEB-INF/views/hr/attendance.jsp").forward(req, resp);
@@ -155,14 +204,25 @@ public class AttendanceServlet extends HttpServlet {
         
         if ("/intern/attendance".equals(path)) {
             String action = req.getParameter("action");
-            int enrollmentId = 0;
-            try {
-                String enrollParam = req.getParameter("enrollmentId");
-                if (enrollParam != null && !enrollParam.trim().isEmpty()) {
-                    enrollmentId = Integer.parseInt(enrollParam);
+            Integer enrollmentId = null;
+            String enrollParam = req.getParameter("enrollmentId");
+            if (enrollParam != null && !enrollParam.trim().isEmpty()) {
+                try {
+                    enrollmentId = Integer.parseInt(enrollParam.trim());
+                } catch (NumberFormatException e) { }
+            }
+            if (enrollmentId == null || enrollmentId <= 0) {
+                String emailParam = req.getParameter("email");
+                if (emailParam != null && !emailParam.trim().isEmpty()) {
+                    enrollmentId = findActiveEnrollmentIdByEmail(emailParam);
                 }
-            } catch (NumberFormatException e) {
-                resp.sendRedirect(req.getContextPath() + "/intern/attendance?error=" + java.net.URLEncoder.encode("Mã ghi danh không hợp lệ", "UTF-8"));
+            }
+            if ((enrollmentId == null || enrollmentId <= 0) && currentUser != null) {
+                enrollmentId = findActiveEnrollmentIdByUserId(currentUser.getUserId());
+            }
+            
+            if (enrollmentId == null || enrollmentId <= 0) {
+                resp.sendRedirect(req.getContextPath() + "/intern/attendance?error=" + java.net.URLEncoder.encode("Không tìm thấy đợt thực tập đang hoạt động liên kết với tài khoản/Gmail này.", "UTF-8"));
                 return;
             }
             
@@ -261,5 +321,104 @@ public class AttendanceServlet extends HttpServlet {
             }
         }
         return out.append('"').toString();
+    }
+
+    private Integer findActiveEnrollmentIdByUserId(long userId) {
+        String sql = """
+            SELECT pe.enrollment_id
+            FROM users u
+            JOIN intern_profiles ip ON ip.user_id = u.user_id
+            JOIN program_enrollments pe ON pe.intern_profile_id = ip.profile_id
+            JOIN internship_programs p ON p.program_id = pe.program_id
+            WHERE u.user_id = ? AND pe.status = 'ACTIVE' AND p.status = 'ACTIVE'
+            LIMIT 1
+            """;
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) { }
+        return null;
+    }
+
+    private Integer findActiveEnrollmentIdByEmail(String email) {
+        if (email == null || email.trim().isEmpty()) return null;
+        String clean = email.trim();
+        String sql = """
+            SELECT pe.enrollment_id
+            FROM users u
+            JOIN intern_profiles ip ON ip.user_id = u.user_id
+            JOIN program_enrollments pe ON pe.intern_profile_id = ip.profile_id
+            LEFT JOIN internship_programs p ON p.program_id = pe.program_id
+            WHERE (LOWER(u.email) = LOWER(?) OR LOWER(ip.email) = LOWER(?) OR LOWER(u.username) = LOWER(?))
+            ORDER BY (pe.status = 'ACTIVE') DESC, (p.status = 'ACTIVE') DESC, pe.enrollment_id DESC
+            LIMIT 1
+            """;
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, clean);
+            ps.setString(2, clean);
+            ps.setString(3, clean);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) { }
+        return null;
+    }
+
+    private Map<String, Object> findEnrollmentDetails(int enrollmentId) {
+        String sql = """
+            SELECT pe.enrollment_id, ip.full_name, u.email, u.username, p.program_name, p.program_id
+            FROM program_enrollments pe
+            JOIN intern_profiles ip ON ip.profile_id = pe.intern_profile_id
+            JOIN users u ON u.user_id = ip.user_id
+            JOIN internship_programs p ON p.program_id = pe.program_id
+            WHERE pe.enrollment_id = ?
+            """;
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, enrollmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("enrollmentId", rs.getInt("enrollment_id"));
+                    map.put("fullName", rs.getString("full_name"));
+                    map.put("email", rs.getString("email"));
+                    map.put("username", rs.getString("username"));
+                    map.put("programName", rs.getString("program_name"));
+                    map.put("programId", rs.getInt("program_id"));
+                    return map;
+                }
+            }
+        } catch (SQLException e) { }
+        return null;
+    }
+
+    private List<Map<String, Object>> findAllActiveInternsForHr() {
+        String sql = """
+            SELECT pe.enrollment_id, ip.full_name, COALESCE(u.email, ip.email) AS email, p.program_name
+            FROM intern_profiles ip
+            JOIN users u ON u.user_id = ip.user_id
+            LEFT JOIN program_enrollments pe ON pe.intern_profile_id = ip.profile_id AND pe.status = 'ACTIVE'
+            LEFT JOIN internship_programs p ON p.program_id = pe.program_id
+            ORDER BY (pe.enrollment_id IS NOT NULL) DESC, ip.full_name ASC
+            """;
+        List<Map<String, Object>> list = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> map = new HashMap<>();
+                int eid = rs.getInt("enrollment_id");
+                map.put("enrollmentId", rs.wasNull() ? null : eid);
+                map.put("fullName", rs.getString("full_name"));
+                map.put("email", rs.getString("email"));
+                map.put("programName", rs.getString("program_name"));
+                list.add(map);
+            }
+        } catch (SQLException e) { }
+        return list;
     }
 }

@@ -7,6 +7,7 @@ import com.internship.util.UserRoleChecks;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.*;
 import java.time.format.DateTimeParseException;
@@ -45,17 +46,46 @@ public class ScheduleLeaveServlet extends HttpServlet {
             boolean schedule = request.getServletPath().endsWith("work-schedules");
             Object data;
             if (!write) {
-                Integer enrollment = optionalId(request, "enrollmentId"), program = optionalId(request, "programId");
-                LocalDate from = date(request, "from"), to = date(request, "to");
-                data = schedule
-                        ? service.schedules(actor, enrollment, program, from, to).stream().map(ScheduleLeaveServlet::schedule).toList()
-                        : service.leaves(actor, enrollment, program, optional(request, "status"), from, to).stream().map(ScheduleLeaveServlet::leave).toList();
+                if ("interns".equals(request.getParameter("action"))) {
+                    try (Connection c = com.internship.util.DBContext.getConnection()) {
+                        data = new com.internship.dao.ScheduleEnrollmentDAO().listEnrolledInterns(c).stream().map(i -> Be4Json.fields(
+                                "enrollmentId", i.enrollmentId() == 0 ? null : i.enrollmentId(),
+                                "email", i.email(),
+                                "fullName", i.fullName(),
+                                "university", i.university(),
+                                "major", i.major(),
+                                "phone", i.phone(),
+                                "programName", i.programName(),
+                                "programId", i.programId(),
+                                "status", i.status()
+                        )).toList();
+                    } catch (SQLException e) {
+                        data = Collections.emptyList();
+                    }
+                } else {
+                    Map<Integer, String> emailMap = Collections.emptyMap();
+                    try (Connection c = com.internship.util.DBContext.getConnection()) {
+                        emailMap = new com.internship.dao.ScheduleEnrollmentDAO().getEnrollmentEmailMap(c);
+                    } catch (Exception ignored) {}
+                    final Map<Integer, String> fEmails = emailMap;
+                    Integer enrollment = optionalId(request, "enrollmentId");
+                    if (enrollment == null && request.getParameter("email") != null) {
+                        try (Connection c = com.internship.util.DBContext.getConnection()) {
+                            enrollment = new com.internship.dao.ScheduleEnrollmentDAO().findEnrollmentIdByEmail(request.getParameter("email"), c);
+                        } catch (Exception ignored) {}
+                    }
+                    Integer program = optionalId(request, "programId");
+                    LocalDate from = date(request, "from"), to = date(request, "to");
+                    data = schedule
+                            ? service.schedules(actor, enrollment, program, from, to).stream().map(s -> schedule(s, fEmails.get(s.enrollmentId()))).toList()
+                            : service.leaves(actor, enrollment, program, optional(request, "status"), from, to).stream().map(l -> leave(l, fEmails.get(l.enrollmentId()))).toList();
+                }
             } else {
                 String action = request.getParameter("action");
                 if (schedule) {
                     if (!hrRoute) throw new ScheduleLeaveException(403, "FORBIDDEN", "TTS chỉ được xem lịch.");
                     data = switch (action == null ? "" : action) {
-                        case "create" -> Be4Json.fields("scheduleId", service.createSchedule(actor, id(request, "enrollmentId"),
+                        case "create" -> Be4Json.fields("scheduleId", service.createSchedule(actor, resolveEnrollment(request),
                                 date(request, "workDate"), time(request, "startTime"), time(request, "endTime"), request.getParameter("note")));
                         case "bulk-create" -> service.createSchedules(actor, ids(request), date(request, "workDate"),
                                 time(request, "startTime"), time(request, "endTime"), request.getParameter("note")).stream()
@@ -101,13 +131,21 @@ public class ScheduleLeaveServlet extends HttpServlet {
     }
 
     static Map<String, Object> schedule(WorkSchedule s) {
+        return schedule(s, null);
+    }
+    static Map<String, Object> schedule(WorkSchedule s, String email) {
         return Be4Json.fields("scheduleId", s.scheduleId(), "enrollmentId", s.enrollmentId(),
+                "internEmail", email,
                 "workDate", s.workDate(), "startTime", s.startTime(), "endTime", s.endTime(),
                 "note", s.note(), "status", s.status(), "internName", s.internName(),
                 "programName", s.programName(), "approvedLeave", s.approvedLeave());
     }
     static Map<String, Object> leave(LeaveRequest l) {
+        return leave(l, null);
+    }
+    static Map<String, Object> leave(LeaveRequest l, String email) {
         return Be4Json.fields("leaveId", l.leaveId(), "enrollmentId", l.enrollmentId(),
+                "internEmail", email,
                 "fromDate", l.fromDate(), "toDate", l.toDate(), "reason", l.reason(), "status", l.status(),
                 "reviewedBy", l.reviewedBy(), "reviewedAt", l.reviewedAt() == null ? null : l.reviewedAt().toString(),
                 "rejectReason", l.rejectReason(), "createdAt", l.createdAt().toString(),
@@ -127,6 +165,20 @@ public class ScheduleLeaveServlet extends HttpServlet {
     private static int id(HttpServletRequest r, String key) {
         Integer value = optionalId(r, key); if (value == null) throw invalid(); return value;
     }
+    private static int resolveEnrollment(HttpServletRequest r) {
+        Integer id = optionalId(r, "enrollmentId");
+        if (id != null && id > 0) return id;
+        String email = optional(r, "internEmail");
+        if (email == null) email = optional(r, "email");
+        if (email != null && !email.isBlank()) {
+            try (Connection c = com.internship.util.DBContext.getConnection()) {
+                Integer resolved = new com.internship.dao.ScheduleEnrollmentDAO().findEnrollmentIdByEmail(email, c);
+                if (resolved != null) return resolved;
+            } catch (SQLException ignored) {}
+            throw new ScheduleLeaveException(400, "NOT_ENROLLED", "Không tìm thấy chương trình thực tập đang hiệu lực cho Gmail: " + email);
+        }
+        return id(r, "enrollmentId");
+    }
     private static LocalDate date(HttpServletRequest r, String key) {
         String value = optional(r, key); if (value == null) throw invalid(); return LocalDate.parse(value);
     }
@@ -135,7 +187,35 @@ public class ScheduleLeaveServlet extends HttpServlet {
     }
     private static List<Integer> ids(HttpServletRequest r) {
         String value = optional(r, "enrollmentIds"); if (value == null) throw invalid();
-        return Arrays.stream(value.split(",", -1)).map(String::trim).map(Integer::valueOf).toList();
+        com.internship.dao.ScheduleEnrollmentDAO dao = new com.internship.dao.ScheduleEnrollmentDAO();
+        List<Integer> list = new ArrayList<>();
+        Connection conn = null;
+        try {
+            conn = com.internship.util.DBContext.getConnection();
+        } catch (Exception ignored) {}
+        try {
+            for (String item : value.split(",", -1)) {
+                String token = item.trim();
+                if (token.isEmpty()) continue;
+                if (token.matches("^[0-9]+$")) {
+                    list.add(Integer.valueOf(token));
+                } else if (token.contains("@") && conn != null) {
+                    try {
+                        Integer resolved = dao.findEnrollmentIdByEmail(token, conn);
+                        list.add(resolved != null ? resolved : 999999);
+                    } catch (SQLException e) {
+                        list.add(999999);
+                    }
+                } else {
+                    list.add(Integer.valueOf(token));
+                }
+            }
+        } finally {
+            if (conn != null) {
+                try { conn.close(); } catch (Exception ignored) {}
+            }
+        }
+        return list;
     }
     private static ScheduleLeaveException invalid() {
         return new ScheduleLeaveException(400, "VALIDATION_ERROR", "Thiếu tham số hoặc hành động không hợp lệ.");

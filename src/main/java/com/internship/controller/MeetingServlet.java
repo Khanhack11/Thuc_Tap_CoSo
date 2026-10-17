@@ -77,7 +77,28 @@ public class MeetingServlet extends HttpServlet {
     private static MeetingRequest request(HttpServletRequest req) {
         String ids=text(req,"enrollmentIds");
         if(ids==null || ids.length()>2400)throw new IllegalArgumentException("Invalid participants");
-        List<Integer> participants=Arrays.stream(ids.split(",",-1)).map(String::trim).map(Integer::valueOf).toList();
+        List<Integer> participants = new ArrayList<>();
+        com.internship.dao.ScheduleEnrollmentDAO dao = new com.internship.dao.ScheduleEnrollmentDAO();
+        for (String token : ids.split(",", -1)) {
+            String t = token.trim();
+            if (t.isEmpty()) continue;
+            if (t.matches("\\d+")) {
+                participants.add(Integer.valueOf(t));
+            } else if (t.contains("@")) {
+                try {
+                    Integer id = dao.findEnrollmentIdByEmail(t);
+                    if (id != null) {
+                        participants.add(id);
+                    } else {
+                        throw new IllegalArgumentException("Không tìm thấy mã ghi danh cho email: " + t);
+                    }
+                } catch (SQLException e) {
+                    throw new IllegalArgumentException("Lỗi tìm mã ghi danh: " + t, e);
+                }
+            } else {
+                throw new IllegalArgumentException("Người tham gia không hợp lệ: " + t);
+            }
+        }
         return new MeetingRequest(number(req,"programId",0),text(req,"title"),text(req,"description"),
                 text(req,"location"),instant(req,"startsAt"),instant(req,"endsAt"),participants);
     }

@@ -257,6 +257,23 @@ public class UserDAO {
         }
     }
 
+    public boolean updatePassword(long userId, String passwordHash) throws SQLException {
+        String sql = """
+                UPDATE users
+                SET password_hash = ?
+                WHERE user_id = ?
+                """;
+
+        try (Connection connection = DBConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, passwordHash);
+            statement.setLong(2, userId);
+
+            return statement.executeUpdate() > 0;
+        }
+    }
+
     public boolean existsByUsername(String username) throws SQLException {
         String sql = """
                 SELECT 1

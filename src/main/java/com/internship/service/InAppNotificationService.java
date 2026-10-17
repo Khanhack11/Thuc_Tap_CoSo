@@ -11,7 +11,10 @@ public class InAppNotificationService {
     private final Connections connections;
     private final InAppNotificationDAO dao;
     private final boolean enabled;
-    public static boolean configured() {return Boolean.getBoolean("inapp.notifications.enabled");}
+    public static boolean configured() {
+        String prop = System.getProperty("inapp.notifications.enabled");
+        return prop == null || !"false".equalsIgnoreCase(prop.trim());
+    }
     public InAppNotificationService() {this(DBConnection::getConnection,new InAppNotificationDAO(),configured());}
     public InAppNotificationService(Connections connections,InAppNotificationDAO dao,boolean enabled) {
         this.connections=Objects.requireNonNull(connections);this.dao=Objects.requireNonNull(dao);this.enabled=enabled;

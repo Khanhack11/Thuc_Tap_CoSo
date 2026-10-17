@@ -57,8 +57,16 @@ public class SupportRequestServlet extends HttpServlet {
                 req.setAttribute("requests", supportRequestService.getAllRequests(currentUser));
                 req.getRequestDispatcher("/WEB-INF/views/hr/support.jsp").forward(req, resp);
             }
-        } catch (SQLException | IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             req.setAttribute("error", e.getMessage());
+            req.setAttribute("requests", java.util.Collections.emptyList());
+            if ("/intern/support".equals(path)) {
+                req.getRequestDispatcher("/WEB-INF/views/intern/support.jsp").forward(req, resp);
+            } else {
+                req.getRequestDispatcher("/WEB-INF/views/hr/support.jsp").forward(req, resp);
+            }
+        } catch (SQLException e) {
+            req.setAttribute("error", "Lỗi cơ sở dữ liệu: " + e.getMessage());
             req.getRequestDispatcher("/error/500.jsp").forward(req, resp);
         }
     }

@@ -39,7 +39,7 @@ tmp/
 temp/
 
 
-# Local database configuration
-src/main/resources/db.properties
-# Local mail configuration
-src/main/resources/mail.properties
+# # Local database configuration (uncomment if you want to ignore your local credentials)
+# src/main/resources/db.properties
+# # Local mail configuration
+# src/main/resources/mail.properties

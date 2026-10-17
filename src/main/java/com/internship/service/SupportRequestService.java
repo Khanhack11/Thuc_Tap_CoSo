@@ -41,7 +41,16 @@ public class SupportRequestService {
         content = required(content, 10000, "Nội dung");
         InternProfile profile = internProfileDAO.getProfileByUserId(actor.getUserId());
         if (profile == null) {
-            throw new IllegalArgumentException("Intern profile not found.");
+            profile = new InternProfile();
+            profile.setUserId(actor.getUserId());
+            profile.setFullName(actor.getFullName() != null && !actor.getFullName().isBlank() ? actor.getFullName() : actor.getUsername());
+            profile.setEmail(actor.getEmail() != null ? actor.getEmail() : actor.getUsername() + "@intern.local");
+            profile.setPhone("0000000000");
+            profile.setUniversity("Chưa cập nhật");
+            profile.setMajor("Chưa cập nhật");
+            profile.setStatus("ACTIVE");
+            int pid = internProfileDAO.createProfile(profile);
+            profile.setProfileId(pid);
         }
 
         SupportRequest req = new SupportRequest();
@@ -57,7 +66,7 @@ public class SupportRequestService {
 
     public void updateResponse(User actor, int requestId, String status, String response) throws SQLException {
         if (actor == null || !UserRoleChecks.canManageHr(actor)) {
-            throw new IllegalArgumentException("Only HR/Admin can respond to support requests.");
+            throw new IllegalArgumentException("Chỉ HR/Admin mới có thể phản hồi yêu cầu hỗ trợ.");
         }
         
         if (requestId <= 0 || status == null || !List.of("IN_PROGRESS", "RESOLVED", "REJECTED").contains(status)) throw new IllegalArgumentException("Trạng thái hoặc mã yêu cầu không hợp lệ.");
@@ -65,10 +74,10 @@ public class SupportRequestService {
         try (Connection c = connections.getConnection()) {
             SupportRequest req = supportRequestDAO.findById(requestId, c);
             if (req == null) {
-                throw new IllegalArgumentException("Support request not found.");
+                throw new IllegalArgumentException("Không tìm thấy yêu cầu hỗ trợ.");
             }
             
-            if (List.of("RESOLVED", "REJECTED").contains(req.getStatus())) throw new IllegalArgumentException("Yêu cầu đã được xử lý.");
+            if (List.of("RESOLVED", "REJECTED").contains(req.getStatus())) throw new IllegalArgumentException("Yêu cầu đã được xử lý trước đó.");
             req.setStatus(status);
             req.setResponse(response);
             req.setHandledBy(actor.getUserId());
@@ -80,12 +89,12 @@ public class SupportRequestService {
 
     public List<SupportRequest> getMyRequests(User actor) throws SQLException {
         if (actor == null || !UserRoleChecks.isIntern(actor)) {
-            throw new IllegalArgumentException("Only interns can view their own support requests.");
+            throw new IllegalArgumentException("Chỉ thực tập sinh mới có thể xem yêu cầu hỗ trợ.");
         }
         
         InternProfile profile = internProfileDAO.getProfileByUserId(actor.getUserId());
         if (profile == null) {
-            throw new IllegalArgumentException("Intern profile not found.");
+            return java.util.Collections.emptyList();
         }
 
         try (Connection c = connections.getConnection()) {

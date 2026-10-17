@@ -51,8 +51,9 @@
                 <input class="form-control" id="fProgram" name="programId" type="number" min="1">
             </div>
             <div class="col-sm-6 col-lg-2">
-                <label class="form-label" for="fEnroll">Mã ghi danh</label>
-                <input class="form-control" id="fEnroll" name="enrollmentId" type="number" min="1">
+                <label class="form-label" for="fEnroll">Gmail / Mã ghi danh</label>
+                <input class="form-control" id="fEnroll" name="enrollmentId" type="text" list="enrollList" placeholder="Gmail hoặc mã">
+                <datalist id="enrollList"></datalist>
             </div>
             <div class="col-sm-6 col-lg-2">
                 <label class="form-label" for="fStatus">Trạng thái</label>
@@ -118,6 +119,7 @@
             .replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
         let loaded = [];
+        let internEmailMap = {};
 
         function paint() {
             const want = statusSelect.value;
@@ -136,10 +138,14 @@
                 const out = x.status === 'MISSING_CHECKOUT'
                     ? '<b class="text-danger">Chưa check-out</b>'
                     : esc(x.checkOutTime);
+                const email = internEmailMap[x.enrollmentId];
+                const subText = email
+                    ? '<i class="bi bi-envelope me-1"></i>' + esc(email)
+                    : ('Ghi danh #' + esc(x.enrollmentId));
                 return '<tr>'
                     + '<td>' + esc(x.workDate) + '</td>'
                     + '<td><b>' + esc(x.internName) + '</b>'
-                        + '<div class="small text-muted">Ghi danh #' + esc(x.enrollmentId) + '</div></td>'
+                        + '<div class="small text-muted">' + subText + '</div></td>'
                     + '<td>' + esc(x.programName) + '</td>'
                     + '<td>' + esc(x.checkInTime) + '</td>'
                     + '<td>' + out + '</td>'
@@ -195,6 +201,31 @@
         const now = new Date();
         document.getElementById('fFrom').value = iso(new Date(now.getTime() - 30 * 864e5));
         document.getElementById('fTo').value = iso(now);
+
+        // Load danh sach email thuc tap sinh
+        fetch(ctx + '/api/hr/work-schedules?action=interns')
+            .then((r) => r.json())
+            .then((data) => {
+                if (data && data.interns) {
+                    const dl = document.getElementById('enrollList');
+                    if (dl) {
+                        dl.innerHTML = '';
+                        data.interns.forEach((it) => {
+                            if (it.enrollmentId && it.email) {
+                                internEmailMap[it.enrollmentId] = it.email;
+                            }
+                            if (it.email) {
+                                const opt = document.createElement('option');
+                                opt.value = it.email;
+                                opt.label = (it.fullName || '') + (it.programName ? ' (' + it.programName + ')' : '');
+                                dl.appendChild(opt);
+                            }
+                        });
+                        paint();
+                    }
+                }
+            })
+            .catch(() => {});
 
         load();
     })();
